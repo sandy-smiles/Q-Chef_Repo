@@ -1,4 +1,3 @@
-import random as rand
 from flask import Flask, request, jsonify
 
 # Create a web server
@@ -17,4 +16,5 @@ def about():
 
 ######## Server Activation ########
 # Start the web server!
-app.run()
+if __name__ == "__main__":
+    app.run()
