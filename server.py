@@ -17,4 +17,4 @@ def about():
 
 ######## Server Activation ########
 # Start the web server!
-app.run(port=4242, debug=True)
+app.run()
