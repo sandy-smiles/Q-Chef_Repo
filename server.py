@@ -1,3 +1,7 @@
+##########################################
+# Q-Chef Server
+# Authors: Q-Chef Backend Programmers
+##########################################
 import cred
 import taste_pref
 
@@ -7,7 +11,9 @@ from flask import Flask, request, jsonify
 # Create a web server
 app = Flask(__name__)
 
-######## API URLs ########
+##########################################
+# API URLs
+##########################################
 # API index - shows when people visit the home page
 @app.route('/')
 def home():
@@ -18,10 +24,22 @@ def home():
 def about():
     return 'Q-Chef is ...'
 
+# API save diet req - saving the user's dietary requirements
+@app.route('/diet_req')
+def about():
+    requ = request.json
+    resp = {}
+    resp[user_id] = requ["user_id"]
+
+    return jsonify(info)
+
+##########################################
+# Testing URLs
+##########################################
 # API pref - returns json list of recipes
 # TODO(kbona@): Return a list of 10 pref recipes.
 @app.route('/pref/<id>')
-def pref(id):
+def taste_preference(id):
     err = checkID(id)
     if err:
         return f'Unable to find user {id}. Unable to return a list of preferenced recipes. err = {err}'
@@ -42,7 +60,9 @@ def pref(id):
 
     return jsonify(userPreferenced)
 
-######## Server Activation ########
+##########################################
+# Server Activation
+##########################################
 # Start the web server!
 if __name__ == "__main__":
     app.run()
