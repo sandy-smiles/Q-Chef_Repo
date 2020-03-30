@@ -26,7 +26,7 @@ def about():
 
 # API save diet req - saving the user's dietary requirements
 @app.route('/diet_req', methods=['GET', 'POST'])
-def about():
+def diet_req():
   try:
     requ = request.json
     resp = {}
