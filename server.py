@@ -5,11 +5,73 @@
 ################################################################################
 # Imports and application creation
 ################################################################################
+import json
 import random as rand
 from flask import Flask, request, jsonify
 
 # Create a web server
 app = Flask(__name__)
+
+DEBUG = True
+
+def debug(fString):
+  if DEBUG:
+    print(fString)
+
+################################################################################
+# Startup
+################################################################################
+# TODO(kbona@): Work out what needs to be done to make the endpoints ready.
+# Input:
+#  - (void)
+# Output:
+#  - (string) error
+def startupDB():
+  try:
+    with open("./data/qchef_ingredient_clusters.json", "r") as f:
+      ingredient_clusters = json.load(f)
+      debug(f'ingredient_clusters = {ingredient_clusters.keys()}')
+    with open("./data/qchef_ingredient_subclusters.json", "r") as f:
+      ingredient_sub_clusters = json.load(f)
+      debug(f'ingredient_sub_clusters = {ingredient_sub_clusters.keys()}')
+    with open("./data/qchef_ingredients.json", "r") as f:
+      ingredients = json.load(f)
+      debug(f'ingredients = {ingredients.keys()}')
+    with open("./data/qchef_recipes.json", "r") as f:
+      recipes = json.load(f)
+      debug(f'recipes = {recipes.keys()}')
+    print(f'Successfully read in data.')
+    return ingredient_clusters, ingredient_sub_clusters, ingredients, recipes, ''
+  except:
+    return None, None, None, None, f'Unable to read in data.'
+
+# TODO(kbona@): Work out whether the user is in the DB
+# Input:
+#  - (string) user's ID
+# Output:
+#  - (string) error
+def checkUser(userID):
+  if userDB[userID]:
+    return ""
+  userDB[userID] = {"Ingredients":{}, "Recipes":{}}
+  return ""
+
+def saveUserDB(userDB):
+  try:
+    with open("./data/data.json", "a") as f:
+      f.write("")
+    with open("./data/data.json", "w") as f:
+      f.write(json.dump(userDB))
+    return ""
+  except:
+    return f'Unable to save the userDB'
+
+def openUserDB():
+  try:
+    with open("./data/data.json", "r") as f:
+      return json.load(f), ""
+  except:
+    return None, f'Unable to save the userDB'
 
 ################################################################################
 # Credential Checking
@@ -19,8 +81,8 @@ app = Flask(__name__)
 #  - (string) user's ID
 # Output:
 #  - (string) error
-def checkID(id):
-    return ""
+def checkID(userID):
+  return ""
 
 ################################################################################
 # Taste Preference
@@ -33,8 +95,8 @@ def checkID(id):
 #  - (float) calculated preference score
 #  - (string) error
 def userFoodRating(userID, targetFood):
-    # TODO(kbona@): Grab from the database the user's rating of the food item
-    return 0.0, "" # (float) calculated user's preference of food item
+  # TODO(kbona@): Grab from the database the user's rating of the food item
+  return 2.0, "" # (float) calculated user's preference of food item
 
 # userRecipeRating - returns the calculated user's recipe item score
 # Input:
@@ -44,8 +106,8 @@ def userFoodRating(userID, targetFood):
 #  - (float) calculated preference score
 #  - (string) error
 def userRecipeRating(userID, targetRecipe):
-    # TODO(kbona@): Grab from the database the user's rating of the recipe
-    return 0.0, "" # (float) calculated user's preference of recipe
+  # TODO(kbona@): Grab from the database the user's rating of the recipe
+  return 2.5, "" # (float) calculated user's preference of recipe
 
 # recipeFood - returns list of food items for the recipe
 # Input:
@@ -54,8 +116,8 @@ def userRecipeRating(userID, targetRecipe):
 #  - ([]string) list of food items
 #  - (string) error
 def recipeFood(targetRecipe):
-    # TODO(kbona@): Grab from the database the list of ingredients in a recipe
-    return ["chicken"], "" # (list) Food item(s) within the targetRecipe
+  # TODO(kbona@): Grab from the database the list of ingredients in a recipe
+  return ["chicken"], "" # (list) Food item(s) within the targetRecipe
 
 # prefRecipe - returns the calculated user's preference score
 # for a particular recipe
@@ -66,19 +128,19 @@ def recipeFood(targetRecipe):
 #  - (float) calculated preference score
 #  - (string) error
 def prefRecipe(userID, targetRecipe):
-    sumScores = 0
-    foodItems, err = recipeFood(targetRecipe)
+  sumScores = 0
+  foodItems, err = recipeFood(targetRecipe)
+  if err:
+    return 0.0, err
+
+  for food in foodItems:
+    rating, err = userFoodRating(userID, food)
     if err:
-        return 0.0, err
+      return 0.0, err
 
-    for food in foodItems:
-        rating, err = userFoodRating(userID, food)
-        if err:
-            return 0.0, err
+    sumScores += rating
 
-        sumScores += rating
-
-    return sumScores/len(foodItems), ""
+  return sumScores/len(foodItems), ""
 
 # updateFoodRating - update the calculated user's food item score
 # Input:
@@ -88,15 +150,17 @@ def prefRecipe(userID, targetRecipe):
 # Output:
 #  - (string) error
 def updateFoodRating(userID, targetFood, newRating):
-    currentRating, recipesRated, err = getFoodRating(userID, targetFood)
-    if err:
-        return err
+  currentRating, recipesRated, err = getFoodRating(userID, targetFood)
+  if err:
+    return err
 
-    currentRating = (currentRating*recipesRated+newRating)/(recipesRated+1)
-    recipesRated += 1
+  currentRating = (currentRating*recipesRated+newRating)/(recipesRated+1)
+  recipesRated += 1
 
-    # TODO(kbona@): Update database with new currentRating and recipesRated
-    return ""
+  # TODO(kbona@): Update database with new currentRating and recipesRated
+  checkUser(userID)
+  userDB[userID]["Ingredients"][targetFood] = (currentRating, recipesRated)
+  return ""
 
 # updateRecipeRating - update the user's recipe score
 # Input:
@@ -108,25 +172,24 @@ def updateFoodRating(userID, targetFood, newRating):
 # Note:
 #  - Also updates food items' score if possible.
 def updateRecipeRating(userID, targetRecipe, newRating):
-    foodItems, err = recipeFood(targetRecipe)
+  foodItems, err = recipeFood(targetRecipe)
+  if err:
+    return err
+
+  for food in foodItems:
+    err = updateFoodRating(userID, food, newRating)
     if err:
-        return err
+      return err
 
-    for food in foodItems:
-        err = updateFoodRating(userID, food, newRating)
-        if err:
-            return err
+  # TODO(kbona@): Update database with new recipeRating
+  # (also check that it hasn't already been rated?
+  # if so, then need to save how many times it has been rated.)
+  userRecipeRating, err = getRecipeRating(userID, targetRecipe)
+  if err:
+    return err
+  userRecipeRating[targetRecipe] = newRating
 
-    # TODO(kbona@): Update database with new recipeRating
-    # (also check that it hasn't already been rated?
-    # if so, then need to save how many times it has been rated.)
-    userRecipeRating, err = getRecipeRating(userID, targetRecipe)
-    if err:
-        return err
-    userRecipeRating[targetRecipe] = newRating
-
-    return ""
-
+  return ""
 
 ################################################################################
 # API URLs
@@ -158,25 +221,33 @@ def diet_req():
 ################################################################################
 # API pref - returns json list of recipes
 # TODO(kbona@): Return a list of 10 pref recipes.
-@app.route('/pref/<id>', methods=['GET', 'POST'])
-def taste_preference(id):
-  err = checkID(id)
+@app.route('/pref/<userID>', methods=['GET', 'POST'])
+def taste_preference(userID):
+  err = checkID(userID)
   if err:
     return f'Unable to find user {id}. Unable to return a list of preferenced recipes. err = {err}'
 
-  userPreferenced = {10: "Chicken Wrap", 8: "Gnocchi", 4: "Salmon Steak", 42: "Roti Canai"}
-  userRecipes = {} # grab dict of user's recipes not rated from db
-  allowedRecipes = userRecipes.keys()
-  picked = -1 # index not allowed.
+  _, _, _, recipes, err = startupDB()
+  if err:
+    print(f'Unable to start up the server. err = {err}')
 
-  """
-      for i in range(10):
-          while picked != -1: # tolerance > choice:
-              picked = rand.Random(allowedRecipes)
-              allowedRecipes.remove(picked)
-          userPreferenced[picked] = userRecipes[picked]
-          picked = -1 # TODO(kbona@): Remove once finalised while loop logic.
-  """
+  #userPreferenced = {10: "Chicken Wrap", 8: "Gnocchi", 4: "Salmon Steak", 42: "Roti Canai"}
+  userPreferenced = {}
+  print(f'recipes = {recipes}')
+  allowedRecipes = list(recipes.keys())
+  print(f'allowedRecipes = {allowedRecipes}')
+  picked = None # index not allowed.
+
+  for i in range(10):
+    while picked == None: # tolerance > choice:
+      picked = rand.choice(allowedRecipes)
+      recipePref, err = prefRecipe(userID, picked)
+      if err:
+        print(f'Unable find preference for recipe {picked}. err = {err}')
+
+      allowedRecipes.remove(picked)
+      userPreferenced[picked] = {"title": recipes[picked]["title"], "prefNum": recipePref}
+    picked = None # TODO(kbona@): Remove once finalised while loop logic.
 
   return jsonify(userPreferenced)
 
