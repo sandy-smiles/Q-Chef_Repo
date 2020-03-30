@@ -1,2 +1,1 @@
-web: python server.py
-worker: python cred.py taste_pref.py
+web: gunicorn --bind 0.0.0.0:$PORT -w 1 server:app
