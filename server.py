@@ -28,7 +28,7 @@ def hello(id):
 # TODO(kbona@): Return a list of 10 pref recipes.
 @app.route('/pref/<id>')
 def pref(id):
-    err = checkID(id)
+    err = cred.checkID(id)
     if err:
         return f'Unable to find user {id}. Unable to return a list of preferenced recipes. err = {err}'
 
@@ -52,7 +52,7 @@ def pref(id):
 # TODO(kazjon@): Return a list of 10 surprising recipes.
 @app.route('/surp/<id>')
 def surp(id):
-    err = checkID(id)
+    err = cred.checkID(id)
     if err:
         return f'Unable to find user {id}. Unable to return a list of surprising recipes. err = {err}'
 
