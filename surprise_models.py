@@ -38,15 +38,16 @@ def simpleSurpRecipe(userID, targetRecipe):
         return None,error
     sigma = 2. #TODO(kazjon@): Replace this with a DB call
     delta = 1. #TODO(kazjon@): Replace this with a DB call
+    # The target surprise level varies by culinary experience
     if cul_ex == "novice":
-        surprise = raw_surprise - sigma #The target surprise level
+        surprise = raw_surprise - sigma
     elif cul_ex == "moderate":
-        surprise = raw_surprise - sigma - delta #The target surprise level
+        surprise = raw_surprise - sigma - delta
     elif cul_ex == "foodie":
-        surprise = raw_surprise - sigma - (2 * delta) #The target surprise level
+        surprise = raw_surprise - sigma - (2 * delta)
     else:
         return None,"Unexpected value in culinary experience"
-    surprise = abs(surprise / sigma)  # Gets the number of "deltas" away from target
+    surprise = abs(surprise / sigma)  # Gets the number of "sigmas" away from target
     surprise = min(surprise, 1)
     surprise = 1 - surprise
     return surprise,""
