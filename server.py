@@ -1,5 +1,6 @@
 import cred
-import taste_pref 
+import taste_pref
+import surprise_models
 
 import random as rand
 from flask import Flask, request, jsonify
@@ -46,6 +47,25 @@ def pref(id):
     """
 
     return jsonify(userPreferenced)
+
+# API surprise - returns json list of recipes that are predicted to surprise a given userid
+# TODO(kazjon@): Return a list of 10 surprising recipes.
+@app.route('/surp/<id>')
+def surp(id):
+    err = checkID(id)
+    if err:
+        return f'Unable to find user {id}. Unable to return a list of surprising recipes. err = {err}'
+
+    userSurprising = {10: "Chicken and vanilla wrap", 8: "Beeswax gnocchi", 4: "Salmon and steak", 42: "Roti canai ice cream"}
+    userRecipes = {} # TODO(kazjon@): grab dict of recipes not already reviewed by user from db
+    allowedRecipes = userRecipes.keys()
+
+    ratings = []
+    for recipe_id in allowedRecipes:
+        ratings.append((recipe_id,surprise_models.surpRecipe(id,recipe_id)))
+    picks = [x[0] for x in sorted(ratings)][:10]
+
+    return jsonify(picks)
 
 ######## Server Activation ########
 if __name__ == "__main__":
