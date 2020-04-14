@@ -67,6 +67,23 @@ def surp(id):
 
     return jsonify(picks)
 
+# API surprise - returns json list of recipes that are predicted to surprise a given userid
+# TODO(kazjon@): Return a list of 5 recommended recipes for each meal requested.
+@app.route('/rec/<id>/<num_meals>')
+def rec(id=None,num_meals=None):
+    err = cred.checkID(id)
+    if err:
+        return f'Unable to find user {id}. Unable to return a list of recommended recipes. err = {err}'
+    try:
+        meals = int(num_meals)
+    except:
+        return f"Unable to parse number of meals from {num_meals}. Unable to return a list of recommended recipes. err = {err}"
+
+    return jsonify([])
+
+@app.before_first_request
+def before_first_request_func():
+
 ######## Server Activation ########
 if __name__ == "__main__":
 # Start the web server!

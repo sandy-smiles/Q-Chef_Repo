@@ -1,5 +1,37 @@
+from flask import g
+from joblib import load
+import sklearn
+
 ######## Surprise Helper Functions ########
 
+def recipeSimilarity(recipe1,recipe2):
+    pass
+
+def archetypeSimilarities(recipe):
+    pass
+
+def userRecipeSurpriseRating(userID,recipeID):
+    pass
+
+def archetypeSurpRatings(userID):
+    pass
+
+# getNN - returns the pretrained classifier used in neural surprise, initialising if needed
+# Input:
+#  - (string): filename to load
+# Output:
+#  - (model): sklearn BaseEstimator object
+#  - (string): error
+def getNN(fn="nn_surprise_model.joblib"):
+    model = g.get("nn",None)
+    if model == None:
+        # TODO(kazjon@): Should we be doing something smarter than loading from file?
+        try:
+            model = load(fn)
+            print("Loaded",fn)
+        except:
+            return None,f"Failed to load model from file. Does {fn} exist?"
+    return model,""
 
 # rawSurpRcipe - returns the ingredient co-occurrence based surprise score for a recipe
 # Input:
@@ -62,8 +94,20 @@ def simpleSurpRecipe(userID, targetRecipe):
 #  - (float) calculated surprise score in [0..1]
 #  - (string) error
 def neuralSurpRecipe(userID, targetRecipe, simpleSurprise=True):
-    # TODO(kazjon@): Query a (pretrained) classifier for the surprise score
-    return 0,""
+    model = getNN()
+    archetype_surp_ratings,error = archetypeSurpRatings(userID)
+    if error is not None:
+        return None,error
+    archetype_sims,error = archetypeSimilarities(targetRecipe)
+    if error is not None:
+        return None,error
+    recipe_surp,error = rawSurpRecipe(targetRecipe)
+    if error is not None:
+        return None,error
+
+    X = archetype_surp_ratings+archetype_sims+[recipe_surp]
+    y_hat = model.predict(X)
+    return y_hat,""
 
 
 # surpRecipe - returns the surprise score for a given user-recipe pair
