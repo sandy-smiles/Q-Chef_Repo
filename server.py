@@ -78,13 +78,11 @@ def rec(id=None,num_meals=None):
         meals = int(num_meals)
     except:
         return f"Unable to parse number of meals from {num_meals}. Unable to return a list of recommended recipes. err = {err}"
-
+    #TODO(kazjon@): combining taste and surp -- Threshold+max? Pareto? Weighting?
     return jsonify([])
 
-@app.before_first_request
-def before_first_request_func():
 
 ######## Server Activation ########
 if __name__ == "__main__":
-# Start the web server!
-app.run(port=8888, debug=True)
+    # Start the web server!
+    app.run(port=8888, debug=True)
