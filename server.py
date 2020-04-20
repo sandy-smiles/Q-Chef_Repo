@@ -13,65 +13,139 @@ from flask import Flask, request, jsonify
 app = Flask(__name__)
 
 DEBUG = True
+WARN = True
+INFO = False
+DATA = False
 
 def debug(fString):
-  if DEBUG:
+  if DEBUG and 'ERROR' in fString:
     print(fString)
+    return
+
+  if DEBUG and WARN and 'WARNING' in fString:
+    print(fString)
+    return
+
+  if DEBUG and INFO and 'INFO' in fString:
+    print(fString)
+    return
+
+  if DEBUG and DATA and 'DATA' in fString:
+    print(fString)
+    return
 
 ################################################################################
 # Startup
 ################################################################################
-# TODO(kbona@): Work out what needs to be done to make the endpoints ready.
+# startupDB
+# Input:
+#  - (void)
+# Output:
+#  - (json) ingredient_clusters
+#  - (json) ingredient_sub_clusters
+#  - (json) ingredients
+#  - (json) recipes
+#  - (string) error
+def startupDB():
+  try:
+    debug(f'[startupDB - INFO]: Starting startupDB.')
+    with open("./data/qchef_ingredient_clusters.json", "r") as f:
+      ingredient_clusters = json.load(f)
+      debug(f'[startupDB - DATA]: ingredient_clusters = {ingredient_clusters.keys()}')
+    with open("./data/qchef_ingredient_subclusters.json", "r") as f:
+      ingredient_sub_clusters = json.load(f)
+      debug(f'[startupDB - DATA]: ingredient_sub_clusters = {ingredient_sub_clusters.keys()}')
+    with open("./data/qchef_ingredients.json", "r") as f:
+      ingredients = json.load(f)
+      debug(f'[startupDB - DATA]: ingredients = {ingredients.keys()}')
+    with open("./data/qchef_recipes.json", "r") as f:
+      recipes = json.load(f)
+      debug(f'[startupDB - DATA]: recipes = {recipes.keys()}')
+    debug(f'[startupDB - INFO]: Successfully read in data.')
+    return ingredient_clusters, ingredient_sub_clusters, ingredients, recipes, ''
+  except:
+    debug(f'[startupDB - ERROR]: Unable to read in data.')
+    return None, None, None, None, f'Unable to read in data.'
+
+# openUserDB
+# Reads in the saved user data base
+# Input:
+#  - (void)
+# Output:
+#  - (json) userDB
+#  - (string) error
+def openUserDB():
+  try:
+    debug(f'[openUserDB - INFO]: Starting openUserDB.')
+    # Append so that file is created if it does not already exist.
+    with open("./data/qchef_users.json", "a") as f:
+      debug(f'[openUserDB - INFO]: Appending to userDB to make sure the file exists.')
+    with open("./data/qchef_users.json", "r") as f:
+      content = f.read()
+      debug(f'[openUserDB - DATA]: content = {content}')
+      # Check that the file is not empty.
+      if content == "":
+        debug(f'[openUserDB - WARN]: userDB is empty, or was not saved earlier.')
+        debug(f'[openUserDB - INFO]: Creating new userDB.')
+        return {}, ''
+    with open("./data/qchef_users.json", "r") as f:
+      userDB = json.load(f)
+      debug(f'[openUserDB - DATA]: userDB = {userDB.keys()}')
+    debug(f'[openUserDB - INFO]: Successfully read in user data.')
+    return userDB, ''
+  except:
+    debug(f'[openUserDB - ERROR]: Unable to read in user data.')
+    return None, f'Unable to read in user data.'
+
+# saveUserDB
+# Reads in the saved user data base
 # Input:
 #  - (void)
 # Output:
 #  - (string) error
-def startupDB():
+def saveUserDB(userDB):
   try:
-    with open("./data/qchef_ingredient_clusters.json", "r") as f:
-      ingredient_clusters = json.load(f)
-      debug(f'ingredient_clusters = {ingredient_clusters.keys()}')
-    with open("./data/qchef_ingredient_subclusters.json", "r") as f:
-      ingredient_sub_clusters = json.load(f)
-      debug(f'ingredient_sub_clusters = {ingredient_sub_clusters.keys()}')
-    with open("./data/qchef_ingredients.json", "r") as f:
-      ingredients = json.load(f)
-      debug(f'ingredients = {ingredients.keys()}')
-    with open("./data/qchef_recipes.json", "r") as f:
-      recipes = json.load(f)
-      debug(f'recipes = {recipes.keys()}')
-    print(f'Successfully read in data.')
-    return ingredient_clusters, ingredient_sub_clusters, ingredients, recipes, ''
+    debug(f'[saveUserDB - INFO]: Starting saveUserDB.')
+    with open("./data/qchef_users.json", "a") as f:
+      debug(f'[saveUserDB - INFO]: Appending to userDB to make sure the file exists.')
+    with open("./data/qchef_users.json", "w") as f:
+      json.dump(userDB, f)
+    debug(f'[saveUserDB - INFO]: Successfully saved the user data.')
+    return ''
   except:
-    return None, None, None, None, f'Unable to read in data.'
+    debug(f'[saveUserDB - ERROR]: Unable to save the user data.')
+    return f'Unable to save the user data.'
 
-# TODO(kbona@): Work out whether the user is in the DB
+# checkUserData
+# Work out whether the user is in the DB
 # Input:
 #  - (string) user's ID
 # Output:
+#  - (json) user's data
 #  - (string) error
-def checkUser(userID):
-  if userDB[userID]:
-    return ""
+def checkUserData(userID):
+  debug(f'[checkUserData - INFO]: Starting checkUserData.')
+  # Open up the userDB
+  userDB, err = openUserDB()
+  if err:
+    debug(f'[checkUserData - ERROR]: Unable to open the userDB.')
+    return None, f'Unable to open the userDB, err: {err}'
+
+  if userID in userDB:
+    debug(f'[checkUserData - INFO]: Found user {userID} in the userDB.')
+    return userDB[userID], ''
+
+  # Add user to the userDB
+  debug(f'[checkUserData - WARNING]: Unable to find user {userID} in the userDB.')
+  debug(f'[checkUserData - INFO]: Creating section for user {userID} in the userDB.')
   userDB[userID] = {"Ingredients":{}, "Recipes":{}}
-  return ""
 
-def saveUserDB(userDB):
-  try:
-    with open("./data/data.json", "a") as f:
-      f.write("")
-    with open("./data/data.json", "w") as f:
-      f.write(json.dump(userDB))
-    return ""
-  except:
-    return f'Unable to save the userDB'
-
-def openUserDB():
-  try:
-    with open("./data/data.json", "r") as f:
-      return json.load(f), ""
-  except:
-    return None, f'Unable to save the userDB'
+  # Save userDB due to newly created value
+  err = saveUserDB(userDB)
+  if err:
+    debug(f'[checkUserData - ERROR]: Unable to save the userDB.')
+    return None, f'Unable to save the userDB, err: {err}'
+  return userDB[userID], ''
 
 ################################################################################
 # Credential Checking
@@ -92,11 +166,19 @@ def checkID(userID):
 #  - (string) user's ID
 #  - (string) name of food item
 # Output:
-#  - (float) calculated preference score
+#  - (float) calculated user's preference of food item
 #  - (string) error
 def userFoodRating(userID, targetFood):
-  # TODO(kbona@): Grab from the database the user's rating of the food item
-  return 2.0, "" # (float) calculated user's preference of food item
+  # Grab the user's data
+  data, err = checkUserData(userID)
+  if err:
+    return None, f'Unable to retrieve the user data, err: {err}'
+
+  if targetFood in data["Ingredients"]:
+    return data["Ingredients"][targetFood], ""
+
+  # TODO(kbona@): Calculate the preference from the surrounding information.
+  return 2.5, "" # (float) 
 
 # userRecipeRating - returns the calculated user's recipe item score
 # Input:
@@ -106,8 +188,19 @@ def userFoodRating(userID, targetFood):
 #  - (float) calculated preference score
 #  - (string) error
 def userRecipeRating(userID, targetRecipe):
+  # Grab the user's data
+  data, err = checkUserData(userID)
+  if err:
+    return None, f'Unable to retrieve the user data, err: {err}'
+
+  if targetRecipe in data["Recipes"]:
+    return data["Recipes"][targetRecipe], ""
+
+  # Have not rated it before, so let's calculate it
+  for 
+
   # TODO(kbona@): Grab from the database the user's rating of the recipe
-  return 2.5, "" # (float) calculated user's preference of recipe
+  return 5.0, "" # (float) calculated user's preference of recipe
 
 # recipeFood - returns list of food items for the recipe
 # Input:
@@ -158,7 +251,7 @@ def updateFoodRating(userID, targetFood, newRating):
   recipesRated += 1
 
   # TODO(kbona@): Update database with new currentRating and recipesRated
-  checkUser(userID)
+  checkUserData(userID)
   userDB[userID]["Ingredients"][targetFood] = (currentRating, recipesRated)
   return ""
 
@@ -180,6 +273,8 @@ def updateRecipeRating(userID, targetRecipe, newRating):
     err = updateFoodRating(userID, food, newRating)
     if err:
       return err
+
+  return ''
 
   # TODO(kbona@): Update database with new recipeRating
   # (also check that it hasn't already been rated?
@@ -223,19 +318,25 @@ def diet_req():
 # TODO(kbona@): Return a list of 10 pref recipes.
 @app.route('/pref/<userID>', methods=['GET', 'POST'])
 def taste_preference(userID):
+  debug(f'[taste_preference - INFO]: Starting taste_preference.')
   err = checkID(userID)
   if err:
+    debug(f'[taste_preference - ERROR]: Unable to find user {id}.')
+    debug(f'[taste_preference - ERROR]: Unable to return a list of preferenced recipes. err = {err}')
     return f'Unable to find user {id}. Unable to return a list of preferenced recipes. err = {err}'
 
-  _, _, _, recipes, err = startupDB()
+  ingredient_clusters, ingredient_sub_clusters, ingredients, recipes, err = startupDB()
   if err:
-    print(f'Unable to start up the server. err = {err}')
+    debug(f'[taste_preference - ERROR]: Unable to start up the server. err = {err}')
+    return f'Unable to start up the server. err = {err}'
+
+  
 
   #userPreferenced = {10: "Chicken Wrap", 8: "Gnocchi", 4: "Salmon Steak", 42: "Roti Canai"}
   userPreferenced = {}
-  print(f'recipes = {recipes}')
+  debug(f'[taste_preference - DATA]: recipes = {recipes}')
   allowedRecipes = list(recipes.keys())
-  print(f'allowedRecipes = {allowedRecipes}')
+  debug(f'[taste_preference - DATA]: allowedRecipes = {allowedRecipes}')
   picked = None # index not allowed.
 
   for i in range(10):
@@ -243,7 +344,8 @@ def taste_preference(userID):
       picked = rand.choice(allowedRecipes)
       recipePref, err = prefRecipe(userID, picked)
       if err:
-        print(f'Unable find preference for recipe {picked}. err = {err}')
+        debug(f'[taste_preference - ERROR]: Unable find preference for recipe {picked}. err = {err}')
+        return f'Unable find preference for recipe {picked}. err = {err}'
 
       allowedRecipes.remove(picked)
       userPreferenced[picked] = {"title": recipes[picked]["title"], "prefNum": recipePref}
