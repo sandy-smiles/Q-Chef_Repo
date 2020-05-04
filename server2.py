@@ -7,7 +7,7 @@
 ################################################################################
 import json
 import random as rand
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, render_template
 
 # Create a web server
 app = Flask(__name__)
@@ -424,9 +424,131 @@ def updateUserRecipeRating(userID, userDB, icDB, iscDB, iDB, rDB, targetRecipe, 
 # API URLs
 ################################################################################
 # API index - shows when people visit the home page
-@app.route('/', methods=['GET'])
+
+def show_form():
+  data = {'pageOutput':'', 'pageError':''}
+  return render_template('index.html', data=data)
+
+def grab_response():
+  data = {'pageOutput':'Unable to find requested page.', 'pageError':''}
+  err = ''
+  r = ''
+  try:
+    pageInput = request.form.get('pageInput', '')
+    pageName = request.form.get('pageName', '').split('|')
+    debug(f'[Home - HELP]: pageName: {pageName}')
+    debug(f'[Home - HELP]: pageInput: {pageInput}')
+    if pageName[0] == '': # Home page
+      r = ''
+    if pageName[0] == 'taste_preference': # Taste Preference
+      values = pageInput.split(',')
+      for i, val in enumerate(values):
+        values[i] = val.strip() # No additional spaces
+      if len(values) != 1:
+        err = 'Incorrect number of values given for '
+        err += 'taste_preference(userID)'
+      r = json.loads(taste_preference(values[0]).data)
+    if pageName[0] == 'update_preference': # Update Preference
+      values = pageInput.split(',')
+      for i, val in enumerate(values):
+        values[i] = val.strip() # No additional spaces
+      if len(values) != 3:
+        err = 'Incorrect number of values given for '
+        err += 'update_preference(userID, recipeID, rating)'
+      r = json.loads(update_preference(values[0], values[1], values[2]).data)
+    if pageName[0] == 'retrieve_data': # Retrieve value from DB
+      pageType = pageName[1]
+      pageName = pageName[0]
+      values = pageInput.split(',')
+      for i, val in enumerate(values):
+        values[i] = val.strip() # No additional spaces
+      if len(values) != 1:
+        err = 'Incorrect number of values given for '
+        err += 'retrieve_data(databaseName, dataID)'
+      r = json.loads(retrieve_data(pageType, values[0]).data)
+    if pageName[0] == 'check_data': # Retrieve value from DB
+      r = json.loads(check_data().data)
+    if err:
+      data['pageError'] = err
+    data['pageOutput'] = json.dumps(r, sort_keys=True, indent=4)
+  except:
+    if err:
+      data['pageError'] = err
+      data['pageOutput'] = ''
+    elif r:
+      data['pageError'] = r
+      data['pageOutput'] = ''
+      
+  if not r:
+    data['pageOutput'] = ''
+  debug(f"[Home - HELP]: r: {r}")
+  debug(f"[Home - HELP]: data['pageOutput']: {data['pageOutput']}")
+  debug(f"[Home - HELP]: data['pageError']: {data['pageError']}")
+  return render_template('index.html', data=data)
+
+def grab_form_response():
+  data = {'pageOutput':'Unable to find requested page.', 'pageError':''}
+  try:
+    pageInput = request.form.get('pageInput', '')
+    pageName = request.form.get('pageName', '').split('|')
+    debug(f'[Home - HELP]: pageName: {pageName}')
+    debug(f'[Home - HELP]: pageInput: {pageInput}')
+    if pageName[0] == '': # Home page
+      return show_form()
+    if pageName[0] == 'taste_preference': # Taste Preference
+      values = pageInput.split(',')
+      for i, val in enumerate(values):
+        values[i] = val.strip() # No additional spaces
+      if len(values) != 1:
+        err = 'Incorrect number of values given for '
+        err += 'taste_preference(userID)'
+      return taste_preference(values[0])
+    if pageName[0] == 'update_preference': # Update Preference
+      values = pageInput.split(',')
+      for i, val in enumerate(values):
+        values[i] = val.strip() # No additional spaces
+      if len(values) != 3:
+        err = 'Incorrect number of values given for '
+        err += 'update_preference(userID, recipeID, rating)'
+      return update_preference(values[0], values[1], values[2])
+    if pageName[0] == 'retrieve_data': # Retrieve value from DB
+      pageType = pageName[1]
+      pageName = pageName[0]
+      values = pageInput.split(',')
+      for i, val in enumerate(values):
+        values[i] = val.strip() # No additional spaces
+      if len(values) != 1:
+        err = 'Incorrect number of values given for '
+        err += 'retrieve_data(databaseName, dataID)'
+      return retrieve_data(pageType, values[0])
+    if pageName[0] == 'check_data': # Retrieve value from DB
+      return check_data()
+    if err:
+      data['pageError'] = err
+    data['pageOutput'] = json.dumps(r, sort_keys=True, indent=4)
+  except:
+    if err:
+      return f'page name: {pageName}, page input: {pageInput}, err: {err}'
+      
+  if not r:
+    data['pageOutput'] = ''
+  debug(f"[Home - HELP]: r: {r}")
+  debug(f"[Home - HELP]: data['pageOutput']: {data['pageOutput']}")
+  debug(f"[Home - HELP]: data['pageError']: {data['pageError']}")
+  return render_template('index.html', data=data)
+
+@app.route('/', methods=['GET', 'POST'])
 def home():
-  return 'Hello!\nYou have reached the backend API for Q-Chef.'
+  print('Requesting the home page')
+  if request.method == 'POST':
+    print('POST request')
+    print(request.form)
+    return grab_form_response()
+  else:
+    print('GET request')
+    print(request)
+    return show_form()
+
 
 ################################################################################
 # Testing URLs
@@ -589,4 +711,4 @@ def update_preference(userID, recipeID, rating):
 ################################################################################
 # Start the web server!
 if __name__ == "__main__":
-  app.run()
+  app.run(debug=True)
