@@ -9,6 +9,17 @@ import json
 import random as rand
 from flask import Flask, request, jsonify, render_template
 
+import firebase_admin
+from firebase_admin import credentials
+from firebase_admin import firestore
+
+# Use the application default credentials
+cred = credentials.Certificate("/home/sandy/Documents/Q-Chef/database_keys/sandy-smiles_q-chef-back-end-firebase-adminsdk-kyeic-a3564abe5f.json")
+firebase_admin.initialize_app(cred, {
+  'projectId': 'q-chef-back-end',
+})
+db = firestore.client()
+
 # Create a web server
 app = Flask(__name__)
 
