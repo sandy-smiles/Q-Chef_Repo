@@ -1,7 +1,7 @@
 ################################################################################
 # Q-Chef Server
 # Authors: Q-Chef Backend Programmers
-# Updated: 20200511
+# Updated: 20200512
 # Note: Database credentials certificate path will need to be updated when run locally.
 ################################################################################
 # Imports and application creation
@@ -265,6 +265,88 @@ def updateIngredientTasteRatings(data):
   return ''
 
 ################################################################################
+# updateSingleRecipeTasteRating
+# Updates the user's taste rating of the recipe and it's ingredients.
+# - Input:
+#   - (string) user id,
+#   - (string) recipe id
+#   - (float)  rating
+# - Output:
+#   - (string) error
+def updateSingleRecipeTasteRating(user_id, recipe_id, rating):
+  debug(f'[updateSingleRecipeTasteRating - INFO]: Starting.')
+  updating_data = {}
+
+  # Retrieve the user document
+  doc_ref, doc, err = retrieveDocument('users', user_id)
+  if err:
+    return err
+  user_dict = doc.to_dict()
+
+  # Retrieve the recipe document
+  r_dict = {}
+  doc_ref, doc, err = retrieveDocument('recipes', recipe_id)
+  if err:
+    return err
+  recipes_dict = doc.to_dict()
+  try:
+    r_dict = recipes_dict[recipe_id]
+  except:
+    err = '[updateSingleRecipeTasteRating - ERROR]: Unable to find recipe information.'
+    debug(f'{err}')
+    return err
+
+  # Update the recipe rating
+  updating_data['r_taste'] = user_dict['r_taste']
+  try:
+    r = user_dict['r_taste'][recipe_id]['rating']
+    n = user_dict['r_taste'][recipe_id]['n_ratings']
+    r = (r*n+rating)/(n+1)
+    n += 1
+    updating_data['r_taste'][recipe_id] =  {'rating': r, 'n_ratings': n}
+  except:
+    updating_data['r_taste'] = {recipe_id: {'rating': rating, 'n_ratings': 1}}
+
+  # Update the ingredients.
+  ingredient_ids = r_dict["ingredient_ids"]
+  for ingredient_id in ingredient_ids:
+    ingredient_id = str(ingredient_id)
+    err = updateSingleIngredientTasteRating(user_id, ingredient_id, rating)
+    if err:
+      err = f'[updateSingleRecipeTasteRating - ERROR]: Unable to update taste ratings for recipe {recipe_id}, err: {err}'
+      debug(f'{err}')
+      return err
+
+  # Update the user's document:
+  err = updateDocument('users', user_id, updating_data)
+  if err:
+    err = f'[updateSingleRecipeTasteRating - ERROR]: Unable to update user document with taste ratings for recipe {recipe_id}, err: {err}'
+    debug(f'{err}')
+    return err
+  return''
+
+################################################################################
+# updateRecipeTasteRating
+# Updates the user's recipe rating of the given recipes.
+# Input:
+#  - (dict) data containing user id, ingredient ids and ratings
+# Output:
+#  - (string) error
+def updateRecipeTasteRating(data):
+  debug(f'[updateRecipeTasteRating - INFO]: Starting.')
+
+  user_id = data['userID']
+  recipe_ids = data['taste_ratings']
+  for recipe_id in recipe_ids.keys():
+    rating = recipe_ids[recipe_id]
+    err = updateSingleRecipeasteRating(user_id, recipe_id, rating)
+    if err:
+      err = f'[updateRecipeTasteRating - ERROR]: Unable to update taste ratings for recipe {recipe_id}, err: {err}'
+      debug(f'{err}')
+      return err
+  return ''
+
+################################################################################
 # API URLs
 ################################################################################
 # API index
@@ -347,13 +429,13 @@ def home():
 # - Input:
 #   - n/a
 # - Output:
-#   - json
+#   - (json)
 # POST: End point is for saving the user's ratings of ingredients
 # during on-boarding.
 # - Input:
-#   - json
+#   - (json)
 # - Output:
-#   - string error
+#   - (string) error
 @app.route('/onboarding_ingredient_rating', methods=['GET', 'POST'])
 def onboarding_ingredient_rating():
   debug(f'[onboarding_ingredient_rating - INFO]: Starting.')
@@ -380,11 +462,129 @@ def onboarding_ingredient_rating():
   return jsonify(doc.to_dict())
 
 ################################################################################
+# onboarding_recipe_rating [GET|POST]
+# 2nd end point used.
+# GET: End point is for obtaining the ingredients for the user to rate
+# during on-boarding.
+# - Input:
+#   - n/a
+# - Output:
+#   - (json)
+# POST: End point is for saving the user's ratings of ingredients
+# during on-boarding.
+# - Input:
+#   - (json)
+# - Output:
+#   - (string) error
+@app.route('/onboarding_recipe_rating', methods=['GET', 'POST'])
+def onboarding_recipe_rating():
+  debug(f'[onboarding_recipe_rating - INFO]: Starting.')
+  if request.method == 'POST':
+    debug('[onboarding_recipe_rating - INFO]: POST request')
+    request_data = json.loads(request.data)
+    debug(f'[Home - DATA]: request_data: {request_data}')
+    user_id =  request_data['userID']
+    # Attempt to grab user's document (as this is the first endpoint)
+    err = createDocument('users', user_id, userStartingDoc)
+    if err:
+      return err
+    # Update user's document with ingredient ratings
+    err = updateRecipeTasteRatings(request_data)
+    if err:
+      return err
+    # Return json of test recipes that a user should liked
+    # TODO(kbona@): Fix up the proper json return.
+    return jsonify("""
+{"60372": {
+  "cookTime": 30,
+  "ingredient_phrases": [
+    "450g/1lb boneless chicken breasts, skinned, cut into 2.5cm/1in cubes",
+    "2 tsp light soy sauce",
+    "1 tsp Shaoxing rice wine (or dry sherry)",
+    "1 tsp cornflour",
+    "1 tbsp groundnut (peanut) oil",
+    "1 tsp salt",
+    "freshly ground white pepper",
+    "2 tbsp finely chopped orange zest",
+    "1 tbsp finely chopped lemon zest",
+    "2 tsp sesame oil",
+    "3 tbsp finely chopped fresh coriander",
+    "enough long-grain rice to fill a measuring jug to 400ml/14fl oz level",
+    "1 tbsp groundnut or peanut oil",
+    "3 garlic cloves, finely sliced",
+    "2 tsp salt",
+    "750g/1.5lb Chinese greens, such as choi sum or bok choi"
+  ],
+  "prepTime": 30,
+  "servings": "Serves 4",
+  "steps": [
+    "Combine the cubed chicken with the soy sauce, rice wine (or dry sherry) and cornflour in a small bowl. Put the mixture in the fridge for about 15 minutes.",
+    "For the rice, put the rice into a heavy pan with 600ml/21 fl oz water. The general rule of thumb is that the water should come up above the level of the rice by about 2.5cm/1in, or the top part of the thumb!",
+    "Bring the water to the boil and cook until most of the surface liquid has evaporated - this should take about 15 minutes. The surface of the rice should have small indentations like a pitted crater.",
+    "At this point, cover the pan with a very tight-fitting lid, turn the heat as low as possible and let the rice cook undisturbed for 15 minutes.  There is no need to 'fluff' the rice, let it rest for five minutes before serving it.",
+    "To finish the chicken, heat a wok until it is very hot and then add the oil. When the oil is very hot and slightly smoking, add the chicken to the wok, together with the salt, pepper and orange and lemon zest.",
+    "Stir-fry the mixture for four minutes, or until the chicken is cooked.  Stir in the sesame oil and give the mixture two turns and cook for another three minutes. Finally add the coriander and continue to stir-fry for another minute. Turn onto a platter and serve at once.",
+    "For the greens, heat a wok or large frying-pan over high heat until it is hot. Add the oil, and, when it is very hot and slightly smoking, add the garlic and salt. Stir-fry the mixture for 15 seconds. Quickly add the Chinese greens.  Stir-fry for 3-4 minutes, or until the greens have wilted, but are still slightly crisp.",
+    "Serve the chicken with the Chinese greens and rice."
+  ],
+  "title": "Quick orange and lemon chicken"},
+"27455": {
+  "cookTime": 120,
+  "ingredient_phrases": [
+    "4 tbsp vegetable oil",
+    "500g/1lb 2oz good-quality beef steak, finely diced",
+    "500g/1lb 2oz good-quality beef mince",
+    "1 white onion, peeled, finely chopped",
+    "1 red onion, peeled, finely chopped",
+    "2 sticks celery, trimmed, chopped",
+    "1 dried chipotle chilli",
+    "1 tbsp dried chilli flakes",
+    ".5 tbsp chilli powder",
+    "2 tsp dried oregano",
+    "3 tbsp light brown sugar",
+    "2 x 400g/14oz cans chopped tomatoes",
+    "500ml/17fl oz beef stock",
+    "1 x 400g/14oz can kidney beans, drained and rinsed",
+    "1 x 400g/14oz can black-eyed beans, drained and rinsed",
+    "sea salt flakes and freshly ground black pepper",
+    "75g/3oz plain chocolate, minimum 70% cocoa solids, roughly chopped",
+    "bunch fresh coriander",
+    "steamed rice",
+    "8 tbsp soured cream",
+    "4 spring onions, trimmed, finely sliced"
+  ],
+  "prepTime": 30,
+  "servings": "Serves 6-8",
+  "steps": [
+    "Heat two tablespoons of the oil over a medium to high heat in a large, heavy-based pan with a tight fitting lid.",
+    "Fry the diced beef steak in batches until browned all over, setting each batch aside on a plate using a slotted spoon.",
+    "Add another tablespoon of oil to the pan and add the beef mince, frying until browned all over. Remove the mince from the pan using a slotted spoon and set aside with the beef steak.",
+    "Add the remaining tablespoon of oil to the pan and fry the white onion, red onion and celery for 3-4 minutes, or until the onions have softened but not browned.",
+    "Stir in the chipotle chilli, chilli flakes, chilli powder and oregano until well combined. Cook for a further two minutes.",
+    "Return the diced and minced beef to the pan, then stir in the sugar, chopped tomatoes, beef stock, kidney beans and black-eyed peas. Bring the mixture to the boil, then reduce the heat until the mixture is simmering. Cover and continue to simmer over a low heat for 2-3 hours. (Alternatively, preheat the oven to 140C/280F/Gas 1 to cook in an ovenproof dish for the same amount of time.)",
+    "Just before serving, season the chilli with crushed sea salt flakes and freshly ground pepper. Stir in the chocolate until melted, then stir in the chopped coriander.",
+    "Serve the chilli with a bowl of steamed rice and top each serving with a dollop of soured cream. Garnish with the sliced spring onions."
+  ],
+  "title": "Beef chilli with bitter chocolate"}}
+""")
+
+  debug('[onboarding_recipe_rating - INFO]: GET request')
+  # Attempt to grab onboarding ingredients list.
+  doc_ref, doc, err = retrieveDocument('onboarding', 'recipes')
+  if err:
+    return err
+  return jsonify(doc.to_dict())
+
+################################################################################
 # Testing URLs
 ################################################################################
-
-# API pref - returns json list of recipes
-# TODO(kbona@): Return a list of 10 pref recipes.
+# retrieve_data [GET|POST]
+# GET|POST: End point is for retrieving documents from the database.
+# - Input:
+#   - (string) databaseName (Firebase collection ID)
+#   - (string) dataID (Firebase document ID)
+# - Output:
+#   - (string) error
 @app.route('/retrieve/<databaseName>/<dataID>', methods=['GET', 'POST'])
 def retrieve_data(databaseName, dataID):
   debug(f'[retrieve_data - INFO]: Starting retrieve_data.')
