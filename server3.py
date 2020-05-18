@@ -838,8 +838,7 @@ def retrieve_meal_plan():
     debug(f'[retrieve_meal_plan - DATA]: request_data: {request_data}')
     user_id = request_data['userID']
 
-    updateData = {'pickedRecipes': request_data['picked']}
-    user_doc_ref, user_doc, err = retrieveDocument(databaseName, dataID)
+    user_doc_ref, user_doc, err = retrieveDocument('users', user_id)
     if err:
       err = f'[retrieve_meal_plan - INFO]: Unable to retrieve the user {user_id} data, err = {err}'
       debug(err)
