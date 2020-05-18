@@ -22,6 +22,7 @@ db = firestore.client()
 
 # Create a web server
 app = Flask(__name__)
+listDelimiter = ";"
 
 ################################################################################
 # Debugging
@@ -580,6 +581,7 @@ def retrieve_data(database, dataID):
       return userDB[dataID]
     return f'Unable to find data for user {dataID}.'
 
+
   icDB, iscDB, iDB, rDB, err = startupDB()
   if err:
     debug(f'[retrieve_data - ERROR]: Unable to start up the server. err = {err}')
@@ -604,9 +606,13 @@ def retrieve_data(database, dataID):
     if dataID in rDB:
       return rDB[dataID]
     return f'Unable to find data for recipe {dataID}.'
-  
 
-  return jsonify(userPreferenced)
+  if database == "recipes_ingredients":
+    if dataID in rDB:
+      return listDelimiter.join(rDB[dataID]["ingredient_phrases"])
+    return f'Unable to find data for recipe {dataID}.'
+
+  return f'Ummmmm. Not sure how I got here?'
 
 ##########################################
 # API pref - returns json list of missing data per recipe.
