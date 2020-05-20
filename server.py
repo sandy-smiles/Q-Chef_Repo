@@ -17,6 +17,8 @@ app = Flask(__name__)
 ################################################################################
 documentationUrl = "https://www.docs.google.com/document/d/1iNerEqPo3D_fMmJwdRgAc42P3XKh6JzDNiu1Xo1z5hc/edit?usp=sharing"
 
+backendUrl = "https://q-chef-test-back-end.herokuapp.com"
+
 listDelimiter = ";"
 
 collectionIDs = ['users',
@@ -165,8 +167,8 @@ def grab_form_response(data):
 
   # Now redirect to the new url.
   if pageRequestType == "POST":
-    debug(f"[Home - HELP]: Attempting to send a POST request to http://127.0.0.1:5000/{pageName}")
-    response = requests.post("https://q-chef-test-back-end.herokuapp.com"+url_for(pageName), json=pageInput)
+    debug(f"[Home - HELP]: Attempting to send a POST request to {backendUrl}/{pageName}")
+    response = requests.post(backendUrl+url_for(pageName), json=pageInput)
     try:
       debug(f"[Home - DATA]: response.json() = {response.json()}")
       return response.json()
@@ -174,8 +176,8 @@ def grab_form_response(data):
       debug(f"[Home - DATA]: response.text = {response.text}")
       return response.text
 
-  debug(f"[Home - HELP]: Attempting to send a GET request to http://127.0.0.1:5000/{pageName}")
-  response = requests.get("https://q-chef-test-back-end.herokuapp.com"+url_for(pageName))
+  debug(f"[Home - HELP]: Attempting to send a GET request to {backendUrl}/{pageName}")
+  response = requests.get(backendUrl+url_for(pageName))
   try:
     debug(f"[Home - DATA]: response.json() = {response.json()}")
     return response.json()
