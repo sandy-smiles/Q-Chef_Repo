@@ -166,7 +166,7 @@ def grab_form_response(data):
   # Now redirect to the new url.
   if pageRequestType == "POST":
     debug(f"[Home - HELP]: Attempting to send a POST request to http://127.0.0.1:5000/{pageName}")
-    response = requests.post("http://127.0.0.1:5000"+url_for(pageName), json=pageInput)
+    response = requests.post("https://q-chef-test-back-end.herokuapp.com"+url_for(pageName), json=pageInput)
     try:
       debug(f"[Home - DATA]: response.json() = {response.json()}")
       return response.json()
@@ -175,7 +175,7 @@ def grab_form_response(data):
       return response.text
 
   debug(f"[Home - HELP]: Attempting to send a GET request to http://127.0.0.1:5000/{pageName}")
-  response = requests.get("http://127.0.0.1:5000"+url_for(pageName))
+  response = requests.get("https://q-chef-test-back-end.herokuapp.com"+url_for(pageName))
   try:
     debug(f"[Home - DATA]: response.json() = {response.json()}")
     return response.json()
