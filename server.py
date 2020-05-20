@@ -6,8 +6,8 @@
 # Imports and application creation
 ################################################################################
 import json
-import random as rand
-from flask import Flask, request, jsonify, render_template
+import requests
+from flask import Flask, request, jsonify, render_template, redirect, url_for
 
 # Create a web server
 app = Flask(__name__)
@@ -15,6 +15,8 @@ app = Flask(__name__)
 ################################################################################
 # Constants
 ################################################################################
+documentationUrl = "https://www.docs.google.com/document/d/1iNerEqPo3D_fMmJwdRgAc42P3XKh6JzDNiu1Xo1z5hc/edit?usp=sharing"
+
 listDelimiter = ";"
 
 collectionIDs = ['users',
@@ -150,27 +152,59 @@ def debug(fString):
 # API URLs
 ################################################################################
 # API index - shows when people visit the home page
+def show_form(data):
+  return render_template('index.html', data=data)
+
+def grab_form_response(data):
+  #try:
+  pageInput = request.form.get('pageInput', '')
+  pageName, pageRequestType = request.form.get('pageName', '').split('|')
+  debug(f'[Home - HELP]: pageName = {pageName}')
+  debug(f'[Home - HELP]: pageRequestType = {pageRequestType}')
+  debug(f'[Home - HELP]: pageInput = {pageInput}')
+
+  # Now redirect to the new url.
+  if pageRequestType == "POST":
+    debug(f"[Home - HELP]: Attempting to send a POST request to http://127.0.0.1:5000/{pageName}")
+    response = requests.post("http://127.0.0.1:5000"+url_for(pageName), json=pageInput)
+    try:
+      debug(f"[Home - DATA]: response.json() = {response.json()}")
+      return response.json()
+    except:
+      debug(f"[Home - DATA]: response.text = {response.text}")
+      return response.text
+
+  debug(f"[Home - HELP]: Attempting to send a GET request to http://127.0.0.1:5000/{pageName}")
+  response = requests.get("http://127.0.0.1:5000"+url_for(pageName))
+  try:
+    debug(f"[Home - DATA]: response.json() = {response.json()}")
+    return response.json()
+  except:
+    debug(f"[Home - DATA]: response.text = {response.text}")
+    return response.text
+  return f"Send help, I'm stuck in the back end... pageName: {pageName}, pageRequestType: {pageRequestType}, pageInput: {pageInput}"
+
 @app.route('/', methods=['GET', 'POST'])
 def home():
-  print('Requesting the home page')
-  if request.method == 'POST':
-    debug('[HOME - INFO]: POST request')
-    return '''
-<!DOCTYPE html>
-<title> Q-Chef Back-end Home Page</title>
-<h1>Welcome to the Q-Chef Back-end.</h1>
-<h2>You have sent a POST request.</h2>
-<p>For more details about our end points, please visit our Q-Chef Back-end API documentation at <a herf="https://www.docs.google.com/document/d/1iNerEqPo3D_fMmJwdRgAc42P3XKh6JzDNiu1Xo1z5hc/edit?usp=sharing">https://www.docs.google.com/document/d/1iNerEqPo3D_fMmJwdRgAc42P3XKh6JzDNiu1Xo1z5hc/edit?usp=sharing</a></p>
-'''
-  
-  debug('[HOME - INFO]: GET request')
-  return '''
-<!DOCTYPE html>
-<title> Q-Chef Back-end Home Page</title>
-<h1>Welcome to the Q-Chef Back-end.</h1>
-<h2>You have sent a GET request.</h2>
-<p>For more details about our end points, please visit our Q-Chef Back-end API documentation at <a herf="https://www.docs.google.com/document/d/1iNerEqPo3D_fMmJwdRgAc42P3XKh6JzDNiu1Xo1z5hc/edit?usp=sharing">https://www.docs.google.com/document/d/1iNerEqPo3D_fMmJwdRgAc42P3XKh6JzDNiu1Xo1z5hc/edit?usp=sharing</a></p>
-'''
+  debug('[HOME - INFO]: Request for the home page...')
+  try:
+    data = {}
+    data["title"] = "Q-Chef Back-end Home Page"
+    data["requestType"] = request.method
+    data["intro"] = "Welcome to the Q-Chef Back-end"
+    data["url"] = documentationUrl
+    data["pageOutput"] = ""
+    data["pageError"] = ""
+
+    if request.method == 'POST':
+      debug("[HOME - INFO]: POST request")
+      debug(f"[HOME - DATA]: request.form = {request.form}")
+      return grab_form_response(data)
+    debug("[HOME - INFO]: GET request")
+    return show_form(data)
+  except:
+    return f"[HOME - ERROR]: Something went wrong..."
+  return ""
 
 ################################################################################
 # Backend End Points URLs
@@ -192,14 +226,18 @@ def home():
 @app.route('/onboarding_ingredient_rating', methods=['GET', 'POST'])
 def onboarding_ingredient_rating():
   debug(f'[onboarding_ingredient_rating - INFO]: Starting.')
-  if request.method == 'POST':
-    debug('[onboarding_ingredient_rating - INFO]: POST request')
-    request_data = json.loads(request.data)
-    debug(f'[onboarding_ingredient_rating - DATA]: request_data: {request_data}')
-    return ''
+  try:
+    if request.method == 'POST':
+      debug('[onboarding_ingredient_rating - INFO]: POST request')
+      request_data = json.loads(request.data)
+      debug(f'[onboarding_ingredient_rating - DATA]: request_data: {request_data}')
+      return ''
 
-  debug('[onboarding_ingredient_rating - INFO]: GET request')
-  return jsonify(json.loads(exampleIngredientDict))
+    debug('[onboarding_ingredient_rating - INFO]: GET request')
+    return jsonify(json.loads(exampleIngredientDict))
+  except:
+    return f"[onboarding_recipe_rating - ERROR]: Something went wrong..."
+  return ""
 
 ################################################################################
 # onboarding_recipe_rating [GET|POST]
@@ -219,14 +257,18 @@ def onboarding_ingredient_rating():
 @app.route('/onboarding_recipe_rating', methods=['GET', 'POST'])
 def onboarding_recipe_rating():
   debug(f'[onboarding_recipe_rating - INFO]: Starting.')
-  if request.method == 'POST':
-    debug('[onboarding_recipe_rating - INFO]: POST request')
-    request_data = json.loads(request.data)
-    debug(f'[onboarding_recipe_rating - DATA]: request_data: {request_data}')
-    return jsonify(json.loads(exampleRecipeDict))
+  try:
+    if request.method == 'POST':
+      debug('[onboarding_recipe_rating - INFO]: POST request')
+      request_data = json.loads(request.data)
+      debug(f'[onboarding_recipe_rating - DATA]: request_data: {request_data}')
+      return jsonify(json.loads(exampleRecipeDict))
 
-  debug('[onboarding_recipe_rating - INFO]: GET request')
-  return jsonify(json.loads(exampleRecipeDict))
+    debug('[onboarding_recipe_rating - INFO]: GET request')
+    return jsonify(json.loads(exampleRecipeDict))
+  except:
+    return f"[onboarding_recipe_rating - ERROR]: Something went wrong..."
+  return ""
 
 ################################################################################
 # validation_recipe_rating [POST]
@@ -239,13 +281,14 @@ def onboarding_recipe_rating():
 @app.route('/validation_recipe_rating', methods=['POST'])
 def validation_recipe_rating():
   debug(f'[validation_recipe_rating - INFO]: Starting.')
-  if request.method == 'POST':
-    debug('[validation_recipe_rating - INFO]: POST request')
-    request_data = json.loads(request.data)
-    debug(f'[validation_recipe_rating - DATA]: request_data: {request_data}')
-    user_id =  request_data['userID']
-
-    return ""
+  try:
+    if request.method == 'POST':
+      debug('[validation_recipe_rating - INFO]: POST request')
+      request_data = json.loads(request.data)
+      debug(f'[validation_recipe_rating - DATA]: request_data: {request_data}')
+  except:
+    return f"[validation_recipe_rating - ERROR]: Something went wrong..."
+  return ""
 
 ################################################################################
 # get_meal_plan_selection [POST]
@@ -260,13 +303,16 @@ def validation_recipe_rating():
 @app.route('/get_meal_plan_selection', methods=['POST'])
 def get_meal_plan_selection():
   debug(f'[get_meal_plan_selection - INFO]: Starting.')
-  if request.method == 'POST':
-    debug('[get_meal_plan_selection - INFO]: POST request')
-    request_data = json.loads(request.data)
-    debug(f'[get_meal_plan_selection - DATA]: request_data: {request_data}')
-    user_id =  request_data['userID']
+  try:
+    if request.method == 'POST':
+      debug('[get_meal_plan_selection - INFO]: POST request')
+      request_data = json.loads(request.data)
+      debug(f'[get_meal_plan_selection - DATA]: request_data: {request_data}')
 
-    return jsonify(json.loads(exampleRecipeDict))
+      return jsonify(json.loads(exampleRecipeDict))
+  except:
+    return f"[get_meal_plan_selection - ERROR]: Something went wrong..."
+  return ""
 
 ################################################################################
 # save_meal_plan [POST]
@@ -280,13 +326,14 @@ def get_meal_plan_selection():
 @app.route('/save_meal_plan', methods=['POST'])
 def save_meal_plan():
   debug(f'[save_meal_plan - INFO]: Starting.')
-  if request.method == 'POST':
-    debug('[save_meal_plan - INFO]: POST request')
-    request_data = json.loads(request.data)
-    debug(f'[save_meal_plan - DATA]: request_data: {request_data}')
-    user_id = request_data['userID']
-
-    return ''
+  try:
+    if request.method == 'POST':
+      debug('[save_meal_plan - INFO]: POST request')
+      request_data = json.loads(request.data)
+      debug(f'[save_meal_plan - DATA]: request_data: {request_data}')
+  except:
+    return f"[save_meal_plan - ERROR]: Something went wrong..."
+  return ""
 
 ################################################################################
 # retrieve_meal_plan [POST]
@@ -298,13 +345,16 @@ def save_meal_plan():
 @app.route('/retrieve_meal_plan', methods=['POST'])
 def retrieve_meal_plan():
   debug(f'[retrieve_meal_plan - INFO]: Starting.')
-  if request.method == 'POST':
-    debug('[retrieve_meal_plan - INFO]: POST request')
-    request_data = json.loads(request.data)
-    debug(f'[retrieve_meal_plan - DATA]: request_data: {request_data}')
-    user_id = request_data['userID']
+  try:
+    if request.method == 'POST':
+      debug('[retrieve_meal_plan - INFO]: POST request')
+      request_data = json.loads(request.data)
+      debug(f'[retrieve_meal_plan - DATA]: request_data: {request_data}')
 
-    return jsonify(json.loads(exampleRecipeDict))
+      return jsonify(json.loads(exampleRecipeDict))
+  except:
+    return f"[retrieve_meal_plan - ERROR]: Something went wrong..."
+  return ""
 
 ################################################################################
 # review_recipe [POST]
@@ -316,31 +366,14 @@ def retrieve_meal_plan():
 @app.route('/review_recipe', methods=['POST'])
 def review_recipe():
   debug(f'[review_recipe - INFO]: Starting.')
-  if request.method == 'POST':
-    debug('[review_recipe - INFO]: POST request')
-    request_data = json.loads(request.data)
-    debug(f'[review_recipe - DATA]: request_data: {request_data}')
-    user_id =  request_data['userID']
-
-    return ""
-
-################################################################################
-# review_image [POST]
-# POST: End point is for saving the user's image of the meal/recipe cooked.
-# - Input:
-#   - (json) {"userID": <user_id>}
-# - Output:
-#   - (json)
-@app.route('/review_image', methods=['POST'])
-def review_image():
-  debug(f'[review_image - INFO]: Starting.')
-  if request.method == 'POST':
-    debug('[review_image - INFO]: POST request')
-    request_data = json.loads(request.data)
-    debug(f'[review_image - DATA]: request_data: {request_data}')
-    user_id =  request_data['userID']
-
-    return ""
+  try:
+    if request.method == 'POST':
+      debug('[review_recipe - INFO]: POST request')
+      request_data = json.loads(request.data)
+      debug(f'[review_recipe - DATA]: request_data: {request_data}')
+  except:
+    return f"[review_recipe - ERROR]: Something went wrong..."
+  return ""
 
 ################################################################################
 # Server Activation

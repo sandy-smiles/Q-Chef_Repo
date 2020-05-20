@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>{{ data.title }}</title>
+<style>
+input[type=text], select {
+  width: 100%;
+  padding: 12px 20px;
+  margin: 8px 0;
+  display: inline-block;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+
+input[type=submit] {
+  width: 100%;
+  background-color: #4CAF50;
+  color: white;
+  padding: 14px 20px;
+  margin: 8px 0;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+input[type=submit]:hover {
+  background-color: #45a049;
+}
+
+div {
+  border-radius: 5px;
+  background-color: #f2f2f2;
+  padding: 20px;
+}
+</style>
+</head>
+<body>
+
+<h1>{{ data.intro }}</h1>
+<h2>You have sent a {{ data.requestType }} request.</h2>
+<p>
+  For more details about our end points, please visit our Q-Chef Back-end API documentation at <a herf="{{ data.url }}">{{ data.url }}</a>
+</p>
+
+<div>
+  <form action="/" method="post">
+    <label for="pageInput">Page Request Input</label>
+    <input name="pageInput" type="text" id="pageInput" placeholder="Insert values here. For multiple values, please have them comma seperated.">
+
+    <label for="pageName">Page End Point</label>
+    <select name="pageName" id="pageName">
+      <option value="" selected="selected" disabled="disabled" hidden="hidden">Choose Action</option>
+      <option value="onboarding_ingredient_rating|GET">/onboarding_ingredient_rating GET</option>
+      <option value="onboarding_ingredient_rating|POST">/onboarding_ingredient_rating POST</option>
+      <option value="onboarding_recipe_rating|GET">/onboarding_recipe_rating GET</option>
+      <option value="onboarding_recipe_rating|POST">/onboarding_recipe_rating POST</option>
+      <option value="validation_recipe_rating|POST">/validation_recipe_rating POST</option>
+      <option value="get_meal_plan_selection|POST">/get_meal_plan_selection POST</option>
+      <option value="save_meal_plan|POST">/save_meal_plan POST</option>
+      <option value="retrieve_meal_plan|POST">/retrieve_meal_plan POST</option>
+      <option value="review_recipe|POST">/review_recipe POST</option>
+    </select>
+
+    <input type="submit" value="Submit">
+  </form>
+</div>
+
+<h3>Page Response Output</h3>
+<div>
+<p>
+  {{ data.pageError }}
+</p>
+<p>
+  {{ data.pageOutput }}
+</p>
+</div>
+
+
+</body>
+</html>
