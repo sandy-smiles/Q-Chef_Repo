@@ -158,11 +158,10 @@ def debug(fString):
 def home():
   debug('[HOME - INFO]: Request for the home page...')
   try:
-    debug('[HOME - INFO]: Redirecting to index page {backendIndexUrl}.')
-    redirect(backendIndexUrl)
+    debug(f'[HOME - INFO]: Redirecting to index page {backendIndexUrl}.')
+    return redirect(backendIndexUrl)
   except:
     return f"[HOME - ERROR]: Something went wrong..."
-  return ""
 
 ################################################################################
 # Backend End Points URLs
