@@ -8,6 +8,7 @@
 import json
 import requests
 from flask import Flask, request, jsonify, render_template, redirect, url_for
+from flask_cors import CORS
 
 # Create a web server
 app = Flask(__name__)
@@ -181,6 +182,7 @@ def home():
 # - Output:
 #   - (string) error
 @app.route('/onboarding_ingredient_rating', methods=['GET', 'POST'])
+@cross_origin()
 def onboarding_ingredient_rating():
   debug(f'[onboarding_ingredient_rating - INFO]: Starting.')
   try:
@@ -212,6 +214,7 @@ def onboarding_ingredient_rating():
 # - Output:
 #   - (json)
 @app.route('/onboarding_recipe_rating', methods=['GET', 'POST'])
+@cross_origin()
 def onboarding_recipe_rating():
   debug(f'[onboarding_recipe_rating - INFO]: Starting.')
   try:
@@ -236,6 +239,7 @@ def onboarding_recipe_rating():
 # - Output:
 #   - (string) error
 @app.route('/validation_recipe_rating', methods=['POST'])
+@cross_origin()
 def validation_recipe_rating():
   debug(f'[validation_recipe_rating - INFO]: Starting.')
   try:
@@ -258,6 +262,7 @@ def validation_recipe_rating():
 # - Output:
 #   - (json)
 @app.route('/get_meal_plan_selection', methods=['POST'])
+@cross_origin()
 def get_meal_plan_selection():
   debug(f'[get_meal_plan_selection - INFO]: Starting.')
   try:
@@ -281,6 +286,7 @@ def get_meal_plan_selection():
 # - Output:
 #   - (string) error
 @app.route('/save_meal_plan', methods=['POST'])
+@cross_origin()
 def save_meal_plan():
   debug(f'[save_meal_plan - INFO]: Starting.')
   try:
@@ -300,6 +306,7 @@ def save_meal_plan():
 # - Output:
 #   - (json)
 @app.route('/retrieve_meal_plan', methods=['POST'])
+@cross_origin()
 def retrieve_meal_plan():
   debug(f'[retrieve_meal_plan - INFO]: Starting.')
   try:
@@ -321,6 +328,7 @@ def retrieve_meal_plan():
 # - Output:
 #   - (json)
 @app.route('/review_recipe', methods=['POST'])
+@cross_origin()
 def review_recipe():
   debug(f'[review_recipe - INFO]: Starting.')
   try:
