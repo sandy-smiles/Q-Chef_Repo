@@ -8,7 +8,7 @@
 import json
 import requests
 from flask import Flask, request, jsonify, render_template, redirect, url_for
-from flask_cors import CORS
+from flask_cors import CORS, cross_origin
 
 # Create a web server
 app = Flask(__name__)
