@@ -79,6 +79,7 @@ def rec(id=None,num_meals=None):
     except:
         return f"Unable to parse number of meals from {num_meals}. Unable to return a list of recommended recipes. err = {err}"
     #TODO(kazjon@): combining taste and surp -- Threshold+max? Pareto? Weighting?
+    #For now we're just taking the highest average -- not even bothering
     return jsonify([])
 
 
