@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Q-Chef Index Page</title>
+<style>
+input[type=text], select {
+  width: 100%;
+  padding: 12px 20px;
+  margin: 8px 0;
+  display: inline-block;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+
+input[type=submit] {
+  width: 100%;
+  background-color: #4CAF50;
+  color: white;
+  padding: 14px 20px;
+  margin: 8px 0;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+input[type=submit]:hover {
+  background-color: #45a049;
+}
+
+div {
+  border-radius: 5px;
+  background-color: #f2f2f2;
+  padding: 20px;
+}
+</style>
+</head>
+<body>
+
+<h1>Hello! You have reached the backend API for Q-Chef.</h1>
+
+<h3>Page Input</h3>
+
+<div>
+  <form action="/" method="post">
+    <label for="pageInput">Page Input</label>
+    <input name="pageInput" type="text" id="pageInput" placeholder="Insert values here. For multiple values, please have them comma seperated.">
+
+    <label for="pageName">Page Requesting</label>
+    <select name="pageName" id="pageName">
+      <option value="" selected="selected" disabled="disabled" hidden="hidden">Choose Action</option>
+      <option value="taste_preference">Find Taste Preference</option>
+      <option value="surprise_preference">Find Surprise Preference</option>
+      <option value="update_preference">Update Preference</option>
+      <option value="retrieve_data|ingredients">Retrieve Ingredient</option>
+      <option value="retrieve_data|ingredient_subcluster">Retrieve Ingredient Subcluster</option>
+      <option value="retrieve_data|ingredient_cluster">Retrieve Ingredient Cluster</option>
+      <option value="retrieve_data|recipes">Retrieve Recipe</option>
+      <option value="retrieve_data|recipes_ingredients">Retrieve Recipe's Ingredients</option>
+      <option value="check_data">Check Data</option>
+    </select>
+  
+    <input type="submit" value="Submit">
+  </form>
+</div>
+
+<h3>Page Response Output</h3>
+<div>
+  {{ data.pageError }}
+  {{ data.pageOutput }}
+</div>
+
+
+</body>
+</html>
