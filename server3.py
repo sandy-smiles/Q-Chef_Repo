@@ -9,6 +9,7 @@
 import json
 import random as rand
 from flask import Flask, request, jsonify, render_template
+from surprise_models import rateSurprise
 
 import firebase_admin
 from firebase_admin import credentials
