@@ -112,7 +112,9 @@ def getNN(fn="nn_surprise_model.joblib"):
 def rawSurpRecipe(recipe,percentile=100):
     if "surprises" not in recipe or not len(recipe["surprises"]):
         return None,"No surprises found for this recipe."
-    return np.percentile([s[0] for s in recipe["surprises"]],percentile)
+    if not str(percentile)+"%" in recipe["surprises"]:
+        return None,"That percentile was not found in the pre-calculated surprises for this recipe."
+    return recipe["surprises"][str(percentile)+"%"]
 
 # culinaryExperience - classifies user as novice, moderate, or foodie
 # Input:
