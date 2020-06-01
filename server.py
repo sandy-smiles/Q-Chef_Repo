@@ -105,24 +105,18 @@ def getExampleRecipes(n):
     fileNames.sort()
     recipe_ids = fileNames
     break
-  print(recipe_ids)
 
   if n == -1:
     n = len(recipe_ids)
-    print(f"n = {n}")
 
   r = {}
   for i, recipe_id in enumerate(recipe_ids):
     print(f"i = {i}, recipe_id = {recipe_id}")
     if i > n:
-      print("Breaking... i = {i}, n = {n}")
       break
     fileName = f"{relativeRecipesFolderPath}/{recipe_id}"
-    print(f"Attempting to open file {fileName}")
     with open(fileName, 'r') as f:
-      print(f"recipe_id = {recipe_id}")
       recipe_dic = json.load(f)
-      print(f"recipe_dic = {recipe_dic}")
       r[recipe_id] = recipe_dic
 
   return r
