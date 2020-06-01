@@ -1,0 +1,28 @@
+{
+  "cookTime": 30,
+  "ingredient_names": [
+    "basil leaves",
+    "fennel",
+    "feta cheese",
+    "linguine",
+    "olive oil",
+    "shallots"
+  ],
+  "ingredient_phrases": [
+    "200g/7oz linguine",
+    "1 fennel bulb",
+    "1 banana shallot",
+    "2 tbsp olive oil",
+    "15 basil leaves",
+    "100g/3.5oz feta cheese"
+  ],
+  "prepTime": 30,
+  "servings": "Serves 2",
+  "steps": [
+    "Cook the pasta in a pan of boiling, salted water, according to packet instructions.",
+    "Slice the fennel and shallot, and fry in the oil until soft.",
+    "Tear the basil over the fennel and shallot and crumble in the feta.",
+    "When the pasta is cooked, drain and combine with the shallot and fennel."
+  ],
+  "title": "Fennel and feta linguine"
+}

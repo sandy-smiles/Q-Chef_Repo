@@ -1,0 +1,23 @@
+{
+  "cookTime": 60,
+  "ingredient_names": [
+    "maple syrup",
+    "parsnips",
+    "vegetable oil"
+  ],
+  "ingredient_phrases": [
+    "1kg/2.25lb parsnips",
+    "125ml/4fl oz vegetable oil",
+    "80ml/3.5fl oz maple syrup"
+  ],
+  "prepTime": 30,
+  "servings": "Serves 8",
+  "steps": [
+    "Preheat the oven to 200C/400F/Gas 6.",
+    "Peel the parsnips and then halve them crosswise, then halve or quarter each piece lengthwise.",
+    "Place the parsnips into a roasting tin.  Pour the oil over the parsnips and mix them well so that the oil covers all of the pieces.",
+    "Pour the maple syrup over the parsnips and transfer the roasting tin to the oven.  Roast the parsnips for 35 minutes, or until they are tender and golden-brown.",
+    "To serve place on a clean serving dish."
+  ],
+  "title": "Maple-roast parsnips"
+}

@@ -1,0 +1,37 @@
+{
+  "cookTime": 10,
+  "ingredient_names": [
+    "basil leaves",
+    "cherry tomatoes",
+    "chickpeas",
+    "harissa",
+    "lemon",
+    "olive oil",
+    "red pepper",
+    "salt",
+    "yellow pepper"
+  ],
+  "ingredient_phrases": [
+    "1 tbsp olive oil",
+    "1 red pepper, seeded and sliced into eight strips",
+    "1 yellow pepper, seeded and sliced into eight strips",
+    "10 cherry tomatoes, halved",
+    "2 tsp harissa paste",
+    "450g/1lb jar of cooked chickpeas in water",
+    "salt",
+    ".5 lemon, juice only",
+    "handful fresh basil leaves"
+  ],
+  "prepTime": 30,
+  "servings": "Serves 2",
+  "steps": [
+    "Pour the olive oil into a large frying pan over a medium heat.",
+    "Add the sliced red and yellow pepper to the pan and allow to soften for 2-3 minutes.",
+    "Add the cherry tomatoes to the pan and cook for a further two minutes, gently squashing the tomatoes with a wooden spoon to release their juices.",
+    "Mix in the harissa paste.",
+    "Carefully pour the chickpeas, and the water in which they were stored, into the pan.  Stir, then allow them to heat through thoroughly for 3-4 minutes.",
+    "Season with salt and the juice of half a lemon.",
+    "Add a handful of fresh basil leaves right at the end of cooking, so they wilt under the residual heat. Serve immediately."
+  ],
+  "title": "Peppers with chickpeas and harissa"
+}

@@ -1,0 +1,31 @@
+{
+  "cookTime": 30,
+  "ingredient_names": [
+    "cherry tomatoes",
+    "chives",
+    "garlic",
+    "olive oil",
+    "red pepper flakes",
+    "spaghetti",
+    "spinach"
+  ],
+  "ingredient_phrases": [
+    "1 tbsp olive oil",
+    "1 garlic clove, chopped",
+    ".5 tsp dried chilli flakes",
+    "110g/4oz spinach",
+    "200g/7oz can cherry tomatoes",
+    "110g/4oz spaghetti, cooked according to packet instructions",
+    "fresh chives, chopped, to serve"
+  ],
+  "prepTime": 30,
+  "servings": "Serves 1",
+  "steps": [
+    "Heat the oil in a deep frying pan, add the garlic and chilli flakes and cook over a low heat for three minutes.",
+    "Add the spinach and let it wilt, stirring for two minutes.",
+    "Add the cherry tomatoes and cook for 4-5 minutes, until the tomatoes are beginning to breakdown.",
+    "Stir through the cooked spaghetti.",
+    "To serve, place into a bowl and garnish with chives."
+  ],
+  "title": "Spaghetti all'arrabbiata"
+}

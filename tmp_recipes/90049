@@ -1,0 +1,27 @@
+{
+  "cookTime": 10,
+  "ingredient_names": [
+    "dijon mustard",
+    "gruyere cheese",
+    "ham",
+    "unsalted butter",
+    "whole wheat bread"
+  ],
+  "ingredient_phrases": [
+    "4 slices wholemeal bread",
+    "2 tsp Dijon mustard",
+    "80g/3oz grated Gruyère cheese",
+    "2 slices ham",
+    "30g/1.5oz unsalted butter"
+  ],
+  "prepTime": 30,
+  "servings": "Serves 2",
+  "steps": [
+    "Preheat the oven to 180C/350F/Gas 4.",
+    "Spread half a teaspoon of mustard over each slice of bread. Top two of the slices with half of the grated cheese followed by a slice of ham each, then finish with the remaining cheese on top. Sandwich together with the other two slices of bread.",
+    "Heat the butter in a large frying pan until foaming, then add the sandwiches and fry for 1-2 minutes on each side, or until golden-brown.",
+    "Transfer the sandwiches to a baking tray and place into the oven for 4-5 minutes, or until the cheese has melted.",
+    "Place the sandwiches on a serving plate, slice each sandwich in half and serve immediately."
+  ],
+  "title": "Croque monsieur"
+}

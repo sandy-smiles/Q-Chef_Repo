@@ -1,0 +1,41 @@
+{
+  "cookTime": 10,
+  "ingredient_names": [
+    "carrot",
+    "chicken breasts",
+    "clear honey",
+    "coriander",
+    "cucumber",
+    "garlic",
+    "ginger",
+    "lettuce",
+    "rice vinegar",
+    "sesame oil",
+    "sesame seeds",
+    "soy sauce",
+    "spring onions"
+  ],
+  "ingredient_phrases": [
+    "4 skinless, boneless chicken breasts",
+    "4 tbsp clear honey",
+    "2 tbsp rice vinegar",
+    "2 tbsp soy sauce",
+    "1 tbsp sesame oil",
+    "1 garlic cloves, crushed",
+    "2.5cm/1in piece fresh ginger, peeled and grated",
+    "2 tbsp sesame seeds, toasted",
+    "small bunch of fresh coriander, roughly chopped",
+    "1 large carrot, cut into fine matchsticks",
+    "1 bunch of spring onions, shredded",
+    ".5 cucumber, peeled, halved, de-seeded and cut into matchsticks",
+    ".5 Chinese lettuce, finely shredded"
+  ],
+  "prepTime": 60,
+  "servings": "Serves 6",
+  "steps": [
+    "Cut the chicken into thin strips and mix with the honey, vinegar and soy sauce. Leave to marinate in a non-metallic bowl for about 30 minutes.",
+    "Heat the sesame oil in a frying pan and cook the chicken over a high heat with any marinade for about 5 minutes until the chicken is cooked through, leaving some cooked marinade in the pan to use as the salad dressing.",
+    "To serve warm, toss in a large bowl with the remaining ingredients and eat immediately. To serve cold, leave the cooked chicken and marinade to cool and then toss with the remaining ingredients."
+  ],
+  "title": "Oriental chicken salad"
+}

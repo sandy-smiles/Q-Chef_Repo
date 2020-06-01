@@ -1,0 +1,33 @@
+{
+  "cookTime": 10,
+  "ingredient_names": [
+    "arugula",
+    "balsamic glaze",
+    "black pepper",
+    "blue cheese",
+    "extra virgin olive oil",
+    "figs",
+    "parma ham",
+    "salt"
+  ],
+  "ingredient_phrases": [
+    "4 ripe but firm figs",
+    "8 slices Parma ham",
+    "75g/3oz Italian blue cheese, such as gorgonzola or dolcelatte, chopped into small pieces",
+    "1 small bag rocket leaves (approx 100g/3.5oz)",
+    "drizzle balsamic glaze (available from delicatessens)",
+    "drizzle extra virgin olive oil",
+    "salt and freshly ground black pepper"
+  ],
+  "prepTime": 30,
+  "servings": "Serves 2-4",
+  "steps": [
+    "Preheat the oven to 180C/350F/Gas 4.",
+    "Using a sharp knife, cut a cross into the top of each fig, then gently squeeze the bottom of each fig in order to open the fruit.",
+    "Divide the blue cheese among the figs, stuffing the pieces into the top of them.",
+    "Carefully wrap two slices of Parma ham around the middle of each fig, leaving the tops uncovered.",
+    "Place the prepared figs onto a baking tray and cook for 8-10 minutes, or until the cheese has melted and the Parma ham is crisp.",
+    "To serve, divide the rocket leaves among four serving plates. Place one roasted fig on top of each pile of rocket. Drizzle over the balsamic glaze and olive oil and season, to taste, with salt and freshly ground black pepper."
+  ],
+  "title": "Roasted figs wrapped in Parma ham with blue cheese and rocket"
+}

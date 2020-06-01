@@ -1,0 +1,36 @@
+{
+  "cookTime": 60,
+  "ingredient_names": [
+    "basil leaves",
+    "bay leaf",
+    "black pepper",
+    "carrots",
+    "celery",
+    "olive oil",
+    "onions",
+    "salt",
+    "tomato puree",
+    "tomatoes",
+    "water"
+  ],
+  "ingredient_phrases": [
+    "1 x 800g tin plum tomatoes (or 2 x 400g tins)",
+    "2 celery sticks",
+    "2 carrots",
+    "2 onions",
+    "1 bay leaf (dried is fine)",
+    "handful of basil leaves (optional)",
+    "1 glass of water",
+    "2 tbsp tomato purée",
+    "2 tbsp olive oil",
+    "salt and freshly ground black pepper"
+  ],
+  "prepTime": 30,
+  "servings": "Serves 4",
+  "steps": [
+    "Finely chop the celery, carrots and onions, fry them gently in a large tall pan in olive oil until softened and golden-brown.",
+    "Add the tomatoes, basil, bay leaf, tomato purée, water, salt and freshly ground black pepper.",
+    "Mix well, cover with a lid and allow to simmer on a low heat for approximately 30 minutes. (Make sure you stir occasionally). You can blend this sauce with a handheld stick blender (removing the bay leaf first!) or leave it chunky."
+  ],
+  "title": "Tomato ragù"
+}

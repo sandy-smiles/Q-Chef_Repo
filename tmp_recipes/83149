@@ -1,0 +1,41 @@
+{
+  "cookTime": 30,
+  "ingredient_names": [
+    "black onion seeds",
+    "coriander",
+    "cumin",
+    "egg",
+    "garlic",
+    "greek-style yogurt",
+    "harissa",
+    "olive oil",
+    "parsnips",
+    "plain flour",
+    "red pepper flakes",
+    "sweet potatoes"
+  ],
+  "ingredient_phrases": [
+    "300g/10.5oz parsnips, grated",
+    "300g/10.5oz sweet potatoes, grated",
+    "pinch dried chilli flakes",
+    "1 small bunch fresh coriander, leaves reserved, stalks finely chopped",
+    "1 garlic clove, crushed",
+    ".5 tsp ground coriander",
+    ".5 tsp ground cumin",
+    "1 tsp black onion seeds",
+    "1–2 tbsp plain flour",
+    "1 medium free-range egg, beaten",
+    "4 tbsp olive oil",
+    "150g/5.5oz Greek-style yoghurt",
+    "harissa paste, to taste"
+  ],
+  "prepTime": 30,
+  "servings": "Serves 4",
+  "steps": [
+    "Put all the ingredients, apart from the oil, yoghurt and harissa, in a large bowl and mix to combine. The mixture should hold together. It it doesn't, add an extra tablespoon of flour. Using your hands, divide the mixture into four and shape into 8cm/3¼in flat rounds.",
+    "Place a large frying pan over a medium heat, add the oil and fry each rosti on both sides until golden and crisp. The rostis will probably need to be cooked in batches. If so, place the cooked rosti on a plate lined with kitchen paper and keep warm in an oven on a low temperature until ready to serve.",
+    "Mix the yoghurt and harissa in a small bowl.",
+    "To serve, put the rosti on serving plates and spoon the harissa yoghurt over the top."
+  ],
+  "title": "Parnsip rosti"
+}

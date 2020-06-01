@@ -1,0 +1,36 @@
+{
+  "cookTime": 30,
+  "ingredient_names": [
+    "bacon",
+    "brussels sprouts",
+    "butter",
+    "goose",
+    "ham",
+    "juniper berries",
+    "leftover stuffing",
+    "potatoes",
+    "pumpkin",
+    "red onion"
+  ],
+  "ingredient_phrases": [
+    "50g/2oz butter",
+    "1 red onion, sliced",
+    "6 juniper berries",
+    "200g/7oz leftover goose, torn into pieces",
+    "200g/7oz leftover ham, torn into pieces",
+    "200g/7oz leftover roast pumpkin, cut into chunks",
+    "100g/3.5oz leftover stuffing",
+    "8 leftover roast potatoes, cut into chunks",
+    "5 rashers leftover bacon, chopped into large pieces",
+    "6-8 raw Brussels sprouts, halved"
+  ],
+  "prepTime": 30,
+  "servings": "Serves 4-6",
+  "steps": [
+    "Melt the butter in a large pan and fry the red onion until softened.",
+    "Crush the juniper with a mortar and pestle and add to the onions.",
+    "When the onions are browning, stir in the remaining ingredients. With a fork, mash the potatoes and pumpkin, distributing it evenly to bind the meat.",
+    "Add the Brussels sprouts and cook through for 15 minutes, adding more butter if needed. (If you only have leftover cooked Brussels, you can add these, but cook for about five minutes.)"
+  ],
+  "title": "Bauble and squeak"
+}

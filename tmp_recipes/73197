@@ -1,0 +1,47 @@
+{
+  "cookTime": 60,
+  "ingredient_names": [
+    "almonds",
+    "beef tomatoes",
+    "black pepper",
+    "capers",
+    "cayenne pepper",
+    "celery",
+    "cocoa powder",
+    "eggplants",
+    "green olives",
+    "olive oil",
+    "onion",
+    "parsley",
+    "sugar",
+    "thyme",
+    "white wine vinegar"
+  ],
+  "ingredient_phrases": [
+    "1 tbsp olive oil",
+    "750g/1lb 10oz aubergines, cut into 1cm/1.5in chunks",
+    "1 large onion, cut into 1cm/1.5in chunks",
+    "3 celery sticks, roughly chopped",
+    "2 large beef tomatoes, skinned and deseeded",
+    "1 tsp chopped thyme",
+    ".25-.5 tsp cayenne pepper",
+    "2 tbsp capers, drained",
+    "small handful pitted green olives",
+    "4 tbsp white wine vinegar",
+    "1 tbsp sugar",
+    "1-2 tbsp cocoa powder (optional)",
+    "freshly ground black pepper",
+    "To garnish",
+    "chopped almonds, toasted",
+    "chopped parsley"
+  ],
+  "prepTime": 30,
+  "servings": "Serves 6",
+  "steps": [
+    "Heat the oil in a non-stick frying pan until very hot, add the aubergine and fry for about 15 minutes, or until very soft. Add a little boiling water to prevent sticking if necessary.",
+    "Meanwhile, place the onion and celery in a large saucepan with a little water. Cook for 5 minutes, or until tender but still firm.",
+    "Add the tomatoes, thyme, cayenne pepper and aubergine to the saucepan. Cook for 15 minutes, stirring occasionally. Add the capers, olives, vinegar, sugar and cocoa powder and cook for 2-3 minutes.",
+    "Season with freshly ground black pepper. Divide between 6 bowls, garnish with the toasted almonds and parsley and serve."
+  ],
+  "title": "Caponata ratatouille"
+}

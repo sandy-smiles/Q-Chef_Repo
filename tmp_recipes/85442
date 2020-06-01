@@ -1,0 +1,53 @@
+{
+  "cookTime": 10,
+  "ingredient_names": [
+    "aubergine",
+    "black pepper",
+    "capers",
+    "celery",
+    "fennel bulb",
+    "honey",
+    "mackerel",
+    "olive oil",
+    "onion",
+    "oranges",
+    "pine nuts",
+    "raisins",
+    "red onion",
+    "red pepper",
+    "salt",
+    "soy sauce",
+    "tomato puree",
+    "vegetable oil"
+  ],
+  "ingredient_phrases": [
+    "2 tbsp olive oil",
+    "1 red onion, finely chopped",
+    "1 onion, finely chopped",
+    "1 fennel bulb, chopped",
+    "1 aubergine, chopped",
+    "2 celery stalks, sliced",
+    "1 tbsp tomato purée",
+    "50g/2oz capers",
+    "50g/2oz raisins, soaked in 50ml/2fl oz red wine vinegar and drained",
+    "25g/1oz pine nuts, toasted",
+    ".5 red pepper, finely chopped",
+    "salt and freshly ground black pepper",
+    "4 x mackerel fillets",
+    "2 tbsp vegetable oil",
+    "100ml/3.5fl oz light soy sauce",
+    "2 oranges, juiced and zested",
+    "150ml/5 fl oz runny honey",
+    "1 red chilli, finely chopped"
+  ],
+  "prepTime": 30,
+  "servings": "Serves 4",
+  "steps": [
+    "For the caponata, heat the olive oil in a pan and fry the onions, fennel, aubergine and celery for seven minutes. Add the tomato purée and fry for another two minutes.",
+    "Remove the mixture from the heat and place in a bowl. Add the capers, raisins, pine nuts, pepper, salt and freshly ground black pepper. Mix together until well combined.",
+    "Rub the mackerel with oil and place skin-side down in a hot frying pan. Fry over a medium heat for 2-3 minutes on each side. Remove and set aside to drain on kitchen paper.",
+    "For the sauce, place all the ingredients in a pan. Stir over a low heat until warmed through.",
+    "To serve, divide the caponata between four plates. Place a piece of mackerel on each and cover with the sauce."
+  ],
+  "title": "Pan-fried mackerel with caponata"
+}

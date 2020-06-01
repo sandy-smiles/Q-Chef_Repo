@@ -1,0 +1,48 @@
+{
+  "cookTime": 60,
+  "ingredient_names": [
+    "black pepper",
+    "celery",
+    "cheddar cheese",
+    "cocoa powder",
+    "coriander",
+    "garlic",
+    "green peppers",
+    "kidney beans",
+    "mixed beans",
+    "mushrooms",
+    "olive oil",
+    "onion",
+    "salt",
+    "taco shells",
+    "tomato puree",
+    "vegetable stock",
+    "yogurt"
+  ],
+  "ingredient_phrases": [
+    "1 tbsp olive oil",
+    "1 onion, finely chopped",
+    "1 garlic clove",
+    "3 celery stalks, finely chopped",
+    "200g/7oz portobello/shiitake mushrooms, chopped",
+    "2 green chillies, chopped",
+    "100g/3.5oz tomato purée",
+    "1 tsp cocoa powder (optional)",
+    "150ml/5fl oz vegetable stock",
+    "2 x 400g tinned kidney beans, or mixed beans, rinsed and drained",
+    "salt and freshly ground black pepper",
+    "12 ready-made taco shells, warmed",
+    "150g/5oz Monterey Jack (or mild cheddar) cheese, grated",
+    "2 tbsp chopped fresh coriander (optional)",
+    "200ml/7fl oz plain yoghurt"
+  ],
+  "prepTime": 30,
+  "servings": "Serves 4",
+  "steps": [
+    "Heat the oil in a frying pan over a medium heat. Fry the onion, garlic and celery until soft.",
+    "Add the mushrooms and chillies and cook for one minute.Add the tomato purée and cook for a further 2-3 minutes. When the mushrooms are soft, add the cocoa powder (if using) and stock and bring to the boil.",
+    "Reduce the heat and simmer for 15 minutes, then add the beans and cook for a further 10-12 minutes, or until the sauce has reduced and the beans are all heated through.",
+    "To serve, place 2-3 tablespoonfuls of the bean chilli in each taco shell. Top with the grated cheese, chopped coriander (if using), and a spoon of yoghurt and put on plates."
+  ],
+  "title": "Vegetarian chilli tacos"
+}

@@ -1,0 +1,41 @@
+{
+  "cookTime": 30,
+  "ingredient_names": [
+    "broccoli",
+    "butter",
+    "carrots",
+    "cherry tomatoes",
+    "milk",
+    "olive oil",
+    "onion",
+    "parmesan",
+    "plain flour",
+    "salmon steak"
+  ],
+  "ingredient_phrases": [
+    "1 onion, chopped",
+    "1 tsp olive oil",
+    "20g/.75oz butter",
+    "20g/.75oz plain flour",
+    "150ml/5fl oz milk",
+    "50g/1.75oz parmesan, grated",
+    "150g/5.25oz salmon steak",
+    "150g/5.25oz broccoli, cut into florets and steamed",
+    "2 carrots, cut into batons and steamed",
+    "6 cherry tomatoes"
+  ],
+  "prepTime": 30,
+  "servings": "Serves 1",
+  "steps": [
+    "Preheat the oven to 220C/425F/Gas 7.",
+    "Gently fry the onions in the oil in a saucepan and cook until soft. Stir in the butter and the flour. Mix thoroughly, cooking on a low heat for one minute.",
+    "Pour in the milk, gradually, until everything is combined. Cook for two minutes.",
+    "Add half the cheese to the sauce and reserve the other half.",
+    "Meanwhile, pan-fry the salmon steak for one minute on each side.",
+    "Lay the salmon steak in a small oven-proof dish.",
+    "Add the broccoli, carrots and cherry tomatoes to the dish.",
+    "Pour over the sauce and top with the rest of the cheese.",
+    "Bake in the oven for ten minutes or until bubbling and golden."
+  ],
+  "title": "Broccoli and salmon bake"
+}
