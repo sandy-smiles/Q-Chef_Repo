@@ -14,7 +14,7 @@ def home():
 @app.route('/recipe_image/<imgId>')
 def recipe_image(imgId):
   try:
-    filename = f'{"./images/"+"0"*(recipeImgStrLen-len(imgId))+imgId}.jpg'
+    filename = f'{"./recipe_images/"+"0"*(recipeImgStrLen-len(imgId))+imgId}.jpg'
     return send_file(filename, mimetype='image/jpg')
   except:
     return f'Unable to find the recipe image for {imgId}.'
@@ -22,7 +22,7 @@ def recipe_image(imgId):
 @app.route('/ingredient_image/<imgId>')
 def ingredient_image(imgId):
   try:
-    filename = f'{"./images/"+"0"*(ingredientImgStrLen-len(imgId))+imgId}.jpg'
+    filename = f'{"./ingredient_images/"+"0"*(ingredientImgStrLen-len(imgId))+imgId}.jpg'
     return send_file(filename, mimetype='image/jpg')
   except:
     return f'Unable to find the ingredient image for {imgId}.'
