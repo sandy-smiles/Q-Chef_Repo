@@ -3,7 +3,7 @@ from flask import Flask, request, jsonify, send_file
 # Create a web server
 app = Flask(__name__)
 recipeImgStrLen = 5
-ingredientImgStrLen = 5
+ingredientImgStrLen = 3
 
 ######## API URLs ########
 # API index - shows when people visit the home page
