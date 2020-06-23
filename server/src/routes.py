@@ -11,6 +11,7 @@ from flask import make_response, request, jsonify, render_template, redirect, ur
 
 from func import *
 from taste import *
+from familiarity import *
 
 ################################################################################
 # Constants
@@ -155,8 +156,13 @@ def onboarding_recipe_rating():
       err = f'[onboarding_recipe_rating - ERROR]: Unable to update recipe familiarity ratings, err = {err}'
       debug(err)
       return err
+
     # Return json of test recipes that a user should liked
-    onboarding_recipes2 = getTasteRecipes(user_id, recipesReturned)
+    onboarding_recipes2, err = getTasteRecipes(user_id, recipesReturned)
+    if err:
+      err = f'[onboarding_recipe_rating - ERROR]: Unable to find any recipes for user {user_id}, err = {err}'
+      debug(err)
+      return err
     return jsonify(onboarding_recipes2)
 
   debug('[onboarding_recipe_rating - INFO]: GET request')
@@ -207,3 +213,98 @@ def validation_recipe_rating():
       debug(err)
       return err
     return ""
+
+################################################################################
+# get_meal_plan_selection [POST]
+# POST: End point is for saving the user's chosen number of recipes 
+# for the week and retrieving the recipes to be picked from.
+# Note: This function is fairly involved and may take some time 
+# (so there is a wait screen in the app).
+# - Input:
+#   - (json)
+# - Output:
+#   - (json)
+@app.route('/get_meal_plan_selection', methods=['POST'])
+def get_meal_plan_selection():
+  debug(f'[get_meal_plan_selection - INFO]: Starting.')
+  if request.method == 'POST':
+    debug('[get_meal_plan_selection - INFO]: POST request')
+    request_data = json.loads(request.data)
+    debug(f'[get_meal_plan_selection - DATA]: request_data: {request_data}')
+    user_id =  request_data['userID']
+    num_wanted_recipes = request_data['number_of_recipes']
+
+    # Update user's document with ingredient ratings
+    # Return json of test recipes that a user should liked
+    taste_recipes, err = getTasteRecipes(user_id, num_wanted_recipes)
+    if err:
+      err = f'[onboarding_recipe_rating - ERROR]: Unable to find any recipes for user {user_id}, err = {err}'
+      debug(err)
+      return err
+    taste_recipes
+    return jsonify(taste_recipes)
+
+################################################################################
+# save_meal_plan [POST]
+# POST: End point is for saving the user's chosen recipes.
+# Note: This function is fairly involved and may take some time 
+# (so there is a wait screen in the app).
+# - Input:
+#   - (json) {"userID": <user_id>, "picked": [<recipe_id>, …, <recipe_id>], "action_log": [(<timestamp_epoch_milliseconds>, <recipe_id>, <action>), … ]}
+# - Output:
+#   - (string) error
+@app.route('/save_meal_plan', methods=['POST'])
+def save_meal_plan():
+  debug(f'[save_meal_plan - INFO]: Starting.')
+  if request.method == 'POST':
+    debug('[save_meal_plan - INFO]: POST request')
+    request_data = json.loads(request.data)
+    debug(f'[save_meal_plan - DATA]: request_data: {request_data}')
+    user_id = request_data['userID']
+
+    updateData = {'pickedRecipes': request_data['picked']}
+    err = updateDocument('users', user_id, updateData)
+    if err:
+      err = f'[save_meal_plan - INFO]: Unable to update the data {updateData} for user {user_id}, err = {err}'
+      debug(err)
+      return err
+
+    #TODO(kbona): Figure out something to do with the action log.
+    return ''
+
+################################################################################
+# retrieve_meal_plan [POST]
+# POST: End point is for retrieving all info about the user's chosen recipes.
+# - Input:
+#   - (json) {"userID": <user_id>}
+# - Output:
+#   - (json)
+@app.route('/retrieve_meal_plan', methods=['POST'])
+def retrieve_meal_plan():
+  debug(f'[retrieve_meal_plan - INFO]: Starting.')
+  if request.method == 'POST':
+    debug('[retrieve_meal_plan - INFO]: POST request')
+    request_data = json.loads(request.data)
+    debug(f'[retrieve_meal_plan - DATA]: request_data: {request_data}')
+    user_id = request_data['userID']
+
+    user_doc_ref, user_doc, err = retrieveDocument('users', user_id)
+    if err:
+      err = f'[retrieve_meal_plan - INFO]: Unable to retrieve the user {user_id} data, err = {err}'
+      debug(err)
+      return err
+
+    # Grab the recipe information to be returned in the json
+    recipe_info = {} 
+    recipe_ids = user_doc.to_dict()['pickedRecipes']
+    for recipe_id in recipe_ids:
+      # Get the recipe information
+      recipeInfo, err = getRecipeInformation(recipe_id)
+      if err:
+        err = f'[retrieve_meal_plan - ERROR]: Unable to get recipe {recipe_id} information, err = {err}'
+        debug(err)
+        continue
+      recipe_info[recipe_id] = recipeInfo
+
+    return jsonify(recipe_info)
+

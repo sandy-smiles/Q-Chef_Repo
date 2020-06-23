@@ -41,6 +41,12 @@ def getIngredientTasteRating(user_doc, ingredient_id):
         for ingredient_rating_dict_val in user_dict['i_taste'].values():
           sumIngredientRatings += ingredient_rating_dict_val['rating']
           numIngredientRatings += 1
+        for ingredient_rating_dict_val in user_dict['is_taste'].values():
+          sumIngredientRatings += ingredient_rating_dict_val['rating']
+          numIngredientRatings += 1
+        for ingredient_rating_dict_val in user_dict['ic_taste'].values():
+          sumIngredientRatings += ingredient_rating_dict_val['rating']
+          numIngredientRatings += 1
         ingredientTasteRating = sumIngredientRatings/numIngredientRatings
 
   return ingredientTasteRating, ''
@@ -59,6 +65,7 @@ def getRecipeTasteRating(user_doc, recipe_doc):
   recipe_id = recipe_doc.id
   debug(f'[getRecipeTasteRating - DATA]: recipe_id = {recipe_id}.')
   debug(f'[getRecipeTasteRating - DATA]: recipe_doc = {recipe_doc}.')
+
   # Obtain all of the recipe ingredients
   recipe_dict = recipe_doc.to_dict()
   ingredient_ids = recipe_dict["ingredient_ids"]
