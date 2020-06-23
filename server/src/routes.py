@@ -89,7 +89,13 @@ def onboarding_ingredient_rating():
     # Update user's document with ingredient ratings
     err = updateIngredientClusterTasteRatings(request_data)
     if err:
-      err = f'[onboarding_ingredient_rating - ERROR]: Unable to update recipe taste ratings, err = {err}'
+      err = f'[onboarding_ingredient_rating - ERROR]: Unable to update ingredient taste ratings, err = {err}'
+      debug(err)
+      return err
+    # Update user's document with ingredient ratings
+    err = updateIngredientClusterFamiliarityRatings(request_data)
+    if err:
+      err = f'[onboarding_ingredient_rating - ERROR]: Unable to update ingredient familiarity ratings, err = {err}'
       debug(err)
       return err
     return ''
@@ -139,13 +145,17 @@ def onboarding_recipe_rating():
     user_id =  request_data['userID']
 
     # Update user's document with recipe ratings
-    err = ''#updateRecipeTasteRatings(request_data)
+    err = updateRecipeTasteRatings(request_data)
     if err:
       err = f'[onboarding_recipe_rating - ERROR]: Unable to update recipe taste ratings, err = {err}'
       debug(err)
       return err
+    err = updateRecipeFamiliarityRatings(request_data)
+    if err:
+      err = f'[onboarding_recipe_rating - ERROR]: Unable to update recipe familiarity ratings, err = {err}'
+      debug(err)
+      return err
     # Return json of test recipes that a user should liked
-    # TODO(kbona@): Fix up the proper json return.
     onboarding_recipes2 = getTasteRecipes(user_id, recipesReturned)
     return jsonify(onboarding_recipes2)
 
