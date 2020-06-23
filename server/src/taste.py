@@ -97,7 +97,7 @@ def getTasteRecipes(user_id, recipes_wanted):
   # Retrieve the user document
   user_doc_ref, user_doc, err = retrieveDocument('users', user_id)
   if err:
-    return err
+    return None, err
   user_dict = user_doc.to_dict()
   user_recipes = list(user_dict['r_taste'].keys())
   
@@ -114,7 +114,7 @@ def getTasteRecipes(user_id, recipes_wanted):
     if not (recipe_doc.id in user_recipes):
       userRecipePref, err = getRecipeTasteRating(user_doc, recipe_doc)
       if err:
-        err = f'[getTasteRecipes - ERROR]: Unable to find user {user_id} preference for recipe {recipe.id}, err = {err}'
+        err = f'[getTasteRecipes - ERROR]: Unable to find user {user_id} preference for recipe {recipe_doc.id}, err = {err}'
         debug(err)
         continue # Just ignore this recipe then.
       possibleRecipes.append((userRecipePref, recipe_doc.id))
@@ -136,7 +136,7 @@ def getTasteRecipes(user_id, recipes_wanted):
       continue
     recipe_info[recipe_id] = recipeInfo
 
-  return recipe_info
+  return recipe_info, ''
 
 ################################################################################
 # updateSingleIngredientTasteRating
