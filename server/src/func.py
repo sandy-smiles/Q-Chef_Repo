@@ -48,6 +48,26 @@ def debug(fString):
 ################################################################################
 # "Database"
 ################################################################################
+# retrieveCollection
+# Retrieve a collection of documents.
+# Input:
+#  - (string) collectionID <- Database collection name (ID)
+# Output:
+#  - (col_ref) collection reference
+#  - (string) error
+def retrieveCollection(collectionID):
+  debug(f'[retrieveCollection - INFO]: Starting.')
+  collectionID = f'{collectionID}'
+
+  if not (collectionID in collectionIDs):
+    err = f'[retrieveCollection - ERROR]: Collection name {collectionID} is not a known collection.'
+    debug(err)
+    return None, err
+
+  col_ref = db.collection(collectionID)
+  return col_ref, ''
+
+################################################################################
 # createDocument
 # Create a document within a specified document collection.
 # Input:

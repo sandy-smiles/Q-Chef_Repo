@@ -38,8 +38,8 @@ def getIngredientTasteRating(user_doc, ingredient_id):
         # For now, finding the overall average ingredient rating.
         sumIngredientRatings = 0
         numIngredientRatings = 0
-        for ingredient_rating_dict in user_dict['i_taste']:
-          sumIngredientRatings += ingredient_rating_dict['rating']
+        for ingredient_rating_dict_val in user_dict['i_taste'].values():
+          sumIngredientRatings += ingredient_rating_dict_val['rating']
           numIngredientRatings += 1
         ingredientTasteRating = sumIngredientRatings/numIngredientRatings
 
@@ -55,8 +55,10 @@ def getIngredientTasteRating(user_doc, ingredient_id):
 #   - (float) recipe preference,
 #   - (string) error
 def getRecipeTasteRating(user_doc, recipe_doc):
-  recipe_id = recipe_doc.id
   debug(f'[getRecipeTasteRating - INFO]: Starting.')
+  recipe_id = recipe_doc.id
+  debug(f'[getRecipeTasteRating - DATA]: recipe_id = {recipe_id}.')
+  debug(f'[getRecipeTasteRating - DATA]: recipe_doc = {recipe_doc}.')
   # Obtain all of the recipe ingredients
   recipe_dict = recipe_doc.to_dict()
   ingredient_ids = recipe_dict["ingredient_ids"]
@@ -87,7 +89,7 @@ def getRecipeTasteRating(user_doc, recipe_doc):
 #   - (string) error
 def getTasteRecipes(user_id, recipes_wanted):
   debug(f'[getTasteRecipes - INFO]: Starting.')
-  numWantedRecipes = recipes_wanted*TASTE_RECIPES_RETURNED
+  numWantedRecipes = recipes_wanted #*TASTE_RECIPES_RETURNED
 
   ## Collect list of possible recipes to pick from
   ## Noting that we won't give a user a recipe they have already tried.
@@ -100,17 +102,22 @@ def getTasteRecipes(user_id, recipes_wanted):
   user_recipes = list(user_dict['r_taste'].keys())
   
   # Retrieve the recipe collection
-  recipes_ref = retrieveCollection("recipes")
+  recipes_col_ref = retrieveCollection("recipes")
+  debug(f'[getTasteRecipes - DATA]: recipes_col_ref = {recipes_col_ref}')
+  recipes_col = [recipes_col for recipes_col in recipes_col_ref][0]
+  debug(f'[getTasteRecipes - DATA]: recipes_col.id = {recipes_col.id}')
   possibleRecipes = []
-  for recipe_doc_ref in recipes_ref:
-    if not (recipe.id in user_recipes):
-      recipe_doc = recipe_doc_ref.get()
+  recipe_docs = recipes_col.stream()
+  for recipe_doc in recipe_docs:
+    debug(f'[getTasteRecipes - DATA]: recipe_docs = {recipe_docs}')
+    debug(f'[getTasteRecipes - DATA]: recipe_doc = {recipe_doc}')
+    if not (recipe_doc.id in user_recipes):
       userRecipePref, err = getRecipeTasteRating(user_doc, recipe_doc)
       if err:
         err = f'[getTasteRecipes - ERROR]: Unable to find user {user_id} preference for recipe {recipe.id}, err = {err}'
         debug(err)
         continue # Just ignore this recipe then.
-      possibleRecipes.append((userRecipePref, recipe.id))
+      possibleRecipes.append((userRecipePref, recipe_doc.id))
 
   possibleRecipes.sort(reverse=True)
   # Check that there are enough recipes to serve up.
@@ -151,17 +158,12 @@ def updateSingleIngredientTasteRating(user_id, ingredient_id, rating):
   user_dict = doc.to_dict()
 
   # Retrieve the ingredients document
-  i_dict = {}
   doc_ref, doc, err = retrieveDocument('ingredients', ingredient_id)
   if err:
-    return err
-  ingredients_dict = doc.to_dict()
-  try:
-    i_dict = ingredients_dict[ingredient_id]
-  except:
-    err = '[updateSingleIngredientTasteRating - ERROR]: Unable to find ingredient information.'
+    err = '[updateSingleIngredientTasteRating - ERROR]: Unable to obtain ingredient {ingredient_id} information from DB.'
     debug(err)
     return err
+  ingredients_dict = doc.to_dict()
 
   # Update the ingredient rating
   updating_data['i_taste'] = user_dict['i_taste']
@@ -172,10 +174,10 @@ def updateSingleIngredientTasteRating(user_id, ingredient_id, rating):
     n += 1
     updating_data['i_taste'][ingredient_id] =  {'rating': r, 'n_ratings': n}
   except:
-    updating_data['i_taste'] = {ingredient_id: {'rating': rating, 'n_ratings': 1}}
+    updating_data['i_taste'][ingredient_id] = {'rating': rating, 'n_ratings': 1}
 
   # Update the ingredient subcluster rating
-  subcluster_id = i_dict["subcluster"]
+  subcluster_id = str(ingredients_dict["subcluster"])
   if subcluster_id != None:
     updating_data['is_taste'] = user_dict['is_taste']
     try:
@@ -183,12 +185,12 @@ def updateSingleIngredientTasteRating(user_id, ingredient_id, rating):
       n = user_dict['is_taste'][subcluster_id]['n_ratings']
       r = (r*n+rating)/(n+1)
       n += 1
-      updating_data['is_taste'] = {subcluster_id: {'rating': r, 'n_ratings': n}}
+      updating_data['is_taste'][subcluster_id] = {'rating': r, 'n_ratings': n}
     except:
-      updating_data['is_taste'] = {subcluster_id: {'rating': rating, 'n_ratings': 1}}
+      updating_data['is_taste'][subcluster_id] = {'rating': rating, 'n_ratings': 1}
 
   # Update the ingredient cluster rating
-  cluster_id = i_dict["cluster"]
+  cluster_id = str(ingredients_dict["cluster"])
   if cluster_id != None:
     updating_data['ic_taste'] = user_dict['ic_taste']
     try:
@@ -196,9 +198,9 @@ def updateSingleIngredientTasteRating(user_id, ingredient_id, rating):
       n = user_dict['ic_taste'][cluster_id]['n_ratings']
       r = (r*n+rating)/(n+1)
       n += 1
-      updating_data['ic_taste'] = {cluster_id: {'rating': r, 'n_ratings': n}}
+      updating_data['ic_taste'][cluster_id] = {'rating': r, 'n_ratings': n}
     except:
-      updating_data['ic_taste'] = {cluster_id: {'rating': rating, 'n_ratings': 1}}
+      updating_data['ic_taste'][cluster_id] = {'rating': rating, 'n_ratings': 1}
 
   # Update the user's document:
   err = updateDocument('users', user_id, updating_data)

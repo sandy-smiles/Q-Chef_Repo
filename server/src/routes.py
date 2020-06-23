@@ -31,6 +31,8 @@ userStartingDoc = {
   'pickedRecipes': []
 }
 
+recipesReturned = 10
+
 ################################################################################
 # API URLs
 ################################################################################
@@ -137,14 +139,15 @@ def onboarding_recipe_rating():
     user_id =  request_data['userID']
 
     # Update user's document with recipe ratings
-    err = updateRecipeTasteRatings(request_data)
+    err = ''#updateRecipeTasteRatings(request_data)
     if err:
       err = f'[onboarding_recipe_rating - ERROR]: Unable to update recipe taste ratings, err = {err}'
       debug(err)
       return err
     # Return json of test recipes that a user should liked
     # TODO(kbona@): Fix up the proper json return.
-    return jsonify(json.loads(exampleRecipeDict))
+    onboarding_recipes2 = getTasteRecipes(user_id, recipesReturned)
+    return jsonify(onboarding_recipes2)
 
   debug('[onboarding_recipe_rating - INFO]: GET request')
   # Attempt to grab onboarding recipes list.
