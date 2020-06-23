@@ -86,13 +86,13 @@ def onboarding_ingredient_rating():
       err = f'[onboarding_ingredient_rating - ERROR]: Unable to create document for {user_id}, err = {err}'
       debug(err)
       return err
+
     # Update user's document with ingredient ratings
     err = updateIngredientClusterTasteRatings(request_data)
     if err:
       err = f'[onboarding_ingredient_rating - ERROR]: Unable to update ingredient taste ratings, err = {err}'
       debug(err)
       return err
-    # Update user's document with ingredient ratings
     err = updateIngredientClusterFamiliarityRatings(request_data)
     if err:
       err = f'[onboarding_ingredient_rating - ERROR]: Unable to update ingredient familiarity ratings, err = {err}'
@@ -177,3 +177,33 @@ def onboarding_recipe_rating():
       continue
     onboarding_recipes[recipe_id] = recipe_info
   return jsonify(onboarding_recipes)
+
+################################################################################
+# validation_recipe_rating [POST]
+# POST: End point is for saving the final set of user's reviews of recipes
+# given (during onboarding).
+# - Input:
+#   - (json)
+# - Output:
+#   - (string) error
+@app.route('/validation_recipe_rating', methods=['POST'])
+def validation_recipe_rating():
+  debug(f'[validation_recipe_rating - INFO]: Starting.')
+  if request.method == 'POST':
+    debug('[validation_recipe_rating - INFO]: POST request')
+    request_data = json.loads(request.data)
+    debug(f'[validation_recipe_rating - DATA]: request_data: {request_data}')
+    user_id =  request_data['userID']
+
+    # Update user's document with recipe ratings
+    err = updateRecipeTasteRatings(request_data)
+    if err:
+      err = f'[onboarding_recipe_rating - ERROR]: Unable to update recipe taste ratings, err = {err}'
+      debug(err)
+      return err
+    err = updateRecipeFamiliarityRatings(request_data)
+    if err:
+      err = f'[onboarding_recipe_rating - ERROR]: Unable to update recipe familiarity ratings, err = {err}'
+      debug(err)
+      return err
+    return ""
