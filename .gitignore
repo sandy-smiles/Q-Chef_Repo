@@ -1,2 +1,15 @@
-# Ignore the security key file.
+# Ignore the security key file
 keyKey.json
+
+# Ignore python cache files
+__pycache__
+
+# Ignore the firebase files
+.firebase
+.firebaserc
+firebase.json
+
+# Ignore the node_module files
+node_modules
+package-lock.json
+package.json
