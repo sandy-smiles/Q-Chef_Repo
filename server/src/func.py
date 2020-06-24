@@ -18,30 +18,33 @@ collectionIDs = ['users',
 ################################################################################
 # Debugging
 ################################################################################
-DEBUG = True
+DEBUG = False
 WARN = True
-INFO = True
-DATA = True
-HELP = True
+INFO = False
+DATA = False
+HELP = False
 
 def debug(fString):
-  if DEBUG and 'ERROR' in fString:
+  if not DEBUG:
+    return
+
+  if 'ERROR' in fString:
     print(fString)
     return
 
-  if DEBUG and WARN and 'WARNING' in fString:
+  if WARN and 'WARNING' in fString:
     print(fString)
     return
 
-  if DEBUG and INFO and 'INFO' in fString:
+  if INFO and 'INFO' in fString:
     print(fString)
     return
 
-  if DEBUG and DATA and 'DATA' in fString:
+  if DATA and 'DATA' in fString:
     print(fString)
     return
 
-  if DEBUG and HELP and 'HELP' in fString:
+  if HELP and 'HELP' in fString:
     print(fString)
     return
 

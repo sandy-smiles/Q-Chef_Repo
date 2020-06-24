@@ -11,7 +11,6 @@ from flask import make_response, request, jsonify, render_template, redirect, ur
 
 from func import *
 from ratings import *
-from familiarity import *
 
 ################################################################################
 # Constants
@@ -94,12 +93,11 @@ def onboarding_ingredient_rating():
 
     # Update user's document with recipe ratings
     rating_types = ['taste', 'familiarity']
-    for rating_type in rating_types:
-      err = updateIngredientClusterRatings(request_data, rating_type)
-      if err:
-        err = f'[onboarding_recipe_rating - ERROR]: Unable to update ingredient ratings, err = {err}'
-        debug(err)
-        return err
+    err = updateIngredientClusterRatings(request_data, rating_types)
+    if err:
+      err = f'[onboarding_recipe_rating - ERROR]: Unable to update ingredient ratings, err = {err}'
+      debug(err)
+      return err
     return ''
 
   debug('[onboarding_ingredient_rating - INFO]: GET request')
@@ -148,12 +146,11 @@ def onboarding_recipe_rating():
 
     # Update user's document with recipe ratings
     rating_types = ['taste', 'familiarity', 'surprise']
-    for rating_type in rating_types:
-      err = updateRecipeRatings(request_data, rating_type)
-      if err:
-        err = f'[onboarding_recipe_rating - ERROR]: Unable to update recipe ratings, err = {err}'
-        debug(err)
-        return err
+    err = updateRecipeRatings(request_data, rating_types)
+    if err:
+      err = f'[onboarding_recipe_rating - ERROR]: Unable to update recipe ratings, err = {err}'
+      debug(err)
+      return err
 
     # Return json of test recipes that a user should liked
     onboarding_recipes2, err = getTasteRecipes(user_id, recipesReturned)
@@ -201,12 +198,11 @@ def validation_recipe_rating():
 
     # Update user's document with recipe ratings
     rating_types = ['taste', 'familiarity', 'surprise']
-    for rating_type in rating_types:
-      err = updateRecipeRatings(request_data, rating_type)
-      if err:
-        err = f'[onboarding_recipe_rating - ERROR]: Unable to update recipe ratings, err = {err}'
-        debug(err)
-        return err
+    err = updateRecipeRatings(request_data, rating_types)
+    if err:
+      err = f'[onboarding_recipe_rating - ERROR]: Unable to update recipe ratings, err = {err}'
+      debug(err)
+      return err
     return ""
 
 ################################################################################
@@ -321,12 +317,11 @@ def review_recipe():
 
     # Update user's document with recipe ratings
     rating_types = ['taste', 'familiarity', 'cook']
-    for rating_type in rating_types:
-      err = updateRecipeRatings(request_data, rating_type)
-      if err:
-        err = f'[onboarding_recipe_rating - ERROR]: Unable to update recipe ratings, err = {err}'
-        debug(err)
-        return err
+    err = updateRecipeRatings(request_data, rating_types)
+    if err:
+      err = f'[onboarding_recipe_rating - ERROR]: Unable to update recipe ratings, err = {err}'
+      debug(err)
+      return err
 
     #TODO(kbona): Do something for why_response
     #TODO(kbona): Do something for how_response
