@@ -20,7 +20,7 @@ collectionIDs = ['users',
 ################################################################################
 DEBUG = True
 WARN = True
-INFO = False
+INFO = True
 DATA = True
 HELP = True
 

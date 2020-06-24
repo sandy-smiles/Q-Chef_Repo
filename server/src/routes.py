@@ -10,7 +10,7 @@ from app import app
 from flask import make_response, request, jsonify, render_template, redirect, url_for
 
 from func import *
-from taste import *
+from ratings import *
 from familiarity import *
 
 ################################################################################
@@ -29,6 +29,10 @@ userStartingDoc = {
   'is_surprise': {},
   'ic_surprise': {},
   'r_surprise' : {},
+  'i_cook' : {},
+  'is_cook': {},
+  'ic_cook': {},
+  'r_cook' : {},
   'pickedRecipes': []
 }
 
@@ -88,17 +92,14 @@ def onboarding_ingredient_rating():
       debug(err)
       return err
 
-    # Update user's document with ingredient ratings
-    err = updateIngredientClusterTasteRatings(request_data)
-    if err:
-      err = f'[onboarding_ingredient_rating - ERROR]: Unable to update ingredient taste ratings, err = {err}'
-      debug(err)
-      return err
-    err = updateIngredientClusterFamiliarityRatings(request_data)
-    if err:
-      err = f'[onboarding_ingredient_rating - ERROR]: Unable to update ingredient familiarity ratings, err = {err}'
-      debug(err)
-      return err
+    # Update user's document with recipe ratings
+    rating_types = ['taste', 'familiarity']
+    for rating_type in rating_types:
+      err = updateIngredientClusterRatings(request_data, rating_type)
+      if err:
+        err = f'[onboarding_recipe_rating - ERROR]: Unable to update ingredient ratings, err = {err}'
+        debug(err)
+        return err
     return ''
 
   debug('[onboarding_ingredient_rating - INFO]: GET request')
@@ -146,16 +147,13 @@ def onboarding_recipe_rating():
     user_id =  request_data['userID']
 
     # Update user's document with recipe ratings
-    err = updateRecipeTasteRatings(request_data)
-    if err:
-      err = f'[onboarding_recipe_rating - ERROR]: Unable to update recipe taste ratings, err = {err}'
-      debug(err)
-      return err
-    err = updateRecipeFamiliarityRatings(request_data)
-    if err:
-      err = f'[onboarding_recipe_rating - ERROR]: Unable to update recipe familiarity ratings, err = {err}'
-      debug(err)
-      return err
+    rating_types = ['taste', 'familiarity', 'surprise']
+    for rating_type in rating_types:
+      err = updateRecipeRatings(request_data, rating_type)
+      if err:
+        err = f'[onboarding_recipe_rating - ERROR]: Unable to update recipe ratings, err = {err}'
+        debug(err)
+        return err
 
     # Return json of test recipes that a user should liked
     onboarding_recipes2, err = getTasteRecipes(user_id, recipesReturned)
@@ -202,16 +200,13 @@ def validation_recipe_rating():
     user_id =  request_data['userID']
 
     # Update user's document with recipe ratings
-    err = updateRecipeTasteRatings(request_data)
-    if err:
-      err = f'[onboarding_recipe_rating - ERROR]: Unable to update recipe taste ratings, err = {err}'
-      debug(err)
-      return err
-    err = updateRecipeFamiliarityRatings(request_data)
-    if err:
-      err = f'[onboarding_recipe_rating - ERROR]: Unable to update recipe familiarity ratings, err = {err}'
-      debug(err)
-      return err
+    rating_types = ['taste', 'familiarity', 'surprise']
+    for rating_type in rating_types:
+      err = updateRecipeRatings(request_data, rating_type)
+      if err:
+        err = f'[onboarding_recipe_rating - ERROR]: Unable to update recipe ratings, err = {err}'
+        debug(err)
+        return err
     return ""
 
 ################################################################################
@@ -308,3 +303,31 @@ def retrieve_meal_plan():
 
     return jsonify(recipe_info)
 
+################################################################################
+# review_recipe [POST]
+# POST: End point is for saving the user's reviews of recipes they cooked.
+# - Input:
+#   - (json) {"userID": <user_id>}
+# - Output:
+#   - (json)
+@app.route('/review_recipe', methods=['POST'])
+def review_recipe():
+  debug(f'[review_recipe - INFO]: Starting.')
+  if request.method == 'POST':
+    debug('[review_recipe - INFO]: POST request')
+    request_data = json.loads(request.data)
+    debug(f'[review_recipe - DATA]: request_data: {request_data}')
+    user_id =  request_data['userID']
+
+    # Update user's document with recipe ratings
+    rating_types = ['taste', 'familiarity', 'cook']
+    for rating_type in rating_types:
+      err = updateRecipeRatings(request_data, rating_type)
+      if err:
+        err = f'[onboarding_recipe_rating - ERROR]: Unable to update recipe ratings, err = {err}'
+        debug(err)
+        return err
+
+    #TODO(kbona): Do something for why_response
+    #TODO(kbona): Do something for how_response
+    return ""
