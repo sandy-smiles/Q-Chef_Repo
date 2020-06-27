@@ -9,6 +9,8 @@ from app import db
 # Constants
 ################################################################################
 collectionIDs = ['users',
+                 'actions',
+                 'reviews',
                  'recipes',
                  'ingredients',
                  'ingredient_clusters',

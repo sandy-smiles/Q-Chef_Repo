@@ -10,7 +10,9 @@ from app import app
 from flask import make_response, request, jsonify, render_template, redirect, url_for
 
 from func import *
+from actions import *
 from ratings import *
+from reviews import *
 
 ################################################################################
 # Constants

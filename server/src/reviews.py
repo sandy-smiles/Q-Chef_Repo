@@ -43,7 +43,7 @@ def updateRecipeReviews(data):
   for recipe_id in recipe_ids:
     try:
       updating_data[recipe_id] = {}
-      updating_data[recipe_id][cook_rating] = data['cook_ratings'][recipe_id]
+      updating_data[recipe_id]['cook_rating'] = data['cook_ratings'][recipe_id]
       updating_data[recipe_id]['how'] = data['how_response'][recipe_id]
       updating_data[recipe_id]['why'] = data['why_response'][recipe_id]
       updating_data[recipe_id]['image'] = data['image'][recipe_id]

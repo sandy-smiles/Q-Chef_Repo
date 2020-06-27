@@ -44,7 +44,7 @@ def updateActionLog(data):
         debug(err)
 
   # Update the user's review document
-  err = updateDocument('reviews', user_id, updating_data)
+  err = updateDocument('actions', user_id, updating_data)
   if err:
     err = f'[updateActionLog - ERROR]: Unable to update user action log document with actions, err: {err}'
     debug(err)
