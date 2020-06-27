@@ -28,10 +28,6 @@ userStartingDoc = {
   'is_surprise': {},
   'ic_surprise': {},
   'r_surprise' : {},
-  'i_cook' : {},
-  'is_cook': {},
-  'ic_cook': {},
-  'r_cook' : {},
   'pickedRecipes': []
 }
 
@@ -84,8 +80,11 @@ def onboarding_ingredient_rating():
     request_data = json.loads(request.data)
     debug(f'[onboarding_ingredient_rating - DATA]: request_data: {request_data}')
     user_id =  request_data['userID']
+
     # Attempt to grab user's document (as this is the first endpoint)
     err = createDocument('users', user_id, userStartingDoc)
+    err = createDocument('actions', user_id, {})
+    err = createDocument('reviews', user_id, {})
     if err:
       err = f'[onboarding_ingredient_rating - ERROR]: Unable to create document for {user_id}, err = {err}'
       debug(err)
@@ -256,11 +255,15 @@ def save_meal_plan():
     updateData = {'pickedRecipes': request_data['picked']}
     err = updateDocument('users', user_id, updateData)
     if err:
-      err = f'[save_meal_plan - INFO]: Unable to update the data {updateData} for user {user_id}, err = {err}'
+      err = f'[save_meal_plan - ERROR]: Unable to update the data {updateData} for user {user_id}, err = {err}'
       debug(err)
       return err
 
-    #TODO(kbona): Figure out something to do with the action log.
+    err = updateActionLog(request_data)
+    if err:
+      err = f'[save_meal_plan - ERROR]: Unable to update recipe(s) action log, err = {err}'
+      debug(err)
+      return err
     return ''
 
 ################################################################################
@@ -316,13 +319,16 @@ def review_recipe():
     user_id =  request_data['userID']
 
     # Update user's document with recipe ratings
-    rating_types = ['taste', 'familiarity', 'cook']
+    rating_types = ['taste', 'familiarity']
     err = updateRecipeRatings(request_data, rating_types)
     if err:
-      err = f'[onboarding_recipe_rating - ERROR]: Unable to update recipe ratings, err = {err}'
+      err = f'[onboarding_recipe_rating - ERROR]: Unable to update recipe(s) ratings, err = {err}'
       debug(err)
       return err
 
-    #TODO(kbona): Do something for why_response
-    #TODO(kbona): Do something for how_response
+    err = updateRecipeReviews(request_data)
+    if err:
+      err = f'[onboarding_recipe_rating - ERROR]: Unable to update recipe(s) review, err = {err}'
+      debug(err)
+      return err
     return ""

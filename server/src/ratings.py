@@ -12,11 +12,10 @@ TASTE_RECIPES_RETURNED = 10
 
 rating_types = ['taste',
                 'familiarity',
-                'surprise',
-                'cook']
+                'surprise']
 
 ################################################################################
-# Taste Helper Functions
+# Helper Functions
 ################################################################################
 # getIngredientRating
 # Returns a json of the recipe info needed to give to the front end.
