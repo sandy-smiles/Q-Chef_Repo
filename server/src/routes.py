@@ -59,10 +59,11 @@ def index():
   return response
 
 ################################################################################
+# Returns the participant information statement for the Q-Chef surveys
 @app.route('/info')
 @cross_origin()
 def info():
-  return send_file('Participant Information Statement - Survey.pdf')
+  return send_file('Participant Information Statement - Survey.pdf', attachment_filename='Participant Information Statement - Survey.pdf')
 
 ################################################################################
 # Server API URLs
