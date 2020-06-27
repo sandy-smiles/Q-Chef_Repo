@@ -7,7 +7,7 @@ import time
 import json
 
 from app import app
-from flask import make_response, request, jsonify, render_template, redirect, url_for
+from flask import make_response, request, jsonify, render_template, redirect, url_for, send_file
 from flask_cors import CORS, cross_origin
 
 from func import *
@@ -57,6 +57,12 @@ def index():
   # 's-maxage' is for the browser
   # response.headers['Cache-Control'] = 'public, max-age=300, s-maxage=600'
   return response
+
+################################################################################
+@app.route('/info')
+@cross_origin()
+def info():
+  return send_file('Participant Information Statement - Survey.pdf')
 
 ################################################################################
 # Server API URLs
