@@ -6,14 +6,33 @@
 import time
 import json
 
-from app import app
-from flask import make_response, request, jsonify, render_template, redirect, url_for, send_file
+from app import app, config
+from flask import make_response, request, jsonify, render_template, redirect, url_for, session, send_file
 from flask_cors import CORS, cross_origin
 
 from func import *
 from actions import *
 from ratings import *
 from reviews import *
+
+################################################################################
+# Constants
+################################################################################
+app.secret_key = config['app-secret_key']
+
+from authlib.integrations.flask_client import OAuth
+oauth = OAuth(app)
+google_auth = oauth.register(
+  name='google',
+  client_id=config['client_id'],
+  client_secret=config['client_secret'],
+  access_token_url='https://accounts.google.com/o/oauth2/token',
+  access_token_params=None,
+  authorize_url='https://accounts.google.com/o/oauth2/auth',
+  authorize_params=None,
+  api_base_url='https://www.googleapis.com/oauth2/v1/',
+  client_kwargs={'scope': 'openid email'},
+)
 
 ################################################################################
 # Constants
@@ -47,6 +66,10 @@ def format_server_time():
 
 @app.route('/')
 def index():
+  # Figure out the session of a user
+  user_id = dict(session).get('user_id', None)
+  print(f'session = {session}')
+
   # Create context for template
   context = {'server_time': format_server_time(), 'authenticated': "False"}
   # Retrieve the information for recipe number: 60372
@@ -64,6 +87,36 @@ def index():
 @cross_origin()
 def info():
   return send_file('Participant Information Statement - Survey.pdf', attachment_filename='Participant Information Statement - Survey.pdf')
+
+################################################################################
+# Auth URLs
+################################################################################
+# Login auth route
+@app.route('/login')
+def login():
+  google_auth = oauth.create_client('google')
+  redirect_url = url_for('authorize', _external=True)
+  return google_auth.authorize_redirect(redirect_url)
+
+# Authorized route
+@app.route('/authorize')
+def authorize():
+  google_auth = oauth.create_client('google')
+  google_token = google_auth.authorize_access_token()
+  resp = google_auth.get('userinfo', token=google_token)
+  user_info = resp.json()
+  print(f'user_info = {user_info}')
+  # Do something with token and profile
+  session['user_id'] = user_info['id']
+  return redirect('/')
+
+# Logout route
+@app.route('/logout')
+def logout():
+  print(f'session = {session}')
+  for key in list(session.keys()):
+    session.pop(key)
+  return redirect('/')
 
 ################################################################################
 # Server API URLs
