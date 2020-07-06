@@ -1,5 +1,6 @@
 # Ignore the security key file
 keyKey.json
+config.json
 
 # Ignore python cache files
 __pycache__
