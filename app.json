@@ -1,0 +1,11 @@
+{
+  "name": "Q-Chef API",
+  "description": "Q-Chef API end points",
+  "keywords": [
+    "Q-Chef",
+    "food"
+  ],
+  "website": "https://small-sharp-tool.com/",
+  "repository": "https://github.com/sandy-smiles/Q-Chef_Repo/tree/develop_firebase_heroku",
+  "image": "heroku/python"
+}
