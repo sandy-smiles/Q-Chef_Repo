@@ -27,6 +27,12 @@ def ingredient_image(imgId):
   except:
     return f'Unable to find the ingredient image for {imgId}.'
 
+################################################################################
+# Returns the participant information statement for the Q-Chef surveys
+@app.route('/participant_info')
+def participant_info():
+  return send_file('Participant Information Statement - Survey.pdf', attachment_filename='Participant Information Statement - Survey.pdf', mimetype='application/pdf')
+
 ######## Server Activation ########
 # Start the web server!
 if __name__ == "__main__":
