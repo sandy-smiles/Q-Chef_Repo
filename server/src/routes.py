@@ -6,7 +6,7 @@
 import time
 import json
 
-from app import app, config
+from app import app, config, authentication
 from flask import make_response, request, jsonify, render_template, redirect, url_for, session, send_file
 from flask_cors import CORS, cross_origin
 
@@ -65,10 +65,11 @@ def format_server_time():
   return time.strftime("%I:%M:%S %p", server_time)
 
 @app.route('/')
+@authentication
 def index():
   # Figure out the session of a user
   user_id = dict(session).get('user_id', None)
-  print(f'session = {session}')
+  #print(f'session = {session}')
 
   # Create context for template
   context = {'server_time': format_server_time(), 'authenticated': "False"}
@@ -105,7 +106,7 @@ def authorize():
   google_token = google_auth.authorize_access_token()
   resp = google_auth.get('userinfo', token=google_token)
   user_info = resp.json()
-  print(f'user_info = {user_info}')
+  #print(f'user_info = {user_info}')
   # Do something with token and profile
   session['user_id'] = user_info['id']
   return redirect('/')
@@ -113,7 +114,7 @@ def authorize():
 # Logout route
 @app.route('/logout')
 def logout():
-  print(f'session = {session}')
+  #print(f'session = {session}')
   for key in list(session.keys()):
     session.pop(key)
   return redirect('/')
@@ -137,6 +138,7 @@ def logout():
 #   - (string) error
 @app.route('/onboarding_ingredient_rating', methods=['GET', 'POST'])
 @cross_origin()
+@authentication
 def onboarding_ingredient_rating():
   debug(f'[onboarding_ingredient_rating - INFO]: Starting.')
   if request.method == 'POST':
