@@ -227,6 +227,8 @@ def getRecipeInformation(recipe_id):
   del recipes_dict["image"]
   # Remove the ingredient_ids field
   del recipes_dict["ingredient_ids"]
+  # Remove the surprises field
+  del recipes_dict["surprises"]
   # Remove the url field
   del recipes_dict["url"]
   # Remove the vector field

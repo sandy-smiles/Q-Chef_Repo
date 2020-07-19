@@ -8,9 +8,10 @@
 ################################################################################
 import os
 import json
+import functools
 
 import firebase_admin
-from firebase_admin import credentials, firestore
+from firebase_admin import auth, credentials, firestore
 
 # Use the application default credentials
 db_cred = credentials.Certificate("./keyKey.json")
@@ -27,11 +28,14 @@ with open("./config.json", 'r') as f:
   config = json.loads(f.read())
 
 def authentication(func):
-  def inner(*args, **kwargs):
-    # Check the token
-    id_token = request_data['userID']
-    # If authenticated
+  @functools.wraps(func)
+  def wrapper_authentication(*args, **kwargs):
+    if request.method == 'GET':
+      return func(*args, **kwargs)
+    #request.method == 'POST':
     try:
+      # Check the token
+      id_token = request_data['userID']
       # Verify the ID token while checking if the token is revoked by
       # passing check_revoked=True.
       decoded_token = auth.verify_id_token(id_token, app=auth_app, check_revoked=True)
@@ -40,14 +44,16 @@ def authentication(func):
       return func(*args, **kwargs)
     except auth.RevokedIdTokenError:
       # Token revoked, inform the user to reauthenticate or signOut().
-      pass
+      err = f'Token revoked, inform the user to reauthenticate or signOut()'
     except auth.InvalidIdTokenError:
       # Token is invalid
-      pass
+      err = f'Token is invalid'
+    except:
+      err = f'Unable to authenticate the user'
     # else return an error
-    return f'Unable to authenticate the user'
-
-
+    user_id = None
+    return err
+  return wrapper_authentication
 
 from routes import *
 

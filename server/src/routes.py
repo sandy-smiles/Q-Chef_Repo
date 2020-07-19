@@ -104,6 +104,7 @@ def login():
 def authorize():
   google_auth = oauth.create_client('google')
   google_token = google_auth.authorize_access_token()
+  print(google_token)
   resp = google_auth.get('userinfo', token=google_token)
   user_info = resp.json()
   #print(f'user_info = {user_info}')
@@ -145,7 +146,7 @@ def onboarding_ingredient_rating():
     debug('[onboarding_ingredient_rating - INFO]: POST request')
     request_data = json.loads(request.data)
     debug(f'[onboarding_ingredient_rating - DATA]: request_data: {request_data}')
-    user_id =  request_data['userID']
+    user_id = request_data['userID']
 
     # Attempt to grab user's document (as this is the first endpoint)
     err = createDocument('users', user_id, userStartingDoc)
@@ -175,15 +176,15 @@ def onboarding_ingredient_rating():
 
   onboarding_ingredients = {}
   doc_dict = doc.to_dict()
-  for ingredient_id in doc_dict['ingredient_ids']:
-    ingredient_info, err = getIngredientInformation(ingredient_id)
-    if err:
-      err = f'[onboarding_recipe_rating - ERROR]: Unable to retrieve ingredient {ingredient_id} for onboarding, err = {err}'
-      debug(err)
-      continue
-    onboarding_ingredients[ingredient_id] = ingredient_info
+#  for ingredient_id in doc_dict['ingredient_ids']:
+#    ingredient_info, err = getIngredientInformation(ingredient_id)
+#    if err:
+#      err = f'[onboarding_recipe_rating - ERROR]: Unable to retrieve ingredient {ingredient_id} for onboarding, err = {err}'
+#      debug(err)
+#      continue
+#    onboarding_ingredients[ingredient_id] = ingredient_info
 
-  return jsonify(onboarding_ingredients)
+  return jsonify(doc_dict)
 
 ################################################################################
 # onboarding_recipe_rating [GET|POST]
@@ -202,6 +203,7 @@ def onboarding_ingredient_rating():
 #   - (string) error
 @app.route('/onboarding_recipe_rating', methods=['GET', 'POST'])
 @cross_origin()
+@authentication
 def onboarding_recipe_rating():
   debug(f'[onboarding_recipe_rating - INFO]: Starting.')
   if request.method == 'POST':
@@ -236,14 +238,14 @@ def onboarding_recipe_rating():
 
   onboarding_recipes = {}
   doc_dict = doc.to_dict()
-  for recipe_id in doc_dict['recipe_ids']:
-    recipe_info, err = getRecipeInformation(recipe_id)
-    if err:
-      err = f'[onboarding_recipe_rating - ERROR]: Unable to retrieve recipe {recipe_id} for onboarding, err = {err}'
-      debug(err)
-      continue
-    onboarding_recipes[recipe_id] = recipe_info
-  return jsonify(onboarding_recipes)
+#  for recipe_id in doc_dict['recipe_ids']:
+#    recipe_info, err = getRecipeInformation(recipe_id)
+#    if err:
+#      err = f'[onboarding_recipe_rating - ERROR]: Unable to retrieve recipe {recipe_id} for onboarding, err = {err}'
+#      debug(err)
+#      continue
+#    onboarding_recipes[recipe_id] = recipe_info
+  return jsonify(doc_dict)
 
 ################################################################################
 # validation_recipe_rating [POST]
@@ -255,6 +257,7 @@ def onboarding_recipe_rating():
 #   - (string) error
 @app.route('/validation_recipe_rating', methods=['POST'])
 @cross_origin()
+@authentication
 def validation_recipe_rating():
   debug(f'[validation_recipe_rating - INFO]: Starting.')
   if request.method == 'POST':
@@ -284,6 +287,7 @@ def validation_recipe_rating():
 #   - (json)
 @app.route('/get_meal_plan_selection', methods=['POST'])
 @cross_origin()
+@authentication
 def get_meal_plan_selection():
   debug(f'[get_meal_plan_selection - INFO]: Starting.')
   if request.method == 'POST':
@@ -314,6 +318,7 @@ def get_meal_plan_selection():
 #   - (string) error
 @app.route('/save_meal_plan', methods=['POST'])
 @cross_origin()
+@authentication
 def save_meal_plan():
   debug(f'[save_meal_plan - INFO]: Starting.')
   if request.method == 'POST':
@@ -345,6 +350,7 @@ def save_meal_plan():
 #   - (json)
 @app.route('/retrieve_meal_plan', methods=['POST'])
 @cross_origin()
+@authentication
 def retrieve_meal_plan():
   debug(f'[retrieve_meal_plan - INFO]: Starting.')
   if request.method == 'POST':
@@ -382,6 +388,7 @@ def retrieve_meal_plan():
 #   - (json)
 @app.route('/review_recipe', methods=['POST'])
 @cross_origin()
+@authentication
 def review_recipe():
   debug(f'[review_recipe - INFO]: Starting.')
   if request.method == 'POST':
