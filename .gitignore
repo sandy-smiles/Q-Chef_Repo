@@ -1,3 +1,6 @@
+# Ignore note files
+*.txt
+
 # Ignore the security key file
 keyKey.json
 config.json
