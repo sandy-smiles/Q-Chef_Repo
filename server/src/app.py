@@ -32,12 +32,33 @@ def authentication(func):
   def wrapper_authentication(*args, **kwargs):
     if request.method == 'GET':
       return func(*args, **kwargs)
+
+
     #request.method == 'POST':
+    request_data = json.loads(request.data)
+    id_token = ''
+    user_id = None
+
+    # Is there a token?
+    try:
+      if request_data['manualID']:
+        user_id = request_data['userID']
+        return func(*args, **kwargs)
+    except:
+      # Allow there to be no manual override of ID
+      pass
+
     try:
       # Check the token
       id_token = request_data['userID']
-      # Verify the ID token while checking if the token is revoked by
-      # passing check_revoked=True.
+    except:
+      err = f'No token given.'
+      # else return an error
+      return err
+
+    # Verify the ID token while checking if the token is revoked by
+    # passing check_revoked=True.
+    try:
       decoded_token = auth.verify_id_token(id_token, app=auth_app, check_revoked=True)
       # Token is valid and not revoked.
       user_id = decoded_token['uid']
@@ -51,7 +72,6 @@ def authentication(func):
     except:
       err = f'Unable to authenticate the user'
     # else return an error
-    user_id = None
     return err
   return wrapper_authentication
 
