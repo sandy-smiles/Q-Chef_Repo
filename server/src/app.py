@@ -8,10 +8,10 @@
 ################################################################################
 import os
 import json
-import functools
 
 import firebase_admin
 from firebase_admin import auth, credentials, firestore
+from functools import wraps
 
 # Use the application default credentials
 db_cred = credentials.Certificate("./keyKey.json")
@@ -28,7 +28,7 @@ with open("./config.json", 'r') as f:
   config = json.loads(f.read())
 
 def authentication(func):
-  @functools.wraps(func)
+  @wraps(func)
   def wrapper_authentication(*args, **kwargs):
     if request.method == 'GET':
       return func(*args, **kwargs)
