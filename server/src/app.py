@@ -49,8 +49,9 @@ def authentication(func):
       pass
 
     try:
-      # Check the token
-      id_token = request_data['userID']
+      # Extract the firebase token from the HTTP header
+      id_token = request.headers['Authorization']
+      id_token = token.replace('Bearer ','')
     except:
       err = f'No token given.'
       # else return an error
@@ -59,21 +60,36 @@ def authentication(func):
     # Verify the ID token while checking if the token is revoked by
     # passing check_revoked=True.
     try:
+      # Validate the token
       decoded_token = auth.verify_id_token(id_token, app=auth_app, check_revoked=True)
       # Token is valid and not revoked.
       user_id = decoded_token['uid']
       return func(*args, **kwargs)
-    except auth.RevokedIdTokenError:
-      # Token revoked, inform the user to reauthenticate or signOut().
-      err = f'Token revoked, inform the user to reauthenticate or signOut()'
-    except auth.InvalidIdTokenError:
-      # Token is invalid
-      err = f'Token is invalid'
-    except:
-      err = f'Unable to authenticate the user'
+#    except auth.RevokedIdTokenError:
+#      # Token revoked, inform the user to reauthenticate or signOut().
+#      err = f'Token revoked, inform the user to reauthenticate or signOut()'
+#    except auth.InvalidIdTokenError:
+#      # Token is invalid
+#      err = f'Token is invalid'
+    except Exception as e:
+      err = f'Unable to authenticate the user, err = {e}'
     # else return an error
-    return err
+      return err
   return wrapper_authentication
+
+def authorization(func):
+  @wraps(func)
+  def wrapper_authorization(*args, **kwargs):
+    if request.method == 'GET':
+      return func(*args, **kwargs)
+
+    #request.method == 'POST':
+    if user_id == None:
+      err = f'No userID found'
+      return err
+
+    return func(*args, **kwargs)
+  return wrapper_authorization
 
 from routes import *
 

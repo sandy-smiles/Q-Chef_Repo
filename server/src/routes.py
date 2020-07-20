@@ -66,6 +66,7 @@ def format_server_time():
 
 @app.route('/')
 @authentication
+@authorization
 def index():
   # Figure out the session of a user
   user_id = dict(session).get('user_id', None)
@@ -140,6 +141,7 @@ def logout():
 @app.route('/onboarding_ingredient_rating', methods=['GET', 'POST'])
 @cross_origin()
 @authentication
+@authorization
 def onboarding_ingredient_rating():
   debug(f'[onboarding_ingredient_rating - INFO]: Starting.')
   if request.method == 'POST':
@@ -204,6 +206,7 @@ def onboarding_ingredient_rating():
 @app.route('/onboarding_recipe_rating', methods=['GET', 'POST'])
 @cross_origin()
 @authentication
+@authorization
 def onboarding_recipe_rating():
   debug(f'[onboarding_recipe_rating - INFO]: Starting.')
   if request.method == 'POST':
@@ -258,6 +261,7 @@ def onboarding_recipe_rating():
 @app.route('/validation_recipe_rating', methods=['POST'])
 @cross_origin()
 @authentication
+@authorization
 def validation_recipe_rating():
   debug(f'[validation_recipe_rating - INFO]: Starting.')
   if request.method == 'POST':
@@ -288,6 +292,7 @@ def validation_recipe_rating():
 @app.route('/get_meal_plan_selection', methods=['POST'])
 @cross_origin()
 @authentication
+@authorization
 def get_meal_plan_selection():
   debug(f'[get_meal_plan_selection - INFO]: Starting.')
   if request.method == 'POST':
@@ -319,6 +324,7 @@ def get_meal_plan_selection():
 @app.route('/save_meal_plan', methods=['POST'])
 @cross_origin()
 @authentication
+@authorization
 def save_meal_plan():
   debug(f'[save_meal_plan - INFO]: Starting.')
   if request.method == 'POST':
@@ -351,6 +357,7 @@ def save_meal_plan():
 @app.route('/retrieve_meal_plan', methods=['POST'])
 @cross_origin()
 @authentication
+@authorization
 def retrieve_meal_plan():
   debug(f'[retrieve_meal_plan - INFO]: Starting.')
   if request.method == 'POST':
@@ -389,6 +396,7 @@ def retrieve_meal_plan():
 @app.route('/review_recipe', methods=['POST'])
 @cross_origin()
 @authentication
+@authorization
 def review_recipe():
   debug(f'[review_recipe - INFO]: Starting.')
   if request.method == 'POST':
