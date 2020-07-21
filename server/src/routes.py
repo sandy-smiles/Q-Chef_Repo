@@ -6,33 +6,15 @@
 import time
 import json
 
-from app import app, config, authentication
-from flask import make_response, request, jsonify, render_template, redirect, url_for, session, send_file
+from app import app, auth_app
+from flask import make_response, request, jsonify, render_template, redirect, url_for, send_file
 from flask_cors import CORS, cross_origin
+from firebase_admin import auth
 
 from func import *
 from actions import *
 from ratings import *
 from reviews import *
-
-################################################################################
-# Constants
-################################################################################
-app.secret_key = config['app-secret_key']
-
-from authlib.integrations.flask_client import OAuth
-oauth = OAuth(app)
-google_auth = oauth.register(
-  name='google',
-  client_id=config['client_id'],
-  client_secret=config['client_secret'],
-  access_token_url='https://accounts.google.com/o/oauth2/token',
-  access_token_params=None,
-  authorize_url='https://accounts.google.com/o/oauth2/auth',
-  authorize_params=None,
-  api_base_url='https://www.googleapis.com/oauth2/v1/',
-  client_kwargs={'scope': 'openid email'},
-)
 
 ################################################################################
 # Constants
@@ -65,8 +47,6 @@ def format_server_time():
   return time.strftime("%I:%M:%S %p", server_time)
 
 @app.route('/')
-@authentication
-@authorization
 def index():
   # Figure out the session of a user
   user_id = dict(session).get('user_id', None)
@@ -91,35 +71,61 @@ def info():
   return send_file('Participant Information Statement - Survey.pdf', attachment_filename='Participant Information Statement - Survey.pdf')
 
 ################################################################################
-# Auth URLs
+# Authentication
 ################################################################################
-# Login auth route
-@app.route('/login')
-def login():
-  google_auth = oauth.create_client('google')
-  redirect_url = url_for('authorize', _external=True)
-  return google_auth.authorize_redirect(redirect_url)
+# Returns (request_data, user_id, err)
+def authentication(request):
+  request_data = json.loads(request.data)
+  id_token = ''
+  user_id = None
+  err = ''
 
-# Authorized route
-@app.route('/authorize')
-def authorize():
-  google_auth = oauth.create_client('google')
-  google_token = google_auth.authorize_access_token()
-  print(google_token)
-  resp = google_auth.get('userinfo', token=google_token)
-  user_info = resp.json()
-  #print(f'user_info = {user_info}')
-  # Do something with token and profile
-  session['user_id'] = user_info['id']
-  return redirect('/')
+  if request.method == 'GET':
+    return request_data, user_id, err
 
-# Logout route
-@app.route('/logout')
-def logout():
-  #print(f'session = {session}')
-  for key in list(session.keys()):
-    session.pop(key)
-  return redirect('/')
+  #request.method == 'POST':
+  # Is there a token?
+  try:
+    if request_data['manualID']:
+      user_id = request_data['userID']
+      return request_data, user_id, err
+  except:
+    # Allow there to be no manual override of ID
+    pass
+
+  try:
+    # Extract the firebase token from the HTTP header
+    id_token = request.headers['Authorization']
+  except:
+    err = f'No "Authorization" header information given.'
+    # else return an error
+    return request_data, user_id, err
+
+  # Extract the token
+  try:
+    id_token = request.headers['Authorization'].replace('Bearer ','')
+  except:
+    err = f'No token given.'
+    # else return an error
+    return request_data, user_id, err
+
+  # Verify the ID token while checking if the token is revoked by
+  # passing check_revoked=True.
+  try:
+    # Validate the token
+    decoded_token = auth.verify_id_token(id_token, app=auth_app, check_revoked=True)
+    # Token is valid and not revoked.
+    user_id = decoded_token['uid']
+#    except auth.RevokedIdTokenError:
+#      # Token revoked, inform the user to reauthenticate or signOut().
+#      err = f'Token revoked, inform the user to reauthenticate or signOut()'
+#    except auth.InvalidIdTokenError:
+#      # Token is invalid
+#      err = f'Token is invalid'
+  except Exception as e:
+    err = f'Unable to authenticate the user, err = {e}'
+  # else return an error
+  return request_data, user_id, err
 
 ################################################################################
 # Server API URLs
@@ -146,9 +152,12 @@ def onboarding_ingredient_rating():
   debug(f'[onboarding_ingredient_rating - INFO]: Starting.')
   if request.method == 'POST':
     debug('[onboarding_ingredient_rating - INFO]: POST request')
-    request_data = json.loads(request.data)
+    request_data, user_id, err = authentication(request)
     debug(f'[onboarding_ingredient_rating - DATA]: request_data: {request_data}')
-    user_id = request_data['userID']
+    if err:
+      err = f'[onboarding_ingredient_rating - ERROR]: Authentication error, err = {err}'
+      debug(err)
+      return err
 
     # Attempt to grab user's document (as this is the first endpoint)
     err = createDocument('users', user_id, userStartingDoc)
@@ -211,9 +220,12 @@ def onboarding_recipe_rating():
   debug(f'[onboarding_recipe_rating - INFO]: Starting.')
   if request.method == 'POST':
     debug('[onboarding_recipe_rating - INFO]: POST request')
-    request_data = json.loads(request.data)
+    request_data, user_id, err = authentication(request)
     debug(f'[onboarding_recipe_rating - DATA]: request_data: {request_data}')
-    user_id =  request_data['userID']
+    if err:
+      err = f'[onboarding_recipe_rating - ERROR]: Authentication error, err = {err}'
+      debug(err)
+      return err
 
     # Update user's document with recipe ratings
     rating_types = ['taste', 'familiarity', 'surprise']
@@ -266,9 +278,12 @@ def validation_recipe_rating():
   debug(f'[validation_recipe_rating - INFO]: Starting.')
   if request.method == 'POST':
     debug('[validation_recipe_rating - INFO]: POST request')
-    request_data = json.loads(request.data)
+    request_data, user_id, err = authentication(request)
     debug(f'[validation_recipe_rating - DATA]: request_data: {request_data}')
-    user_id =  request_data['userID']
+    if err:
+      err = f'[validation_recipe_rating - ERROR]: Authentication error, err = {err}'
+      debug(err)
+      return err
 
     # Update user's document with recipe ratings
     rating_types = ['taste', 'familiarity', 'surprise']
@@ -297,11 +312,14 @@ def get_meal_plan_selection():
   debug(f'[get_meal_plan_selection - INFO]: Starting.')
   if request.method == 'POST':
     debug('[get_meal_plan_selection - INFO]: POST request')
-    request_data = json.loads(request.data)
+    request_data, user_id, err = authentication(request)
     debug(f'[get_meal_plan_selection - DATA]: request_data: {request_data}')
-    user_id =  request_data['userID']
-    num_wanted_recipes = request_data['number_of_recipes']
+    if err:
+      err = f'[get_meal_plan_selection - ERROR]: Authentication error, err = {err}'
+      debug(err)
+      return err
 
+    num_wanted_recipes = request_data['number_of_recipes']
     # Update user's document with ingredient ratings
     # Return json of test recipes that a user should liked
     taste_recipes, err = getTasteRecipes(user_id, num_wanted_recipes)
@@ -329,9 +347,12 @@ def save_meal_plan():
   debug(f'[save_meal_plan - INFO]: Starting.')
   if request.method == 'POST':
     debug('[save_meal_plan - INFO]: POST request')
-    request_data = json.loads(request.data)
+    request_data, user_id, err = authentication(request)
     debug(f'[save_meal_plan - DATA]: request_data: {request_data}')
-    user_id = request_data['userID']
+    if err:
+      err = f'[save_meal_plan - ERROR]: Authentication error, err = {err}'
+      debug(err)
+      return err
 
     updateData = {'pickedRecipes': request_data['picked']}
     err = updateDocument('users', user_id, updateData)
@@ -362,9 +383,12 @@ def retrieve_meal_plan():
   debug(f'[retrieve_meal_plan - INFO]: Starting.')
   if request.method == 'POST':
     debug('[retrieve_meal_plan - INFO]: POST request')
-    request_data = json.loads(request.data)
+    request_data, user_id, err = authentication(request)
     debug(f'[retrieve_meal_plan - DATA]: request_data: {request_data}')
-    user_id = request_data['userID']
+    if err:
+      err = f'[review_rretrieve_meal_planecipe - ERROR]: Authentication error, err = {err}'
+      debug(err)
+      return err
 
     user_doc_ref, user_doc, err = retrieveDocument('users', user_id)
     if err:
@@ -401,9 +425,12 @@ def review_recipe():
   debug(f'[review_recipe - INFO]: Starting.')
   if request.method == 'POST':
     debug('[review_recipe - INFO]: POST request')
-    request_data = json.loads(request.data)
+    request_data, user_id, err = authentication(request)
     debug(f'[review_recipe - DATA]: request_data: {request_data}')
-    user_id =  request_data['userID']
+    if err:
+      err = f'[review_recipe - ERROR]: Authentication error, err = {err}'
+      debug(err)
+      return err
 
     # Update user's document with recipe ratings
     rating_types = ['taste', 'familiarity']

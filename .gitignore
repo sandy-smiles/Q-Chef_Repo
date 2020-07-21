@@ -1,5 +1,5 @@
 # Ignore note files
-*.txt
+*_notes.txt
 
 # Ignore the security key file
 keyKey.json

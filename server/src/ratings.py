@@ -4,6 +4,7 @@
 # Updated: 20200612
 
 from func import *
+from surprise_models import *
 
 ################################################################################
 # Constants
@@ -139,10 +140,15 @@ def getTasteRecipes(user_id, recipes_wanted):
     if not (recipe_doc.id in user_recipes):
       userRecipePref, err = getRecipeRating(user_doc, recipe_doc, 'taste')
       if err:
-        err = f'[getTasteRecipes - ERROR]: Unable to find user {user_id} preference for recipe {recipe_doc.id}, err = {err}'
+        err = f'[getTasteRecipes - ERROR]: Unable to find user {user_id} taste preference for recipe {recipe_doc.id}, err = {err}'
         debug(err)
         continue # Just ignore this recipe then.
-      possibleRecipes.append((userRecipePref, recipe_doc.id))
+      userRecipeSurp, err = surpRecipe(user_doc.to_dict(), recipe_doc.to_dict())
+      if err:
+        err = f'[getTasteRecipes - ERROR]: Unable to find user {user_id} surprise preference for recipe {recipe_doc.id}, err = {err}'
+        debug(err)
+        continue # Just ignore this recipe then.
+      possibleRecipes.append((userRecipePref*userRecipeSurp, recipe_doc.id))
 
   possibleRecipes.sort(reverse=True)
   # Check that there are enough recipes to serve up.
