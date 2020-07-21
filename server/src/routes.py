@@ -6,9 +6,10 @@
 import time
 import json
 
-from app import app
+from app import app, auth_app
 from flask import make_response, request, jsonify, render_template, redirect, url_for, send_file
 from flask_cors import CORS, cross_origin
+from firebase_admin import auth
 
 from func import *
 from actions import *
@@ -66,6 +67,63 @@ def info():
   return send_file('Participant Information Statement - Survey.pdf', attachment_filename='Participant Information Statement - Survey.pdf')
 
 ################################################################################
+# Authentication
+################################################################################
+# Returns (request_data, user_id, err)
+def authentication(request):
+  request_data = json.loads(request.data)
+  id_token = ''
+  user_id = None
+  err = ''
+
+  if request.method == 'GET':
+    return request_data, user_id, err
+
+  #request.method == 'POST':
+  # Is there a token?
+  try:
+    if request_data['manualID']:
+      user_id = request_data['userID']
+      return request_data, user_id, err
+  except:
+    # Allow there to be no manual override of ID
+    pass
+
+  try:
+    # Extract the firebase token from the HTTP header
+    id_token = request.headers['Authorization']
+  except:
+    err = f'No "Authorization" header information given.'
+    # else return an error
+    return request_data, user_id, err
+
+  # Extract the token
+  try:
+    id_token = request.headers['Authorization'].replace('Bearer ','')
+  except:
+    err = f'No token given.'
+    # else return an error
+    return request_data, user_id, err
+
+  # Verify the ID token while checking if the token is revoked by
+  # passing check_revoked=True.
+  try:
+    # Validate the token
+    decoded_token = auth.verify_id_token(id_token, app=auth_app, check_revoked=True)
+    # Token is valid and not revoked.
+    user_id = decoded_token['uid']
+#    except auth.RevokedIdTokenError:
+#      # Token revoked, inform the user to reauthenticate or signOut().
+#      err = f'Token revoked, inform the user to reauthenticate or signOut()'
+#    except auth.InvalidIdTokenError:
+#      # Token is invalid
+#      err = f'Token is invalid'
+  except Exception as e:
+    err = f'Unable to authenticate the user, err = {e}'
+  # else return an error
+  return request_data, user_id, err
+
+################################################################################
 # Server API URLs
 ################################################################################
 # onboarding_ingredient_rating [GET|POST]
@@ -88,9 +146,12 @@ def onboarding_ingredient_rating():
   debug(f'[onboarding_ingredient_rating - INFO]: Starting.')
   if request.method == 'POST':
     debug('[onboarding_ingredient_rating - INFO]: POST request')
-    request_data = json.loads(request.data)
+    request_data, user_id, err = authentication(request)
     debug(f'[onboarding_ingredient_rating - DATA]: request_data: {request_data}')
-    user_id =  request_data['userID']
+    if err:
+      err = f'[onboarding_ingredient_rating - ERROR]: Authentication error, err = {err}'
+      debug(err)
+      return err
 
     # Attempt to grab user's document (as this is the first endpoint)
     err = createDocument('users', user_id, userStartingDoc)
@@ -120,15 +181,15 @@ def onboarding_ingredient_rating():
 
   onboarding_ingredients = {}
   doc_dict = doc.to_dict()
-  for ingredient_id in doc_dict['ingredient_ids']:
-    ingredient_info, err = getIngredientInformation(ingredient_id)
-    if err:
-      err = f'[onboarding_recipe_rating - ERROR]: Unable to retrieve ingredient {ingredient_id} for onboarding, err = {err}'
-      debug(err)
-      continue
-    onboarding_ingredients[ingredient_id] = ingredient_info
+#  for ingredient_id in doc_dict['ingredient_ids']:
+#    ingredient_info, err = getIngredientInformation(ingredient_id)
+#    if err:
+#      err = f'[onboarding_recipe_rating - ERROR]: Unable to retrieve ingredient {ingredient_id} for onboarding, err = {err}'
+#      debug(err)
+#      continue
+#    onboarding_ingredients[ingredient_id] = ingredient_info
 
-  return jsonify(onboarding_ingredients)
+  return jsonify(doc_dict)
 
 ################################################################################
 # onboarding_recipe_rating [GET|POST]
@@ -151,9 +212,12 @@ def onboarding_recipe_rating():
   debug(f'[onboarding_recipe_rating - INFO]: Starting.')
   if request.method == 'POST':
     debug('[onboarding_recipe_rating - INFO]: POST request')
-    request_data = json.loads(request.data)
+    request_data, user_id, err = authentication(request)
     debug(f'[onboarding_recipe_rating - DATA]: request_data: {request_data}')
-    user_id =  request_data['userID']
+    if err:
+      err = f'[onboarding_recipe_rating - ERROR]: Authentication error, err = {err}'
+      debug(err)
+      return err
 
     # Update user's document with recipe ratings
     rating_types = ['taste', 'familiarity', 'surprise']
@@ -181,14 +245,14 @@ def onboarding_recipe_rating():
 
   onboarding_recipes = {}
   doc_dict = doc.to_dict()
-  for recipe_id in doc_dict['recipe_ids']:
-    recipe_info, err = getRecipeInformation(recipe_id)
-    if err:
-      err = f'[onboarding_recipe_rating - ERROR]: Unable to retrieve recipe {recipe_id} for onboarding, err = {err}'
-      debug(err)
-      continue
-    onboarding_recipes[recipe_id] = recipe_info
-  return jsonify(onboarding_recipes)
+#  for recipe_id in doc_dict['recipe_ids']:
+#    recipe_info, err = getRecipeInformation(recipe_id)
+#    if err:
+#      err = f'[onboarding_recipe_rating - ERROR]: Unable to retrieve recipe {recipe_id} for onboarding, err = {err}'
+#      debug(err)
+#      continue
+#    onboarding_recipes[recipe_id] = recipe_info
+  return jsonify(doc_dict)
 
 ################################################################################
 # validation_recipe_rating [POST]
@@ -204,9 +268,12 @@ def validation_recipe_rating():
   debug(f'[validation_recipe_rating - INFO]: Starting.')
   if request.method == 'POST':
     debug('[validation_recipe_rating - INFO]: POST request')
-    request_data = json.loads(request.data)
+    request_data, user_id, err = authentication(request)
     debug(f'[validation_recipe_rating - DATA]: request_data: {request_data}')
-    user_id =  request_data['userID']
+    if err:
+      err = f'[validation_recipe_rating - ERROR]: Authentication error, err = {err}'
+      debug(err)
+      return err
 
     # Update user's document with recipe ratings
     rating_types = ['taste', 'familiarity', 'surprise']
@@ -233,11 +300,14 @@ def get_meal_plan_selection():
   debug(f'[get_meal_plan_selection - INFO]: Starting.')
   if request.method == 'POST':
     debug('[get_meal_plan_selection - INFO]: POST request')
-    request_data = json.loads(request.data)
+    request_data, user_id, err = authentication(request)
     debug(f'[get_meal_plan_selection - DATA]: request_data: {request_data}')
-    user_id =  request_data['userID']
-    num_wanted_recipes = request_data['number_of_recipes']
+    if err:
+      err = f'[get_meal_plan_selection - ERROR]: Authentication error, err = {err}'
+      debug(err)
+      return err
 
+    num_wanted_recipes = request_data['number_of_recipes']
     # Update user's document with ingredient ratings
     # Return json of test recipes that a user should liked
     taste_recipes, err = getTasteRecipes(user_id, num_wanted_recipes)
@@ -263,9 +333,12 @@ def save_meal_plan():
   debug(f'[save_meal_plan - INFO]: Starting.')
   if request.method == 'POST':
     debug('[save_meal_plan - INFO]: POST request')
-    request_data = json.loads(request.data)
+    request_data, user_id, err = authentication(request)
     debug(f'[save_meal_plan - DATA]: request_data: {request_data}')
-    user_id = request_data['userID']
+    if err:
+      err = f'[save_meal_plan - ERROR]: Authentication error, err = {err}'
+      debug(err)
+      return err
 
     updateData = {'pickedRecipes': request_data['picked']}
     err = updateDocument('users', user_id, updateData)
@@ -294,9 +367,12 @@ def retrieve_meal_plan():
   debug(f'[retrieve_meal_plan - INFO]: Starting.')
   if request.method == 'POST':
     debug('[retrieve_meal_plan - INFO]: POST request')
-    request_data = json.loads(request.data)
+    request_data, user_id, err = authentication(request)
     debug(f'[retrieve_meal_plan - DATA]: request_data: {request_data}')
-    user_id = request_data['userID']
+    if err:
+      err = f'[review_rretrieve_meal_planecipe - ERROR]: Authentication error, err = {err}'
+      debug(err)
+      return err
 
     user_doc_ref, user_doc, err = retrieveDocument('users', user_id)
     if err:
@@ -331,9 +407,12 @@ def review_recipe():
   debug(f'[review_recipe - INFO]: Starting.')
   if request.method == 'POST':
     debug('[review_recipe - INFO]: POST request')
-    request_data = json.loads(request.data)
+    request_data, user_id, err = authentication(request)
     debug(f'[review_recipe - DATA]: request_data: {request_data}')
-    user_id =  request_data['userID']
+    if err:
+      err = f'[review_recipe - ERROR]: Authentication error, err = {err}'
+      debug(err)
+      return err
 
     # Update user's document with recipe ratings
     rating_types = ['taste', 'familiarity']

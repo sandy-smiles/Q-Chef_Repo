@@ -4,7 +4,7 @@ import csv,math
 from scipy.spatial import distance
 import numpy as np
 
-from server3 import retrieveDocument
+from func import retrieveDocument
 
 ######## Surprise Helper Functions ########
 

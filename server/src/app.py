@@ -16,6 +16,9 @@ cred = credentials.Certificate("./keyKey.json")
 firebase_admin.initialize_app(cred)
 db = firestore.client()
 
+auth_cred = credentials.Certificate("./authKey.json")
+auth_app = firebase_admin.initialize_app(auth_cred, name='authApp')
+
 from flask import Flask
 app = Flask(__name__)
 
