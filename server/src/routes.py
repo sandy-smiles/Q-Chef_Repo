@@ -67,6 +67,51 @@ def info():
   return send_file('Participant Information Statement - Survey.pdf', attachment_filename='Participant Information Statement - Survey.pdf')
 
 ################################################################################
+# Before Request Functions
+################################################################################
+def before_request_func():
+  def get_i_data():
+    debug(f'[get_i_data - INFO]: Starting.')
+    if 'i_data' not in g:
+      data = {}
+      with open('./data/qchef_ingredients.json', 'r') as f:
+        data = json.load(f)
+      g.i_data = data
+      return g.i_data
+
+  def get_is_data():
+    debug(f'[get_is_data - INFO]: Starting.')
+    if 'is_data' not in g:
+      data = {}
+      with open('./data/qchef_ingredient_subclusters.json', 'r') as f:
+        data = json.load(f)
+      g.is_data = data
+      return g.is_data
+
+  def get_ic_data():
+    debug(f'[get_ic_data - INFO]: Starting.')
+    if 'ic_data' not in g:
+      data = {}
+      with open('./data/qchef_ingredient_clusters.json', 'r') as f:
+        data = json.load(f)
+      g.ic_data = data
+      return g.ic_data
+
+  def get_r_data():
+    debug(f'[get_r_data - INFO]: Starting.')
+    if 'r_data' not in g:
+      data = {}
+      with open('./data/qchef_recipes.json', 'r') as f:
+        data = json.load(f)
+      g.r_data = data
+      return g.r_data
+
+  get_i_data()
+  get_is_data()
+  get_ic_data()
+  get_r_data()
+
+################################################################################
 # Authentication
 ################################################################################
 # Returns (request_data, user_id, err)
@@ -152,6 +197,8 @@ def onboarding_ingredient_rating():
       err = f'[onboarding_ingredient_rating - ERROR]: Authentication error, err = {err}'
       debug(err)
       return err
+    # Run any functions that need to be done before the rest of the request
+    before_request_func()
 
     # Attempt to grab user's document (as this is the first endpoint)
     err = createDocument('users', user_id, userStartingDoc)
@@ -218,6 +265,8 @@ def onboarding_recipe_rating():
       err = f'[onboarding_recipe_rating - ERROR]: Authentication error, err = {err}'
       debug(err)
       return err
+    # Run any functions that need to be done before the rest of the request
+    before_request_func()
 
     # Update user's document with recipe ratings
     rating_types = ['taste', 'familiarity', 'surprise']
@@ -274,6 +323,8 @@ def validation_recipe_rating():
       err = f'[validation_recipe_rating - ERROR]: Authentication error, err = {err}'
       debug(err)
       return err
+    # Run any functions that need to be done before the rest of the request
+    before_request_func()
 
     # Update user's document with recipe ratings
     rating_types = ['taste', 'familiarity', 'surprise']
@@ -306,6 +357,8 @@ def get_meal_plan_selection():
       err = f'[get_meal_plan_selection - ERROR]: Authentication error, err = {err}'
       debug(err)
       return err
+    # Run any functions that need to be done before the rest of the request
+    before_request_func()
 
     num_wanted_recipes = request_data['number_of_recipes']
     # Update user's document with ingredient ratings
@@ -315,7 +368,6 @@ def get_meal_plan_selection():
       err = f'[onboarding_recipe_rating - ERROR]: Unable to find any recipes for user {user_id}, err = {err}'
       debug(err)
       return err
-    taste_recipes
     return jsonify(taste_recipes)
 
 ################################################################################
@@ -339,8 +391,18 @@ def save_meal_plan():
       err = f'[save_meal_plan - ERROR]: Authentication error, err = {err}'
       debug(err)
       return err
+    # Run any functions that need to be done before the rest of the request
+    before_request_func()
 
-    updateData = {'pickedRecipes': request_data['picked']}
+    user_doc_ref, user_doc, err = retrieveDocument('users', user_id)
+    if err:
+      err = f'[save_meal_plan - ERROR]: Unable to retrieve the user {user_id} data, err = {err}'
+      debug(err)
+      return err
+
+    pickedRecipes = user_doc.to_dict()['pickedRecipes']
+    pickedRecipes.append(request_data['picked'])
+    updateData = {'pickedRecipes': pickedRecipes}
     err = updateDocument('users', user_id, updateData)
     if err:
       err = f'[save_meal_plan - ERROR]: Unable to update the data {updateData} for user {user_id}, err = {err}'
@@ -373,16 +435,18 @@ def retrieve_meal_plan():
       err = f'[review_rretrieve_meal_planecipe - ERROR]: Authentication error, err = {err}'
       debug(err)
       return err
+    # Run any functions that need to be done before the rest of the request
+    before_request_func()
 
     user_doc_ref, user_doc, err = retrieveDocument('users', user_id)
     if err:
-      err = f'[retrieve_meal_plan - INFO]: Unable to retrieve the user {user_id} data, err = {err}'
+      err = f'[retrieve_meal_plan - ERROR]: Unable to retrieve the user {user_id} data, err = {err}'
       debug(err)
       return err
 
     # Grab the recipe information to be returned in the json
     recipe_info = {} 
-    recipe_ids = user_doc.to_dict()['pickedRecipes']
+    recipe_ids = user_doc.to_dict()['pickedRecipes'][-1]
     for recipe_id in recipe_ids:
       # Get the recipe information
       recipeInfo, err = getRecipeInformation(recipe_id)
@@ -413,6 +477,8 @@ def review_recipe():
       err = f'[review_recipe - ERROR]: Authentication error, err = {err}'
       debug(err)
       return err
+    # Run any functions that need to be done before the rest of the request
+    before_request_func()
 
     # Update user's document with recipe ratings
     rating_types = ['taste', 'familiarity']

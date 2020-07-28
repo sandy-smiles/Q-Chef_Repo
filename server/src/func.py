@@ -2,8 +2,10 @@
 # Q-Chef Server
 # Authors: Q-Chef Backend Programmers
 # Updated: 20200621
+import json
 
 from app import db
+from flask import g
 
 ################################################################################
 # Constants
@@ -20,7 +22,7 @@ collectionIDs = ['users',
 ################################################################################
 # Debugging
 ################################################################################
-DEBUG = False
+DEBUG = True
 WARN = True
 INFO = False
 DATA = False
@@ -185,12 +187,7 @@ def updateDocument(collectionID, documentID, updateData):
 #   - (string) error
 def getIngredientInformation(ingredient_id):
   debug(f'[getIngredientInformation - INFO]: Starting.')
-  # Retrieve the ingredient information
-  doc_ref, doc, err = retrieveDocument('ingredients', ingredient_id)
-  if err:
-    return None, err
-
-  ingredients_dict = doc.to_dict()
+  ingredients_dict = g.ic_data[ingredient_id]
   ingredientName = ingredients_dict["name"].replace('_', ' ')
   return ingredientName, ''
 
@@ -204,20 +201,13 @@ def getIngredientInformation(ingredient_id):
 #   - (string) error
 def getRecipeInformation(recipe_id):
   debug(f'[getRecipeInformation - INFO]: Starting.')
-  # Retrieve the recipe information
-  doc_ref, doc, err = retrieveDocument('recipes', recipe_id)
-  if err:
-    return None, err
-  recipes_dict = doc.to_dict()
+  recipes_dict = g.r_data[recipe_id]
 
   # Change the ingredient ids to ingredient names
   ingredientNames = []
   for ingredient_id in recipes_dict["ingredient_ids"]:
     # Retrieve the recipe information
-    doc_ref, doc, err = retrieveDocument('ingredients', ingredient_id)
-    if err:
-      return None, err
-    ingredients_dict = doc.to_dict()
+    ingredients_dict = g.i_data[str(ingredient_id)]
     ingredientName = ingredients_dict["name"].replace('_', ' ')
     if not (ingredientName in ingredientNames):
       ingredientNames.append(ingredientName)
@@ -227,6 +217,8 @@ def getRecipeInformation(recipe_id):
   del recipes_dict["image"]
   # Remove the ingredient_ids field
   del recipes_dict["ingredient_ids"]
+  # Remove the surprises field
+  del recipes_dict["surprises"]
   # Remove the url field
   del recipes_dict["url"]
   # Remove the vector field

@@ -37,14 +37,21 @@ def getIngredientRating(user_doc, ingredient_id, rating_type):
     debug(err)
     return None, err
 
+  if ingredient_id == str(None):
+    err = f'[getIngredientRating - {rating_type} - ERROR]: Weird ID, ingredient_id = {ingredient_id}.'
+    debug(err)
+    return None, err
+
+  i_id = ingredient_id
+  is_id, ic_id = g.i_data[i_id]['subcluster'], g.i_data[i_id]['cluster']
   try:
-    ingredientTasteRating = user_dict['i_'+rating_type][ingredient_id]['rating']
+    ingredientTasteRating = user_dict['i_'+rating_type][i_id]['rating']
   except:
     try:
-      ingredientTasteRating = user_dict['is_'+rating_type][ingredient_id]['rating']
+      ingredientTasteRating = user_dict['is_'+rating_type][is_id]['rating']
     except:
       try:
-        ingredientTasteRating = user_dict['ic_'+rating_type][ingredient_id]['rating']
+        ingredientTasteRating = user_dict['ic_'+rating_type][ic_id]['rating']
       except:
         # TODO(kbona): Figure out how to return an ingredient rating from a closely located rated ingredient.
         # For now, finding the overall average ingredient rating.
@@ -68,17 +75,14 @@ def getIngredientRating(user_doc, ingredient_id, rating_type):
 # Returns a json of the recipe info needed to give to the front end.
 # - Input:
 #   - (document) user_doc,
-#   - (document) recipe_doc,
+#   - (string) recipe_id,
 #   - (string) rating_type
 # - Output:
 #   - (float) recipe preference,
 #   - (string) error
-def getRecipeRating(user_doc, recipe_doc, rating_type):
+def getRecipeRating(user_doc, recipe_id, rating_type):
   rating_type = rating_type.lower()
   debug(f'[getRecipeRating - {rating_type} - INFO]: Starting.')
-  recipe_id = recipe_doc.id
-  debug(f'[getRecipeRating - {rating_type} - DATA]: recipe_id = {recipe_id}.')
-  debug(f'[getRecipeRating - {rating_type} - DATA]: recipe_doc = {recipe_doc}.')
 
   if not (rating_type in rating_types):
     err = f'[getRecipeRating - {rating_type} - ERROR]: rating_type {rating_type} is not a known rating type.'
@@ -86,8 +90,10 @@ def getRecipeRating(user_doc, recipe_doc, rating_type):
     return None, err
 
   # Obtain all of the recipe ingredients
-  recipe_dict = recipe_doc.to_dict()
+  recipe_dict = g.r_data[recipe_id]
+  debug(f'[getRecipeRating - {rating_type} - HELP]: recipe_id = {recipe_id}')
   ingredient_ids = recipe_dict["ingredient_ids"]
+  debug(f'[getRecipeRating - {rating_type} - HELP]: ingredient_ids = {ingredient_ids}')
   sumIngredientRatings = 0
   numIngredientRatings = 0
   for ingredient_id in ingredient_ids:
@@ -115,7 +121,7 @@ def getRecipeRating(user_doc, recipe_doc, rating_type):
 #   - (string) error
 def getTasteRecipes(user_id, recipes_wanted):
   debug(f'[getTasteRecipes - INFO]: Starting.')
-  numWantedRecipes = recipes_wanted #*TASTE_RECIPES_RETURNED
+  numWantedRecipes = TASTE_RECIPES_RETURNED #recipes_wanted
 
   ## Collect list of possible recipes to pick from
   ## Noting that we won't give a user a recipe they have already tried.
@@ -128,27 +134,22 @@ def getTasteRecipes(user_id, recipes_wanted):
   user_recipes = list(user_dict['r_taste'].keys())
   
   # Retrieve the recipe collection
-  recipes_col_ref = retrieveCollection("recipes")
-  debug(f'[getTasteRecipes - DATA]: recipes_col_ref = {recipes_col_ref}')
-  recipes_col = [recipes_col for recipes_col in recipes_col_ref][0]
-  debug(f'[getTasteRecipes - DATA]: recipes_col.id = {recipes_col.id}')
   possibleRecipes = []
-  recipe_docs = recipes_col.stream()
-  for recipe_doc in recipe_docs:
-    debug(f'[getTasteRecipes - DATA]: recipe_docs = {recipe_docs}')
-    debug(f'[getTasteRecipes - DATA]: recipe_doc = {recipe_doc}')
-    if not (recipe_doc.id in user_recipes):
-      userRecipePref, err = getRecipeRating(user_doc, recipe_doc, 'taste')
+  recipe_ids = g.r_data.keys()
+  for recipe_id in recipe_ids:
+    if not (recipe_id in user_recipes):
+      userRecipePref, err = getRecipeRating(user_doc, recipe_id, 'taste')
       if err:
         err = f'[getTasteRecipes - ERROR]: Unable to find user {user_id} taste preference for recipe {recipe_doc.id}, err = {err}'
         debug(err)
         continue # Just ignore this recipe then.
-      userRecipeSurp, err = surpRecipe(user_doc.to_dict(), recipe_doc.to_dict())
+      #userRecipeSurp, err = surpRecipe(user_doc.to_dict(), g.r_data[recipe_id])
       if err:
         err = f'[getTasteRecipes - ERROR]: Unable to find user {user_id} surprise preference for recipe {recipe_doc.id}, err = {err}'
         debug(err)
         continue # Just ignore this recipe then.
-      possibleRecipes.append((userRecipePref*userRecipeSurp, recipe_doc.id))
+      #possibleRecipes.append((userRecipePref*userRecipeSurp, recipe_doc.id))
+      possibleRecipes.append((userRecipePref, recipe_id))
 
   possibleRecipes.sort(reverse=True)
   # Check that there are enough recipes to serve up.
@@ -194,12 +195,7 @@ def updateSingleIngredientRating(user_doc, ingredient_id, ratings, rating_types)
   user_dict = user_doc.to_dict()
 
   # Retrieve the ingredients document
-  doc_ref, doc, err = retrieveDocument('ingredients', ingredient_id)
-  if err:
-    err = '[updateSingleIngredientRating - ERROR]: Unable to obtain ingredient {ingredient_id} information from DB.'
-    debug(err)
-    return None, err
-  ingredients_dict = doc.to_dict()
+  ingredients_dict = g.i_data[ingredient_id]
 
   # Update the ingredient rating
   for rating_type in rating_types:
@@ -361,10 +357,7 @@ def updateSingleRecipeRating(user_doc, recipe_id, ratings, rating_types):
   user_dict = user_doc.to_dict()
 
   # Retrieve the recipe document
-  doc_ref, doc, err = retrieveDocument('recipes', recipe_id)
-  if err:
-    return err
-  recipe_dict = doc.to_dict()
+  recipe_dict = g.r_data[recipe_id]
 
   # Update the recipe ratings
   for rating_type in rating_types:
