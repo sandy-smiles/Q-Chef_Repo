@@ -157,6 +157,7 @@ def authentication(request):
     decoded_token = auth.verify_id_token(id_token, app=auth_app, check_revoked=True)
     # Token is valid and not revoked.
     user_id = decoded_token['uid']
+    request_data['userID'] = user_id
 #    except auth.RevokedIdTokenError:
 #      # Token revoked, inform the user to reauthenticate or signOut().
 #      err = f'Token revoked, inform the user to reauthenticate or signOut()'

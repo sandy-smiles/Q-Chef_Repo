@@ -48,12 +48,11 @@ def main():
     print(f"Response Status code: {response.status_code}")
 
     # Check status
-    if response.status_code != 200:
-      print(f"Printing Entire Response...")
-      try:
-        print(f"{response.json()}")
-      except:
-        print(f"No response data")
+    print(f"Printing Entire Response...")
+    try:
+      print(f"{response.json().keys()}")
+    except:
+      print(f"No response data")
 
 
 if __name__ == "__main__":
