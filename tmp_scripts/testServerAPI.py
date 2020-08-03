@@ -48,11 +48,16 @@ def main():
     print(f"Response Status code: {response.status_code}")
 
     # Check status
-    print(f"Printing Entire Response...")
-    try:
-      print(f"{response.json().keys()}")
-    except:
-      print(f"No response data")
+    if request_type == 'POST':
+      print(f"Printing Entire Response...")
+      try:
+        print(f"{response.json()}")
+      except:
+        print(f"No response json data")
+        print(f"{response.text}")
+
+    # Next endpoint
+    print(f"")
 
 
 if __name__ == "__main__":
