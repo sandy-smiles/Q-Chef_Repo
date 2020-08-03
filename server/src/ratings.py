@@ -267,7 +267,8 @@ def updateIngredientRatings(data, rating_types):
   for ingredient_id in ingredient_ids.keys():
     ratings = {}
     for rating_type in rating_types:
-      ratings[rating_type] = data[rating_type+'_ratings'][ingredient_id]
+      # -1 to remap 0 -> 2 into -1 -> 1
+      ratings[rating_type] = int(data[rating_type+'_ratings'][ingredient_id])-1
     update_dict, err = updateSingleIngredientRating(user_doc, ingredient_id, ratings, rating_types)
     if err:
       err = f'[updateIngredientRating - ERROR]: Unable to update ratings for ingredient {ingredient_id}, err: {err}'
@@ -313,7 +314,8 @@ def updateIngredientClusterRatings(data, rating_types):
   ic_ids = data[rating_types[0]+'_ratings']
   for ic_id in ic_ids.keys():
     for rating_type in rating_types:
-      rating = data[rating_type+'_ratings'][ic_id]
+      # -1 to remap 0 -> 2 into -1 -> 1
+      rating = int(data[rating_type+'_ratings'][ic_id])-1
       try:
         r = user_dict['ic_'+rating_type][ic_id]['rating']
         n = user_dict['ic_'+rating_type][ic_id]['n_ratings']
@@ -355,6 +357,15 @@ def updateSingleRecipeRating(user_doc, recipe_id, ratings, rating_types):
 
   # Retrieve the user document
   user_dict = user_doc.to_dict()
+
+  # Check that the user has NOT already rated this recipe...
+  try:
+    user_dict['r_'+rating_type[0]][recipe_id]
+    err = f'[updateSingleRecipeRating - ERROR]: recipe {recipe_id} has already been rated.'
+    debug(err)
+    return err
+  except:
+    pass
 
   # Retrieve the recipe document
   recipe_dict = g.r_data[recipe_id]
@@ -414,7 +425,8 @@ def updateRecipeRatings(data, rating_types):
   for recipe_id in recipe_ids.keys():
     ratings = {}
     for rating_type in rating_types:
-      ratings[rating_type] = data[rating_type+'_ratings'][recipe_id]
+      # -1 to remap 0 -> 2 into -1 -> 1
+      ratings[rating_type] = int(data[rating_type+'_ratings'][recipe_id])-1
     update_dict, err = updateSingleRecipeRating(user_doc, recipe_id, ratings, rating_types)
     if err:
       err = f'[updateRecipeRatings - ERROR]: Unable to update ratings for recipe {recipe_id}, err: {err}'
