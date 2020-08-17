@@ -32,7 +32,7 @@ userStartingDoc = {
   'is_surprise': {},
   'ic_surprise': {},
   'r_surprise' : {},
-  'pickedRecipes': []
+  'pickedRecipes': {'latest': -1}
 }
 
 recipesReturned = 10
@@ -402,7 +402,8 @@ def save_meal_plan():
       return err
 
     pickedRecipes = user_doc.to_dict()['pickedRecipes']
-    pickedRecipes.append(request_data['picked'])
+    pickedRecipes['latest'] += 1
+    pickedRecipes[str(pickedRecipes['latest'])] = request_data['picked']
     updateData = {'pickedRecipes': pickedRecipes}
     err = updateDocument('users', user_id, updateData)
     if err:
@@ -446,8 +447,12 @@ def retrieve_meal_plan():
       return err
 
     # Grab the recipe information to be returned in the json
+    pickedRecipes = user_doc.to_dict()['pickedRecipes']
+    latest = pickedRecipes['latest']
+    if latest == -1:
+      return 'No recipes selected.'
     recipe_info = {} 
-    recipe_ids = user_doc.to_dict()['pickedRecipes'][-1]
+    recipe_ids = pickedRecipes[str(pickedRecipes['latest'])]
     for recipe_id in recipe_ids:
       # Get the recipe information
       recipeInfo, err = getRecipeInformation(recipe_id)
