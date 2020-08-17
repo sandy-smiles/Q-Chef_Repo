@@ -54,19 +54,8 @@ def getIngredientRating(user_doc, ingredient_id, rating_type):
         ingredientTasteRating = user_dict['ic_'+rating_type][ic_id]['rating']
       except:
         # TODO(kbona): Figure out how to return an ingredient rating from a closely located rated ingredient.
-        # For now, finding the overall average ingredient rating.
-        sumIngredientRatings = 0
-        numIngredientRatings = 0
-        for ingredient_rating_dict_val in user_dict['i_'+rating_type].values():
-          sumIngredientRatings += ingredient_rating_dict_val['rating']
-          numIngredientRatings += 1
-        for ingredient_rating_dict_val in user_dict['is_'+rating_type].values():
-          sumIngredientRatings += ingredient_rating_dict_val['rating']
-          numIngredientRatings += 1
-        for ingredient_rating_dict_val in user_dict['ic_'+rating_type].values():
-          sumIngredientRatings += ingredient_rating_dict_val['rating']
-          numIngredientRatings += 1
-        ingredientTasteRating = sumIngredientRatings/numIngredientRatings
+        # For now, return as if there was no rating.
+        ingredientTasteRating = 0
 
   return ingredientTasteRating, ''
 
