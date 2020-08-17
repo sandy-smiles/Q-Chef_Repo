@@ -203,10 +203,18 @@ def onboarding_ingredient_rating():
 
     # Attempt to grab user's document (as this is the first endpoint)
     err = createDocument('users', user_id, userStartingDoc)
+    if err:
+      err = f'[onboarding_ingredient_rating - ERROR]: Unable to create user document for {user_id}, err = {err}'
+      debug(err)
+      return err
     err = createDocument('actions', user_id, {})
+    if err:
+      err = f'[onboarding_ingredient_rating - ERROR]: Unable to create action document for {user_id}, err = {err}'
+      debug(err)
+      return err
     err = createDocument('reviews', user_id, {})
     if err:
-      err = f'[onboarding_ingredient_rating - ERROR]: Unable to create document for {user_id}, err = {err}'
+      err = f'[onboarding_ingredient_rating - ERROR]: Unable to create review document for {user_id}, err = {err}'
       debug(err)
       return err
 
@@ -268,6 +276,27 @@ def onboarding_recipe_rating():
       return err
     # Run any functions that need to be done before the rest of the request
     before_request_func()
+
+    # Attempt to grab user's document (as this is the second endpoint)
+    user_doc_ref, user_doc, err = retrieveDocument('users', user_id)
+    if err:
+      err = f'[onboarding_recipe_rating - WARN]: Unable to retrieve document for {user_id}, err = {err}\nCreating documents now...'
+      debug(err)
+      err = createDocument('users', user_id, userStartingDoc)
+      if err:
+        err = f'[onboarding_recipe_rating - ERROR]: Unable to create user document for {user_id}, err = {err}'
+        debug(err)
+        return err
+      err = createDocument('actions', user_id, {})
+      if err:
+        err = f'[onboarding_recipe_rating - ERROR]: Unable to create action document for {user_id}, err = {err}'
+        debug(err)
+        return err
+      err = createDocument('reviews', user_id, {})
+      if err:
+        err = f'[onboarding_recipe_rating - ERROR]: Unable to create review document for {user_id}, err = {err}'
+        debug(err)
+        return err
 
     # Update user's document with recipe ratings
     rating_types = ['taste', 'familiarity', 'surprise']
@@ -331,7 +360,7 @@ def validation_recipe_rating():
     rating_types = ['taste', 'familiarity', 'surprise']
     err = updateRecipeRatings(request_data, rating_types)
     if err:
-      err = f'[onboarding_recipe_rating - ERROR]: Unable to update recipe ratings, err = {err}'
+      err = f'[validation_recipe_rating - ERROR]: Unable to update recipe ratings, err = {err}'
       debug(err)
       return err
     return ""
@@ -366,7 +395,7 @@ def get_meal_plan_selection():
     # Return json of test recipes that a user should liked
     taste_recipes, err = getTasteRecipes(user_id, num_wanted_recipes)
     if err:
-      err = f'[onboarding_recipe_rating - ERROR]: Unable to find any recipes for user {user_id}, err = {err}'
+      err = f'[get_meal_plan_selection - ERROR]: Unable to find any recipes for user {user_id}, err = {err}'
       debug(err)
       return err
     return jsonify(taste_recipes)
@@ -434,7 +463,7 @@ def retrieve_meal_plan():
     request_data, user_id, err = authentication(request)
     debug(f'[retrieve_meal_plan - DATA]: request_data: {request_data}')
     if err:
-      err = f'[review_rretrieve_meal_planecipe - ERROR]: Authentication error, err = {err}'
+      err = f'[retrieve_meal_plan - ERROR]: Authentication error, err = {err}'
       debug(err)
       return err
     # Run any functions that need to be done before the rest of the request
@@ -490,13 +519,13 @@ def review_recipe():
     rating_types = ['taste', 'familiarity']
     err = updateRecipeRatings(request_data, rating_types)
     if err:
-      err = f'[onboarding_recipe_rating - ERROR]: Unable to update recipe(s) ratings, err = {err}'
+      err = f'[review_recipe - ERROR]: Unable to update recipe(s) ratings, err = {err}'
       debug(err)
       return err
 
     err = updateRecipeReviews(request_data)
     if err:
-      err = f'[onboarding_recipe_rating - ERROR]: Unable to update recipe(s) review, err = {err}'
+      err = f'[review_recipe - ERROR]: Unable to update recipe(s) review, err = {err}'
       debug(err)
       return err
     return ""

@@ -33,12 +33,12 @@ def getIngredientRating(user_doc, ingredient_id, rating_type):
   rating_type = rating_type.lower()
 
   if not (rating_type in rating_types):
-    err = f'[getIngredientRating - {rating_type} - ERROR]: rating_type {rating_type} is not a known rating type.'
+    err = f'[getIngredientRating - {rating_type} - WARN]: rating_type {rating_type} is not a known rating type.'
     debug(err)
     return None, err
 
   if ingredient_id == str(None):
-    err = f'[getIngredientRating - {rating_type} - ERROR]: Weird ID, ingredient_id = {ingredient_id}.'
+    err = f'[getIngredientRating - {rating_type} - WARN]: Weird ID, ingredient_id = {ingredient_id}.'
     debug(err)
     return None, err
 

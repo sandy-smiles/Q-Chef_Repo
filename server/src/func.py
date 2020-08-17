@@ -36,7 +36,7 @@ def debug(fString):
     print(fString)
     return
 
-  if WARN and 'WARNING' in fString:
+  if WARN and 'WARN' in fString:
     print(fString)
     return
 
