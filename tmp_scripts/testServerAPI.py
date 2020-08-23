@@ -19,7 +19,8 @@ endpoints = ['/onboarding_ingredient_rating GET',
              '/retrieve_meal_plan POST',
              '/review_recipe POST']
 
-url_domain = 'https://q-chef-backend-api-server.web.app'
+#url_domain = 'https://q-chef-backend-api-server.web.app'
+url_domain = 'http://127.0.0.1:5000'
 
 ################################################################################
 # MAIN

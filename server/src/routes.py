@@ -121,6 +121,13 @@ def authentication(request):
   user_id = None
   err = ''
 
+  requ = f'[authentication - REQUEST | {request.url}]: request.method = {request.method}'
+  debug(requ)
+  requ = f'[authentication - REQUEST | {request.url}]: request.headers = {request.headers}'
+  debug(requ)
+  requ = f'[authentication - REQUEST | {request.url}]: request.data = {request_data}'
+  debug(requ)
+
   if request.method == 'GET':
     return request_data, user_id, err
 

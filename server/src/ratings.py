@@ -132,13 +132,13 @@ def getTasteRecipes(user_id, recipes_wanted):
         err = f'[getTasteRecipes - ERROR]: Unable to find user {user_id} taste preference for recipe {recipe_doc.id}, err = {err}'
         debug(err)
         continue # Just ignore this recipe then.
-      #userRecipeSurp, err = surpRecipe(user_doc.to_dict(), g.r_data[recipe_id])
+      userRecipeSurp, err = surpRecipe(user_doc.to_dict(), g.r_data[recipe_id])
       if err:
-        err = f'[getTasteRecipes - ERROR]: Unable to find user {user_id} surprise preference for recipe {recipe_doc.id}, err = {err}'
+        err = f'[getTasteRecipes - ERROR]: Unable to find user {user_id} surprise preference for recipe {recipe_id}, err = {err}'
         debug(err)
         continue # Just ignore this recipe then.
-      #possibleRecipes.append((userRecipePref*userRecipeSurp, recipe_doc.id))
-      possibleRecipes.append((userRecipePref, recipe_id))
+      possibleRecipes.append((userRecipeSurp, recipe_id))
+      #possibleRecipes.append((userRecipePref, recipe_id))
 
   possibleRecipes.sort(reverse=True)
   # Check that there are enough recipes to serve up.

@@ -27,6 +27,7 @@ WARN = True
 INFO = False
 DATA = False
 HELP = False
+REQU = True
 
 def debug(fString):
   if not DEBUG:
@@ -49,6 +50,10 @@ def debug(fString):
     return
 
   if HELP and 'HELP' in fString:
+    print(fString)
+    return
+
+  if REQU and 'REQU' in fString:
     print(fString)
     return
 

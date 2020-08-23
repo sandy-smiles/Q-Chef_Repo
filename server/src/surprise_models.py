@@ -110,11 +110,11 @@ def getNN(fn="nn_surprise_model.joblib"):
 #  - (float: Raw surprise score
 #  - (string): error
 def rawSurpRecipe(recipe,percentile=100):
-    if "surprises" not in recipe or not len(recipe["surprises"]):
+    if "surprises" not in recipe.keys() or not len(recipe["surprises"]):
         return None,"No surprises found for this recipe."
-    if not str(percentile)+"%" in recipe["surprises"]:
+    if not str(percentile)+"%" in recipe["surprises"].keys():
         return None,"That percentile was not found in the pre-calculated surprises for this recipe."
-    return recipe["surprises"][str(percentile)+"%"]
+    return recipe["surprises"][str(percentile)+"%"], ""
 
 # culinaryExperience - classifies user as novice, moderate, or foodie
 # Input:
@@ -123,12 +123,17 @@ def rawSurpRecipe(recipe,percentile=100):
 #  - (string: experience level ["novice","moderate","foodie"]
 #  - (string): error
 def culinaryExperience(user):
-    familiarities = user["ic_familiarity"].values()
-    if len(familiarities) < 20: #TODO(kazjon@): Replace this with a call to check if this user has completed onboarding
+    familiarities = list(user["ic_familiarity"].values())
+    len_familiarities = len(familiarities)
+    if len_familiarities < 20: #TODO(kazjon@): Replace this with a call to check if this user has completed onboarding
         return None,"User has not rated all onboarding ingredients."
-    fam_mean = float(sum(familiarities))/len(familiarities)
+    sum_familiarities = 0
+    for fam_dict in familiarities:
+      sum_familiarities += fam_dict['rating']
+    fam_mean = float(sum_familiarities)/len_familiarities
     experience_levels = ["novice","moderate","foodie"]
-    return experience_levels[int(math.floor(fam_mean))],""
+    # +1 as fam_mean will be between -1 and 1
+    return experience_levels[int(math.floor(fam_mean))+1],""
 
 
 # simpleSurpRecipe - surprise score for a given user-recipe pair
