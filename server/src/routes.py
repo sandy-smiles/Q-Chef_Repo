@@ -121,11 +121,11 @@ def authentication(request):
   user_id = None
   err = ''
 
-  requ = f'[authentication - REQUEST | {request.url}]: request.method = {request.method}'
+  requ = f'[auth - REQUEST | {request.url}]: request.method = {request.method}'
   debug(requ)
-  requ = f'[authentication - REQUEST | {request.url}]: request.headers = {request.headers}'
+  requ = f'[auth - REQUEST | {request.url}]: request.data = {request_data}'
   debug(requ)
-  requ = f'[authentication - REQUEST | {request.url}]: request.data = {request_data}'
+  requ = f'[auth - REQUEST | {request.url}]: request.headers = {request.headers}'
   debug(requ)
 
   if request.method == 'GET':
@@ -209,30 +209,42 @@ def onboarding_ingredient_rating():
     before_request_func()
 
     # Attempt to grab user's document (as this is the first endpoint)
-    err = createDocument('users', user_id, userStartingDoc)
+    # Attempt to grab user's document (as this is the second endpoint)
+    user_doc_ref, user_doc, err = retrieveDocument('users', user_id)
     if err:
-      err = f'[onboarding_ingredient_rating - ERROR]: Unable to create user document for {user_id}, err = {err}'
+      err = f'[onboarding_ingredient_rating - WARN]: Unable to retrieve document for {user_id}, err = {err}\nCreating documents now...'
       debug(err)
-      return err
-    err = createDocument('actions', user_id, {})
-    if err:
-      err = f'[onboarding_ingredient_rating - ERROR]: Unable to create action document for {user_id}, err = {err}'
-      debug(err)
-      return err
-    err = createDocument('reviews', user_id, {})
-    if err:
-      err = f'[onboarding_ingredient_rating - ERROR]: Unable to create review document for {user_id}, err = {err}'
-      debug(err)
-      return err
+      err = createDocument('users', user_id, userStartingDoc)
+      if err:
+        err = f'[onboarding_ingredient_rating - ERROR]: Unable to create user document for {user_id}, err = {err}'
+        debug(err)
+        return err
+      err = createDocument('actions', user_id, {})
+      if err:
+        err = f'[onboarding_ingredient_rating - ERROR]: Unable to create action document for {user_id}, err = {err}'
+        debug(err)
+        return err
+      err = createDocument('reviews', user_id, {})
+      if err:
+        err = f'[onboarding_ingredient_rating - ERROR]: Unable to create review document for {user_id}, err = {err}'
+        debug(err)
+        return err
 
-    # Update user's document with recipe ratings
+    # Update user's document with ingredient ratings
     rating_types = ['taste', 'familiarity']
     err = updateIngredientClusterRatings(request_data, rating_types)
     if err:
       err = f'[onboarding_recipe_rating - ERROR]: Unable to update ingredient ratings, err = {err}'
       debug(err)
       return err
-    return ''
+
+    # Return json of test recipes that a user should liked
+    onboarding_recipes2, err = getTasteRecipes(user_id, recipesReturned)
+    if err:
+      err = f'[onboarding_recipe_rating - ERROR]: Unable to find any recipes for user {user_id}, err = {err}'
+      debug(err)
+      return err
+    return jsonify(onboarding_recipes2)
 
   debug('[onboarding_ingredient_rating - INFO]: GET request')
   # Attempt to grab onboarding recipes list.
@@ -313,13 +325,7 @@ def onboarding_recipe_rating():
       debug(err)
       return err
 
-    # Return json of test recipes that a user should liked
-    onboarding_recipes2, err = getTasteRecipes(user_id, recipesReturned)
-    if err:
-      err = f'[onboarding_recipe_rating - ERROR]: Unable to find any recipes for user {user_id}, err = {err}'
-      debug(err)
-      return err
-    return jsonify(onboarding_recipes2)
+    return ''
 
   debug('[onboarding_recipe_rating - INFO]: GET request')
   # Attempt to grab onboarding recipes list.
@@ -397,7 +403,8 @@ def get_meal_plan_selection():
     # Run any functions that need to be done before the rest of the request
     before_request_func()
 
-    num_wanted_recipes = request_data['number_of_recipes']
+    #num_wanted_recipes = request_data['number_of_recipes']
+    num_wanted_recipes = recipesReturned
     # Update user's document with ingredient ratings
     # Return json of test recipes that a user should liked
     taste_recipes, err = getTasteRecipes(user_id, num_wanted_recipes)

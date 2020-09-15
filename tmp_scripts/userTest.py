@@ -39,7 +39,8 @@ endpoints = ['/onboarding_ingredient_rating',
              '/retrieve_meal_plan',
              '/review_recipe']
 
-url_domain = 'https://q-chef-backend-api-server.web.app'
+#url_domain = 'https://q-chef-backend-api-server.web.app'
+url_domain = 'http://127.0.0.1:5000'
 
 ################################################################################
 # MAIN
@@ -66,42 +67,6 @@ def main():
   with open(data_folder+'/qchef_recipes.json', 'r') as f:
     r_data = json.load(f)
   print(f"Finished json data for {user_name}.")
-
-  #-----------------------------------------------------------------------------
-
-  #/onboarding_ingredient_rating GET
-  url_path = '/onboarding_ingredient_rating'
-  request_type = 'GET'
-  response = requests.get(url_domain+url_path)
-  print(f"{user_name} - {url_path} {request_type}: Sent {request_type} request to {url_domain+url_path}")
-  print(f"{user_name} - {url_path} {request_type}: Response Status code: {response.status_code}")
-
-  #/onboarding_ingredient_rating POST
-  url_path = '/onboarding_ingredient_rating'
-  request_type = 'POST'
-  try:
-    response_data = response.json()
-  except:
-    print(f"{user_name} - {url_path} {request_type}: Unable to obtain response.json()")
-    print(f"{user_name} - {url_path} {request_type}: Ending program now.")
-    return
-  request_data = {
-    "userID": user_name,
-    "manualID": True}
-  request_data['familiarity_ratings'] = {}
-  request_data['taste_ratings'] = {}
-  for ic_key in response_data.keys():
-    request_data['familiarity_ratings'][ic_key] = rand.randint(0, 2)
-    request_data['taste_ratings'][ic_key] = rand.randint(0, 2)
-
-  response = requests.post(url_domain+url_path, json=request_data)
-  print(f"{user_name} - {url_path} {request_type}: Sent {request_type} request to {url_domain+url_path}")
-  print(f"{user_name} - {url_path} {request_type}: Response Status code: {response.status_code}")
-  try:
-    print(f"{user_name} - {url_path} {request_type}: {response.json()}")
-  except:
-    print(f"{user_name} - {url_path} {request_type}: No response json data")
-    print(f"{user_name} - {url_path} {request_type}: {response.text}")
 
   #-----------------------------------------------------------------------------
 
@@ -132,6 +97,42 @@ def main():
     request_data['familiarity_ratings'][r_key] = rand.randint(0, 2)
     request_data['taste_ratings'][r_key] = rand.randint(0, 2)
     request_data['surprise_ratings'][r_key] = rand.randint(0, 2)
+
+  response = requests.post(url_domain+url_path, json=request_data)
+  print(f"{user_name} - {url_path} {request_type}: Sent {request_type} request to {url_domain+url_path}")
+  print(f"{user_name} - {url_path} {request_type}: Response Status code: {response.status_code}")
+  try:
+    print(f"{user_name} - {url_path} {request_type}: {response.json()}")
+  except:
+    print(f"{user_name} - {url_path} {request_type}: No response json data")
+    print(f"{user_name} - {url_path} {request_type}: {response.text}")
+
+  #-----------------------------------------------------------------------------
+
+  #/onboarding_ingredient_rating GET
+  url_path = '/onboarding_ingredient_rating'
+  request_type = 'GET'
+  response = requests.get(url_domain+url_path)
+  print(f"{user_name} - {url_path} {request_type}: Sent {request_type} request to {url_domain+url_path}")
+  print(f"{user_name} - {url_path} {request_type}: Response Status code: {response.status_code}")
+
+  #/onboarding_ingredient_rating POST
+  url_path = '/onboarding_ingredient_rating'
+  request_type = 'POST'
+  try:
+    response_data = response.json()
+  except:
+    print(f"{user_name} - {url_path} {request_type}: Unable to obtain response.json()")
+    print(f"{user_name} - {url_path} {request_type}: Ending program now.")
+    return
+  request_data = {
+    "userID": user_name,
+    "manualID": True}
+  request_data['familiarity_ratings'] = {}
+  request_data['taste_ratings'] = {}
+  for ic_key in response_data.keys():
+    request_data['familiarity_ratings'][ic_key] = rand.randint(0, 2)
+    request_data['taste_ratings'][ic_key] = rand.randint(0, 2)
 
   response = requests.post(url_domain+url_path, json=request_data)
   print(f"{user_name} - {url_path} {request_type}: Sent {request_type} request to {url_domain+url_path}")

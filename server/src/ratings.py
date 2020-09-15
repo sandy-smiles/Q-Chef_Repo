@@ -89,7 +89,7 @@ def getRecipeRating(user_doc, recipe_id, rating_type):
     ingredient_id = str(ingredient_id)
     ingredientRating, err = getIngredientRating(user_doc, ingredient_id, rating_type)
     if err:
-      err = f'[getRecipeRating - {rating_type} - ERROR]: Unable to get ingredient {ingredient_id} rating for recipe {recipe_id}.'
+      err = f'[getRecipeRating - {rating_type} - WARN]: Unable to get ingredient {ingredient_id} rating for recipe {recipe_id}.'
       debug(err)
       continue # Just skip this rating, and hope it doesn't matter.
     sumIngredientRatings += ingredientRating
@@ -125,20 +125,25 @@ def getTasteRecipes(user_id, recipes_wanted):
   # Retrieve the recipe collection
   possibleRecipes = []
   recipe_ids = g.r_data.keys()
+  err = f'[getTasteRecipes - WARN]: For user {user_id}, recipe {user_recipes} have already been rated.'
+  debug(err)
   for recipe_id in recipe_ids:
-    if not (recipe_id in user_recipes):
-      userRecipePref, err = getRecipeRating(user_doc, recipe_id, 'taste')
-      if err:
-        err = f'[getTasteRecipes - ERROR]: Unable to find user {user_id} taste preference for recipe {recipe_doc.id}, err = {err}'
-        debug(err)
-        continue # Just ignore this recipe then.
-      userRecipeSurp, err = surpRecipe(user_doc.to_dict(), g.r_data[recipe_id])
-      if err:
-        err = f'[getTasteRecipes - ERROR]: Unable to find user {user_id} surprise preference for recipe {recipe_id}, err = {err}'
-        debug(err)
-        continue # Just ignore this recipe then.
-      possibleRecipes.append((userRecipeSurp, recipe_id))
-      #possibleRecipes.append((userRecipePref, recipe_id))
+    if recipe_id in user_recipes:
+      err = f'[getTasteRecipes - WARN]: For user {user_id}, recipe {recipe_id} has already been rated, therefore continuing...'
+      debug(err)
+      continue
+    userRecipePref, err = getRecipeRating(user_doc, recipe_id, 'taste')
+    if err:
+      err = f'[getTasteRecipes - ERROR]: Unable to find user {user_id} taste preference for recipe {recipe_doc.id}, err = {err}'
+      debug(err)
+      continue # Just ignore this recipe then.
+    userRecipeSurp, err = surpRecipe(user_doc.to_dict(), g.r_data[recipe_id])
+    if err:
+      err = f'[getTasteRecipes - ERROR]: Unable to find user {user_id} surprise preference for recipe {recipe_id}, err = {err}'
+      debug(err)
+      continue # Just ignore this recipe then.
+    #possibleRecipes.append((userRecipeSurp, recipe_id))
+    possibleRecipes.append((userRecipePref, recipe_id))
 
   possibleRecipes.sort(reverse=True)
   # Check that there are enough recipes to serve up.
@@ -357,11 +362,19 @@ def updateSingleRecipeRating(user_doc, recipe_id, ratings, rating_types):
     pass
 
   # Retrieve the recipe document
-  recipe_dict = g.r_data[recipe_id]
+  try:
+    recipe_dict = g.r_data[recipe_id]
+  except:
+    err = f'[updateSingleRecipeRating - ERROR]: recipe {recipe_id} does not seem to exist.'
+    debug(err)
+    return err
+
 
   # Update the recipe ratings
   for rating_type in rating_types:
     updating_data['r_'+rating_type] = user_dict['r_'+rating_type]
+    err = f'[updateSingleRecipeRating - WARN]: updating_data = {updating_data}'
+    debug(err)
     rating = ratings[rating_type]
     try:
       r = user_dict['r_'+rating_type][recipe_id]['rating']
@@ -371,6 +384,8 @@ def updateSingleRecipeRating(user_doc, recipe_id, ratings, rating_types):
       updating_data['r_'+rating_type][recipe_id] =  {'rating': r, 'n_ratings': n}
     except:
       updating_data['r_'+rating_type][recipe_id] = {'rating': rating, 'n_ratings': 1}
+  err = f'[updateSingleRecipeRating - WARN]: updating_data = {updating_data}'
+  debug(err)
 
   # Update the ingredients.
   ingredient_ids = recipe_dict["ingredient_ids"]
@@ -378,10 +393,12 @@ def updateSingleRecipeRating(user_doc, recipe_id, ratings, rating_types):
     ingredient_id = str(ingredient_id)
     update_dict, err = updateSingleIngredientRating(user_doc, ingredient_id, ratings, rating_types)
     if err:
-      err = f'[updateSingleRecipeRating - ERROR]: Unable to update ratings for recipe {recipe_id}, err: {err}'
+      err = f'[updateSingleRecipeRating - WARN]: Unable to update ingredient {ingredient_id} ratings for recipe {recipe_id}, err: {err}'
       debug(err)
-      return err
+      continue
     updating_data.update(update_dict)
+  err = f'[updateSingleRecipeRating - WARN]: updating_data = {updating_data}'
+  debug(err)
 
   # Update the user's document:
   return updating_data, ''
@@ -411,17 +428,34 @@ def updateRecipeRatings(data, rating_types):
     return err
 
   recipe_ids = data[rating_types[0]+'_ratings']
+  err = f'[updateRecipeRatings - WARN]: For user {user_id}, saving  {recipe_ids} ratings.'
+  debug(err)
   for recipe_id in recipe_ids.keys():
     ratings = {}
     for rating_type in rating_types:
       # -1 to remap 0 -> 2 into -1 -> 1
-      ratings[rating_type] = int(data[rating_type+'_ratings'][recipe_id])-1
+      try:
+        ratings[rating_type] = int(data[rating_type+'_ratings'][recipe_id])-1
+      except:
+        err = f'[updateRecipeRatings - WARN]: Missing {rating_type} rating for recipe {recipe_id}, err: {err}'
+        debug(err)
     update_dict, err = updateSingleRecipeRating(user_doc, recipe_id, ratings, rating_types)
     if err:
-      err = f'[updateRecipeRatings - ERROR]: Unable to update ratings for recipe {recipe_id}, err: {err}'
+      err = f'[updateRecipeRatings - WARN]: Unable to update ratings for recipe {recipe_id}, err: {err}'
       debug(err)
-      return err
-    updating_data.update(update_dict)
+      continue
+    err = f'[updateRecipeRatings - WARN]: update_dict = {update_dict}'
+    debug(err)
+    # merge 2 dictionaries' dictionaries together
+    for key in update_dict.keys():
+      try:
+        updating_data[key].update(update_dict[key])
+      except:
+        err = f'[updateRecipeRatings - WARN]: key {key} not yet in updating_data'
+        debug(err)
+        updating_data[key] = update_dict[key]
+    err = f'[updateRecipeRatings - WARN]: updating_data = {updating_data}'
+    debug(err)
 
   # Update the user document
   err = updateDocument('users', user_id, updating_data)

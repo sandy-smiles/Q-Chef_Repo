@@ -9,10 +9,10 @@ import requests
 ################################################################################
 data_folder = './test_requests'
 
-endpoints = ['/onboarding_ingredient_rating GET',
-             '/onboarding_ingredient_rating POST',
-             '/onboarding_recipe_rating GET',
+endpoints = ['/onboarding_recipe_rating GET',
              '/onboarding_recipe_rating POST',
+             '/onboarding_ingredient_rating GET',
+             '/onboarding_ingredient_rating POST',
              '/validation_recipe_rating POST',
              '/get_meal_plan_selection POST',
              '/save_meal_plan POST',

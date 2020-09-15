@@ -211,7 +211,9 @@ def getRecipeInformation(recipe_id):
   # Change the ingredient ids to ingredient names
   ingredientNames = []
   for ingredient_id in recipes_dict["ingredient_ids"]:
-    # Retrieve the recipe information
+    # Retrieve the recipe's ingredient information
+    if ingredient_id == None:
+      continue
     ingredients_dict = g.i_data[str(ingredient_id)]
     ingredientName = ingredients_dict["name"].replace('_', ' ')
     if not (ingredientName in ingredientNames):
