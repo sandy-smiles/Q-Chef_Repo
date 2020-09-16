@@ -244,8 +244,9 @@ def main():
     print(f"Sent {request_type} request to {url_domain+url_path}")
     print(f"Response Status code: {response.status_code}")
 
-    #/review_recipe
-    url_path = '/review_recipe'
+    #/validation_recipe_rating POST
+    # instead of /review_recipe to bypass needed images
+    url_path = '/validation_recipe_rating'
     request_type = 'POST'
     response_data = response.json()
     request_data = {

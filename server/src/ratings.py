@@ -185,6 +185,12 @@ def updateSingleIngredientRating(user_doc, ingredient_id, ratings, rating_types)
       debug(err)
       return None, err
 
+  # Check that the ingredient is not None
+  if ingredient_id == "None":
+    err = f'[updateSingleIngredientRating - WARN]: ingredient_id {ingredient_id} is None.'
+    debug(err)
+    return None, err
+
   # Retrieve the user document
   user_dict = user_doc.to_dict()
 
@@ -373,8 +379,6 @@ def updateSingleRecipeRating(user_doc, recipe_id, ratings, rating_types):
   # Update the recipe ratings
   for rating_type in rating_types:
     updating_data['r_'+rating_type] = user_dict['r_'+rating_type]
-    err = f'[updateSingleRecipeRating - WARN]: updating_data = {updating_data}'
-    debug(err)
     rating = ratings[rating_type]
     try:
       r = user_dict['r_'+rating_type][recipe_id]['rating']
@@ -390,6 +394,8 @@ def updateSingleRecipeRating(user_doc, recipe_id, ratings, rating_types):
   # Update the ingredients.
   ingredient_ids = recipe_dict["ingredient_ids"]
   for ingredient_id in ingredient_ids:
+    if not ingredient_id:
+      continue # skip 'None' ingredient id
     ingredient_id = str(ingredient_id)
     update_dict, err = updateSingleIngredientRating(user_doc, ingredient_id, ratings, rating_types)
     if err:
@@ -444,7 +450,7 @@ def updateRecipeRatings(data, rating_types):
       err = f'[updateRecipeRatings - WARN]: Unable to update ratings for recipe {recipe_id}, err: {err}'
       debug(err)
       continue
-    err = f'[updateRecipeRatings - WARN]: update_dict = {update_dict}'
+    err = f'[updateRecipeRatings - DATA]: update_dict = {update_dict}'
     debug(err)
     # merge 2 dictionaries' dictionaries together
     for key in update_dict.keys():
@@ -454,7 +460,7 @@ def updateRecipeRatings(data, rating_types):
         err = f'[updateRecipeRatings - WARN]: key {key} not yet in updating_data'
         debug(err)
         updating_data[key] = update_dict[key]
-    err = f'[updateRecipeRatings - WARN]: updating_data = {updating_data}'
+    err = f'[updateRecipeRatings - DATA]: updating_data = {updating_data}'
     debug(err)
 
   # Update the user document
