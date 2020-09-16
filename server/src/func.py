@@ -25,8 +25,8 @@ collectionIDs = ['users',
 DEBUG = True
 WARN = True
 INFO = False
-DATA = False
 HELP = False
+DATA = False
 REQU = True
 
 def debug(fString):
@@ -45,11 +45,11 @@ def debug(fString):
     print(fString)
     return
 
-  if DATA and 'DATA' in fString:
+  if HELP and 'HELP' in fString:
     print(fString)
     return
 
-  if HELP and 'HELP' in fString:
+  if DATA and 'DATA' in fString:
     print(fString)
     return
 

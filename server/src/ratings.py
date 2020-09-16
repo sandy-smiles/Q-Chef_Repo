@@ -33,12 +33,12 @@ def getIngredientRating(user_doc, ingredient_id, rating_type):
   rating_type = rating_type.lower()
 
   if not (rating_type in rating_types):
-    err = f'[getIngredientRating - {rating_type} - WARN]: rating_type {rating_type} is not a known rating type.'
+    err = f'[getIngredientRating - {rating_type} - ERROR]: rating_type {rating_type} is not a known rating type.'
     debug(err)
     return None, err
 
   if ingredient_id == str(None):
-    err = f'[getIngredientRating - {rating_type} - WARN]: Weird ID, ingredient_id = {ingredient_id}.'
+    err = f'[getIngredientRating - {rating_type} - HELP]: Weird ID, ingredient_id = {ingredient_id}.'
     debug(err)
     return None, err
 
@@ -80,16 +80,16 @@ def getRecipeRating(user_doc, recipe_id, rating_type):
 
   # Obtain all of the recipe ingredients
   recipe_dict = g.r_data[recipe_id]
-  debug(f'[getRecipeRating - {rating_type} - HELP]: recipe_id = {recipe_id}')
+  debug(f'[getRecipeRating - {rating_type} - DATA]: recipe_id = {recipe_id}')
   ingredient_ids = recipe_dict["ingredient_ids"]
-  debug(f'[getRecipeRating - {rating_type} - HELP]: ingredient_ids = {ingredient_ids}')
+  debug(f'[getRecipeRating - {rating_type} - DATA]: ingredient_ids = {ingredient_ids}')
   sumIngredientRatings = 0
   numIngredientRatings = 0
   for ingredient_id in ingredient_ids:
     ingredient_id = str(ingredient_id)
     ingredientRating, err = getIngredientRating(user_doc, ingredient_id, rating_type)
     if err:
-      err = f'[getRecipeRating - {rating_type} - WARN]: Unable to get ingredient {ingredient_id} rating for recipe {recipe_id}.'
+      err = f'[getRecipeRating - {rating_type} - WARN]: Unable to get ingredient {ingredient_id} rating for recipe {recipe_id}. Skipping...'
       debug(err)
       continue # Just skip this rating, and hope it doesn't matter.
     sumIngredientRatings += ingredientRating
@@ -125,11 +125,11 @@ def getTasteRecipes(user_id, recipes_wanted):
   # Retrieve the recipe collection
   possibleRecipes = []
   recipe_ids = g.r_data.keys()
-  err = f'[getTasteRecipes - WARN]: For user {user_id}, recipe {user_recipes} have already been rated.'
+  err = f'[getTasteRecipes - HELP]: For user {user_id}, recipe {user_recipes} have already been rated.'
   debug(err)
   for recipe_id in recipe_ids:
     if recipe_id in user_recipes:
-      err = f'[getTasteRecipes - WARN]: For user {user_id}, recipe {recipe_id} has already been rated, therefore continuing...'
+      err = f'[getTasteRecipes - INFO]: For user {user_id}, recipe {recipe_id} has already been rated, therefore continuing...'
       debug(err)
       continue
     userRecipePref, err = getRecipeRating(user_doc, recipe_id, 'taste')
@@ -157,7 +157,7 @@ def getTasteRecipes(user_id, recipes_wanted):
     # Get the recipe information
     recipeInfo, err = getRecipeInformation(recipe_id)
     if err:
-      err = f'[getTasteRecipes - ERROR]: Unable to get recipe {recipe_id} information, err = {err}'
+      err = f'[getTasteRecipes - WARN]: Unable to get recipe {recipe_id} information, err = {err}. Skipping...'
       debug(err)
       continue
     recipe_info[recipe_id] = recipeInfo
@@ -186,8 +186,8 @@ def updateSingleIngredientRating(user_doc, ingredient_id, ratings, rating_types)
       return None, err
 
   # Check that the ingredient is not None
-  if ingredient_id == "None":
-    err = f'[updateSingleIngredientRating - WARN]: ingredient_id {ingredient_id} is None.'
+  if ingredient_id == str(None):
+    err = f'[updateSingleIngredientRating - HELP]: Weird ID, ingredient_id = {ingredient_id}.'
     debug(err)
     return None, err
 
@@ -238,51 +238,6 @@ def updateSingleIngredientRating(user_doc, ingredient_id, ratings, rating_types)
 
   # Update the user's document:
   return updating_data, ''
-
-################################################################################
-# updateIngredientRating
-# Updates the user's rating of the given ingredients.
-# - Input:
-#   - (dict) data containing user id, ingredient ids and ratings,
-#   - (array - string) rating_type
-# - Output:
-#   - (string) error
-def updateIngredientRatings(data, rating_types):
-  debug(f'[updateIngredientRating - INFO]: Starting.')
-  updating_data = {}
-  user_id = data['userID']
-
-  for rating_type in rating_types:
-    if not (rating_type in rating_types):
-      err = f'[updateIngredientRating - ERROR]: rating_type {rating_type} is not a known rating type.'
-      debug(err)
-      return err
-
-  # Retrieve the user document
-  user_doc_ref, user_doc, err = retrieveDocument('users', user_id)
-  if err:
-    return err
-
-  ingredient_ids = data[rating_types[0]]
-  for ingredient_id in ingredient_ids.keys():
-    ratings = {}
-    for rating_type in rating_types:
-      # -1 to remap 0 -> 2 into -1 -> 1
-      ratings[rating_type] = int(data[rating_type+'_ratings'][ingredient_id])-1
-    update_dict, err = updateSingleIngredientRating(user_doc, ingredient_id, ratings, rating_types)
-    if err:
-      err = f'[updateIngredientRating - ERROR]: Unable to update ratings for ingredient {ingredient_id}, err: {err}'
-      debug(err)
-      return err
-    updating_data.update(update_dict)
-
-  # Update the user's document:
-  err = updateDocument('users', user_id, updating_data)
-  if err:
-    err = f'[updateIngredientRating - ERROR]: Unable to update user document with ratings, err: {err}'
-    debug(err)
-    return err
-  return ''
 
 ################################################################################
 # updateIngredientClusterRatings
@@ -361,7 +316,7 @@ def updateSingleRecipeRating(user_doc, recipe_id, ratings, rating_types):
   # Check that the user has NOT already rated this recipe...
   try:
     user_dict['r_'+rating_type[0]][recipe_id]
-    err = f'[updateSingleRecipeRating - ERROR]: recipe {recipe_id} has already been rated.'
+    err = f'[updateSingleRecipeRating - HELP]: recipe {recipe_id} has already been rated. Skipping re-rating.'
     debug(err)
     return err
   except:
@@ -388,7 +343,7 @@ def updateSingleRecipeRating(user_doc, recipe_id, ratings, rating_types):
       updating_data['r_'+rating_type][recipe_id] =  {'rating': r, 'n_ratings': n}
     except:
       updating_data['r_'+rating_type][recipe_id] = {'rating': rating, 'n_ratings': 1}
-  err = f'[updateSingleRecipeRating - WARN]: updating_data = {updating_data}'
+  err = f'[updateSingleRecipeRating - DATA]: updating_data = {updating_data}'
   debug(err)
 
   # Update the ingredients.
@@ -399,11 +354,11 @@ def updateSingleRecipeRating(user_doc, recipe_id, ratings, rating_types):
     ingredient_id = str(ingredient_id)
     update_dict, err = updateSingleIngredientRating(user_doc, ingredient_id, ratings, rating_types)
     if err:
-      err = f'[updateSingleRecipeRating - WARN]: Unable to update ingredient {ingredient_id} ratings for recipe {recipe_id}, err: {err}'
+      err = f'[updateSingleRecipeRating - WARN]: Unable to update ingredient {ingredient_id} ratings for recipe {recipe_id}, err: {err}. Skipping...'
       debug(err)
       continue
     updating_data.update(update_dict)
-  err = f'[updateSingleRecipeRating - WARN]: updating_data = {updating_data}'
+  err = f'[updateSingleRecipeRating - DATA]: updating_data = {updating_data}'
   debug(err)
 
   # Update the user's document:
@@ -434,7 +389,7 @@ def updateRecipeRatings(data, rating_types):
     return err
 
   recipe_ids = data[rating_types[0]+'_ratings']
-  err = f'[updateRecipeRatings - WARN]: For user {user_id}, saving  {recipe_ids} ratings.'
+  err = f'[updateRecipeRatings - INFO]: For user {user_id}, saving  {recipe_ids} ratings.'
   debug(err)
   for recipe_id in recipe_ids.keys():
     ratings = {}
@@ -457,7 +412,7 @@ def updateRecipeRatings(data, rating_types):
       try:
         updating_data[key].update(update_dict[key])
       except:
-        err = f'[updateRecipeRatings - WARN]: key {key} not yet in updating_data'
+        err = f'[updateRecipeRatings - HELP]: key {key} not yet in updating_data. Adding it in now...'
         debug(err)
         updating_data[key] = update_dict[key]
     err = f'[updateRecipeRatings - DATA]: updating_data = {updating_data}'
