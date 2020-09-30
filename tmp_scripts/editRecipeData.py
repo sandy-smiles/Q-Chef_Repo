@@ -9,6 +9,7 @@
 # This script runs through all of the recipe data within qchef_recipes.json and 
 # changes any 'null' times to 0.
 # Additionally it lets the user know all recipes with a listed 'null' ingredient
+# Also changes ids to be 5 char long rather than 4 or 5 long.
 
 ################################################################################
 # Imports
@@ -52,7 +53,7 @@ if __name__ == "__main__":
 
 
   # Save the modified data back into their jsons
-  #with open('../server/src/data/qchef_recipes.json', 'a') as f:
-    #f.write('')
-  #with open('../server/src/data/qchef_recipes.json', 'w') as f:
-    #f.write(json.dumps(new_r_data))
+  with open('../server/src/data/qchef_recipes.json', 'a') as f:
+    f.write('')
+  with open('../server/src/data/qchef_recipes.json', 'w') as f:
+    f.write(json.dumps(new_r_data))
