@@ -29,15 +29,6 @@ from firebase_admin import firestore
 ################################################################################
 # Constants
 ################################################################################
-i_data, ic_data, r_data = {}, {}, {}
-# Grab the data from their jsons
-with open('../server/src/data/qchef_ingredients.json', 'r') as f:
-  i_data = json.load(f)
-with open('../server/src/data/qchef_ingredient_clusters.json', 'r') as f:
-  ic_data = json.load(f)
-with open('../server/src/data/qchef_recipes.json', 'r') as f:
-  r_data = json.load(f)
-
 # Holds the onboarding ingredient cluster ids
 ic_ids = ['219',
 '233',
@@ -109,7 +100,7 @@ if __name__ == "__main__":
   for ic_id in ic_ids:
     ic_id = str(ic_id)
     try:
-      ic_onboarding[ic_id], err = getIngredientInformation(ic_id)
+      ic_onboarding[ic_id], err = getIngredientClusterInformation(ic_id)
     except:
       print(f'Unable to find ingredient cluster {ic_id}')
 

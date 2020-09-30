@@ -7,6 +7,20 @@
 # from helpFunc import *
 
 ################################################################################
+
+# Load in all data
+i_data, is_data, ic_data, r_data = {}, {}, {}, {}
+# Grab the data from their jsons
+with open('../server/src/data/qchef_ingredients.json', 'r') as f:
+  i_data = json.load(f)
+with open('../server/src/data/qchef_ingredient_subclusters.json', 'r') as f:
+  is_data = json.load(f)
+with open('../server/src/data/qchef_ingredient_clusters.json', 'r') as f:
+  ic_data = json.load(f)
+with open('../server/src/data/qchef_recipes.json', 'r') as f:
+  r_data = json.load(f)
+
+################################################################################
 # Helper Functions
 ################################################################################
 # getIngredientInformation
@@ -71,7 +85,7 @@ def getRecipeInformation(recipe_id):
     # Find the ingredient name
     ingredients_dict = i_data[str(ingredient_id)]
     # Change the ingredient name to one without underscores
-    ingredientName = ingredients_dict["name"].replace('_', ' ').capitalize()
+    ingredientName = ingredients_dict["name"].replace('_', ' ')
     # Add the ingredient name to the list if it isn't already there
     if not (ingredientName in ingredientNames):
       ingredientNames.append((ingredientName, str(ingredient_id)))
