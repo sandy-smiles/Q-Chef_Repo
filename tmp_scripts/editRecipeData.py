@@ -1,4 +1,16 @@
 ################################################################################
+
+# Q-Chef API Server Data Checking and Editing
+# Authors: K. di Bona
+
+# In order to run this file alone:
+# $ python editRecipeData.py
+
+# This script runs through all of the recipe data within qchef_recipes.json and 
+# changes any 'null' times to 0.
+# Additionally it lets the user know all recipes with a listed 'null' ingredient
+
+################################################################################
 # Imports
 ################################################################################
 import json

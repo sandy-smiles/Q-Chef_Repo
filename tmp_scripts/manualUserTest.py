@@ -1,4 +1,15 @@
 ################################################################################
+
+# Q-Chef API Server Model Testing
+# Authors: K. di Bona
+
+# In order to run this file alone:
+# $ python manualUserTest.py
+
+# This script allows the user to pretend to be a q-chef user to test the server 
+# model as different types of foodies.
+
+################################################################################
 # Imports
 ################################################################################
 import json

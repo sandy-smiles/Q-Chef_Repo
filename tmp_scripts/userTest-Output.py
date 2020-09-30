@@ -9,6 +9,8 @@
 
 # for i in {0..99}; do (python3 userTest.py userID${i} > ./tmp-output/userTest-output-userID${i}.txt) & done; wait; echo "Looking into output..."; python3 userTest-Output.py; wait; echo "All finished!"
 
+# This program checks for any errors within the output of the load tests.
+
 ################################################################################
 # Imports
 import os

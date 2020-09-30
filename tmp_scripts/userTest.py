@@ -16,6 +16,9 @@
 
 # for i in {0..99}; do (python3 userTest.py userID${i} > ./tmp-output/userTest-output-userID${i}.txt) & done; wait; echo "All finished!"
 
+# This script is used for server load testing by pretending to be a user 
+# through randomly picking ratings.
+
 ################################################################################
 # Imports
 ################################################################################

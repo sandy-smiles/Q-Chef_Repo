@@ -1,4 +1,22 @@
 ################################################################################
+
+# Q-Chef API Server Onboarding Data Creation
+# Authors: K. di Bona
+
+# In order to run this file alone:
+# $ python createOnboardingInfo.py
+
+# Change the lists within `Constants`, ic_ids (ingredient cluster ids) and r_ids
+#  (recipe ids) to those for onboarding.
+
+# This script runs through all ingredient cluster ids listed in ic_ids, and sets
+# the database onboarding ingredients document as the created json containing 
+# the ids' information. 
+# This script also runs through all recipe ids listed in r_ids, and sets the 
+# database onboarding recipes document as the created json containing the ids'
+# information.
+
+################################################################################
 # Imports
 ################################################################################
 import json
@@ -148,11 +166,6 @@ if __name__ == "__main__":
       r_onboarding[r_id], err = getRecipeInformation(r_id)
     except:
       print(f'Unable to find ingredient cluster {r_id}')
-
-  print('ic_onboarding')
-  print(ic_onboarding)
-  print('r_onboarding')
-  print(type(r_onboarding))
 
   # Use the application default credentials
   cred = credentials.Certificate("../server/src/keyKey.json")
