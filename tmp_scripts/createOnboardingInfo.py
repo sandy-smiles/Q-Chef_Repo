@@ -25,6 +25,7 @@ import firebase_admin
 from firebase_admin import credentials
 from firebase_admin import firestore
 
+
 ################################################################################
 # Constants
 ################################################################################
@@ -95,55 +96,8 @@ r_ids = ['86478',
 ################################################################################
 # Helper Functions
 ################################################################################
-# getIngredientInformation
-# Returns a name of the ingredient (needed to give to the front end).
-# - Input:
-#   - (string) ingredient_id
-# - Output:
-#   - (string) ingredient's information (which is just the name),
-#   - (string) error
-def getIngredientInformation(ingredient_id):
-  print(f'[getIngredientInformation - INFO]: Starting.')
-  ingredients_dict = ic_data[ingredient_id]
-  ingredientName = ingredients_dict["name"].replace('_', ' ')
-  return ingredientName, ''
 
-################################################################################
-# getRecipeInformation
-# Returns a json of the recipe info needed to give to the front end.
-# - Input:
-#   - (string) recipe_id
-# - Output:
-#   - (dict) recipe's information,
-#   - (string) error
-def getRecipeInformation(recipe_id):
-  print(f'[getRecipeInformation - INFO]: Starting.')
-  recipes_dict = r_data[recipe_id]
-
-  # Change the ingredient ids to ingredient names
-  ingredientNames = []
-  for ingredient_id in recipes_dict["ingredient_ids"]:
-    # Retrieve the recipe information
-    ingredients_dict = i_data[str(ingredient_id)]
-    ingredientName = ingredients_dict["name"].replace('_', ' ')
-    if not (ingredientName in ingredientNames):
-      ingredientNames.append(ingredientName)
-  recipes_dict["ingredient_names"] = ingredientNames
-
-  # Remove the image field
-  del recipes_dict["image"]
-  # Remove the ingredient_ids field
-  del recipes_dict["ingredient_ids"]
-  # Remove the surprises field
-  del recipes_dict["surprises"]
-  # Remove the url field
-  del recipes_dict["url"]
-  # Remove the vector field
-  del recipes_dict["vector"]
-  # Remove the vegetarian field
-  del recipes_dict["vegetarian"]
-
-  return recipes_dict, ''
+from helpFunc import *
 
 ################################################################################
 # MAIN
