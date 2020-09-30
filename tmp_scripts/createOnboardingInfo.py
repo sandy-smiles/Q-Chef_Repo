@@ -19,7 +19,7 @@
 ################################################################################
 # Imports
 ################################################################################
-import json
+import json, time
 
 import firebase_admin
 from firebase_admin import credentials
@@ -110,7 +110,8 @@ if __name__ == "__main__":
     try:
       r_onboarding[r_id], err = getRecipeInformation(r_id)
     except:
-      print(f'Unable to find ingredient cluster {r_id}')
+      print(f'Unable to find recipe cluster {r_id}')
+
 
   # Use the application default credentials
   cred = credentials.Certificate("../server/src/keyKey.json")

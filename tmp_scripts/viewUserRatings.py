@@ -78,7 +78,7 @@ def main():
       r_id = str(r_id)
 
       # Obtain the recipe's information
-      r_info, err = getRecipeInformation(r_id)
+      r_info, err = getRecipeMoreInformation(r_id)
       print(f"{r_id} | {r_info['title']}\'s ingredients:")
       for i_name, i_id in r_info['ingredient_names']:
         print(f" --> {i_id} | {i_name}")

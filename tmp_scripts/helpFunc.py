@@ -7,6 +7,7 @@
 # from helpFunc import *
 
 ################################################################################
+import json
 
 # Load in all data
 i_data, is_data, ic_data, r_data = {}, {}, {}, {}
@@ -73,6 +74,48 @@ def getIngredientClusterInformation(ingredient_cluster_id):
 #   - (dict) recipe's information,
 #   - (string) error
 def getRecipeInformation(recipe_id):
+  #print(f'[getRecipeInformation - INFO]: Starting.')
+  recipes_dict = r_data[recipe_id]
+
+  # Change the ingredient ids to ingredient names
+  ingredientNames = []
+  for ingredient_id in recipes_dict["ingredient_ids"]:
+    # Check that the ingredient id is not null/None
+    if not ingredient_id or str(ingredient_id) == str(None):
+      continue # Skip this ingredient
+    # Find the ingredient name
+    ingredients_dict = i_data[str(ingredient_id)]
+    # Change the ingredient name to one without underscores
+    ingredientName = ingredients_dict["name"].replace('_', ' ')
+    # Add the ingredient name to the list if it isn't already there
+    if not (ingredientName in ingredientNames):
+      ingredientNames.append(ingredientName)
+  recipes_dict["ingredient_names"] = ingredientNames
+
+  # Remove the image field
+  del recipes_dict["image"]
+  # Remove the ingredient_ids field
+  del recipes_dict["ingredient_ids"]
+  # Remove the surprises field
+  del recipes_dict["surprises"]
+  # Remove the url field
+  del recipes_dict["url"]
+  # Remove the vector field
+  del recipes_dict["vector"]
+  # Remove the vegetarian field
+  del recipes_dict["vegetarian"]
+
+  return recipes_dict, ''
+
+################################################################################
+# getRecipeInformation
+# Returns a json of the recipe info needed to give to the front end.
+# - Input:
+#   - (string) recipe_id
+# - Output:
+#   - (dict) recipe's information,
+#   - (string) error
+def getRecipeMoreInformation(recipe_id):
   #print(f'[getRecipeInformation - INFO]: Starting.')
   recipes_dict = r_data[recipe_id]
 
