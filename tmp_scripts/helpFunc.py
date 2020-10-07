@@ -33,6 +33,8 @@ with open('../server/src/data/qchef_recipes.json', 'r') as f:
 #   - (string) error
 def getIngredientInformation(ingredient_id):
   #print(f'[getIngredientInformation - INFO]: Starting.')
+  if str(ingredient_id) == str(None):
+    return None, "No ingredient with id = 'None'"
   ingredients_dict = i_data[ingredient_id]
   ingredientName = ingredients_dict["name"].replace('_', ' ').capitalize()
   return ingredientName, ''
@@ -47,6 +49,8 @@ def getIngredientInformation(ingredient_id):
 #   - (string) error
 def getIngredientSubclusterInformation(ingredient_subcluster_id):
   #print(f'[getIngredientSubclusterInformation - INFO]: Starting.')
+  if str(ingredient_subcluster_id) == str(None):
+    return None, "No subcluster ingredient with id = 'None'"
   ingredients_dict = is_data[ingredient_subcluster_id]
   ingredientName = ingredients_dict["name"].replace('_', ' ').capitalize()
   return ingredientName, ''
@@ -61,6 +65,8 @@ def getIngredientSubclusterInformation(ingredient_subcluster_id):
 #   - (string) error
 def getIngredientClusterInformation(ingredient_cluster_id):
   #print(f'[getIngredientClusterInformation - INFO]: Starting.')
+  if str(ingredient_cluster_id) == str(None):
+    return None, "No cluster ingredient with id = 'None'"
   ingredients_dict = ic_data[ingredient_cluster_id]
   ingredientName = ingredients_dict["name"].replace('_', ' ').capitalize()
   return ingredientName, ''

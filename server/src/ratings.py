@@ -89,7 +89,7 @@ def getRecipeRating(user_doc, recipe_id, rating_type):
     ingredient_id = str(ingredient_id)
     ingredientRating, err = getIngredientRating(user_doc, ingredient_id, rating_type)
     if err:
-      err = f'[getRecipeRating - {rating_type} - WARN]: Unable to get ingredient {ingredient_id} rating for recipe {recipe_id}. Skipping...'
+      err = f'[getRecipeRating - {rating_type} - WARN]: Unable to get ingredient {ingredient_id} rating for recipe {recipe_id}. Skipping this ingredient...'
       debug(err)
       continue # Just skip this rating, and hope it doesn't matter.
     sumIngredientRatings += ingredientRating
@@ -168,16 +168,15 @@ def getTasteRecipes(user_id, recipes_wanted):
 # updateSingleIngredientRating
 # Updates the user's rating of the ingredient, ingredient subcluster and cluster.
 # - Input:
-#   - (document) user_doc,
+#   - (dict) user_dict,
 #   - (string) ingredient_id,
 #   - (dict)  ratings,
 #   - (array - string) rating_types
 # - Output:
 #   - (dict) update_dict,
 #   - (string) error
-def updateSingleIngredientRating(user_doc, ingredient_id, ratings, rating_types):
+def updateSingleIngredientRating(user_dict, ingredient_id, ratings, rating_types):
   debug(f'[updateSingleIngredientRating - INFO]: Starting.')
-  updating_data = {}
 
   for rating_type in rating_types:
     if not (rating_type in rating_types):
@@ -191,53 +190,47 @@ def updateSingleIngredientRating(user_doc, ingredient_id, ratings, rating_types)
     debug(err)
     return None, err
 
-  # Retrieve the user document
-  user_dict = user_doc.to_dict()
-
   # Retrieve the ingredients document
   ingredients_dict = g.i_data[ingredient_id]
 
   # Update the ingredient rating
   for rating_type in rating_types:
     rating = ratings[rating_type]
-    updating_data['i_'+rating_type] = user_dict['i_'+rating_type]
     try:
       r = user_dict['i_'+rating_type][ingredient_id]['rating']
       n = user_dict['i_'+rating_type][ingredient_id]['n_ratings']
       r = (r*n+rating)/(n+1)
       n += 1
-      updating_data['i_'+rating_type][ingredient_id] =  {'rating': r, 'n_ratings': n}
+      user_dict['i_'+rating_type][ingredient_id] =  {'rating': r, 'n_ratings': n}
     except:
-      updating_data['i_'+rating_type][ingredient_id] = {'rating': rating, 'n_ratings': 1}
+      user_dict['i_'+rating_type][ingredient_id] = {'rating': rating, 'n_ratings': 1}
 
     # Update the ingredient subcluster rating
     subcluster_id = str(ingredients_dict["subcluster"])
     if subcluster_id != None:
-      updating_data['is_'+rating_type] = user_dict['is_'+rating_type]
       try:
         r = user_dict['is_'+rating_type][subcluster_id]['rating']
         n = user_dict['is_'+rating_type][subcluster_id]['n_ratings']
         r = (r*n+rating)/(n+1)
         n += 1
-        updating_data['is_'+rating_type][subcluster_id] = {'rating': r, 'n_ratings': n}
+        user_dict['is_'+rating_type][subcluster_id] = {'rating': r, 'n_ratings': n}
       except:
-        updating_data['is_'+rating_type][subcluster_id] = {'rating': rating, 'n_ratings': 1}
+        user_dict['is_'+rating_type][subcluster_id] = {'rating': rating, 'n_ratings': 1}
 
     # Update the ingredient cluster rating
     cluster_id = str(ingredients_dict["cluster"])
     if cluster_id != None:
-      updating_data['ic_'+rating_type] = user_dict['ic_'+rating_type]
       try:
         r = user_dict['ic_'+rating_type][cluster_id]['rating']
         n = user_dict['ic_'+rating_type][cluster_id]['n_ratings']
         r = (r*n+rating)/(n+1)
         n += 1
-        updating_data['ic_'+rating_type][cluster_id] = {'rating': r, 'n_ratings': n}
+        user_dict['ic_'+rating_type][cluster_id] = {'rating': r, 'n_ratings': n}
       except:
-        updating_data['ic_'+rating_type][cluster_id] = {'rating': rating, 'n_ratings': 1}
+        user_dict['ic_'+rating_type][cluster_id] = {'rating': rating, 'n_ratings': 1}
 
-  # Update the user's document:
-  return updating_data, ''
+  # Update the user's document by just returning to the upper level func
+  return user_dict, ''
 
 ################################################################################
 # updateIngredientClusterRatings
@@ -292,26 +285,21 @@ def updateIngredientClusterRatings(data, rating_types):
 # updateSingleRecipeRating
 # Updates the user's rating of the recipe and it's ingredients.
 # - Input:
-#   - (document) user_doc,
+#   - (dict) user_dict,
 #   - (string) recipe_id
 #   - (dict)  ratings,
 #   - (array - string) rating_types
 # - Output:
 #   - (dict) update_dict,
 #   - (string) error
-def updateSingleRecipeRating(user_doc, recipe_id, ratings, rating_types):
+def updateSingleRecipeRating(user_dict, recipe_id, ratings, rating_types):
   debug(f'[updateSingleRecipeRating - INFO]: Starting.')
-  updating_data = {}
 
   for rating_type in rating_types:
     if not (rating_type in rating_types):
       err = f'[updateSingleRecipeRating - ERROR]: rating_type {rating_type} is not a known rating type.'
       debug(err)
       return err
-    updating_data['ic_'+rating_type] = {}
-
-  # Retrieve the user document
-  user_dict = user_doc.to_dict()
 
   # Check that the user has NOT already rated this recipe...
   try:
@@ -333,18 +321,15 @@ def updateSingleRecipeRating(user_doc, recipe_id, ratings, rating_types):
 
   # Update the recipe ratings
   for rating_type in rating_types:
-    updating_data['r_'+rating_type] = user_dict['r_'+rating_type]
     rating = ratings[rating_type]
     try:
       r = user_dict['r_'+rating_type][recipe_id]['rating']
       n = user_dict['r_'+rating_type][recipe_id]['n_ratings']
       r = (r*n+rating)/(n+1)
       n += 1
-      updating_data['r_'+rating_type][recipe_id] =  {'rating': r, 'n_ratings': n}
+      user_dict['r_'+rating_type][recipe_id] =  {'rating': r, 'n_ratings': n}
     except:
-      updating_data['r_'+rating_type][recipe_id] = {'rating': rating, 'n_ratings': 1}
-  err = f'[updateSingleRecipeRating - DATA]: updating_data = {updating_data}'
-  debug(err)
+      user_dict['r_'+rating_type][recipe_id] = {'rating': rating, 'n_ratings': 1}
 
   # Update the ingredients.
   ingredient_ids = recipe_dict["ingredient_ids"]
@@ -352,17 +337,14 @@ def updateSingleRecipeRating(user_doc, recipe_id, ratings, rating_types):
     if not ingredient_id:
       continue # skip 'None' ingredient id
     ingredient_id = str(ingredient_id)
-    update_dict, err = updateSingleIngredientRating(user_doc, ingredient_id, ratings, rating_types)
+    user_dict, err = updateSingleIngredientRating(user_dict, ingredient_id, ratings, rating_types)
     if err:
       err = f'[updateSingleRecipeRating - WARN]: Unable to update ingredient {ingredient_id} ratings for recipe {recipe_id}, err: {err}. Skipping...'
       debug(err)
       continue
-    updating_data.update(update_dict)
-  err = f'[updateSingleRecipeRating - DATA]: updating_data = {updating_data}'
-  debug(err)
 
-  # Update the user's document:
-  return updating_data, ''
+  # Update the user's document by just returning to the upper level func
+  return user_dict, ''
 
 ################################################################################
 # updateRecipeRatings
@@ -374,7 +356,6 @@ def updateSingleRecipeRating(user_doc, recipe_id, ratings, rating_types):
 #   - (string) error
 def updateRecipeRatings(data, rating_types):
   debug(f'[updateRecipeRatings - INFO]: Starting.')
-  updating_data = {}
   user_id = data['userID']
 
   for rating_type in rating_types:
@@ -388,6 +369,9 @@ def updateRecipeRatings(data, rating_types):
   if err:
     return err
 
+  # Retrieve the user document
+  user_dict = user_doc.to_dict()
+
   recipe_ids = data[rating_types[0]+'_ratings']
   err = f'[updateRecipeRatings - INFO]: For user {user_id}, saving  {recipe_ids} ratings.'
   debug(err)
@@ -400,26 +384,14 @@ def updateRecipeRatings(data, rating_types):
       except:
         err = f'[updateRecipeRatings - WARN]: Missing {rating_type} rating for recipe {recipe_id}, err: {err}'
         debug(err)
-    update_dict, err = updateSingleRecipeRating(user_doc, recipe_id, ratings, rating_types)
+    user_dict, err = updateSingleRecipeRating(user_dict, recipe_id, ratings, rating_types)
     if err:
       err = f'[updateRecipeRatings - WARN]: Unable to update ratings for recipe {recipe_id}, err: {err}'
       debug(err)
       continue
-    err = f'[updateRecipeRatings - DATA]: update_dict = {update_dict}'
-    debug(err)
-    # merge 2 dictionaries' dictionaries together
-    for key in update_dict.keys():
-      try:
-        updating_data[key].update(update_dict[key])
-      except:
-        err = f'[updateRecipeRatings - HELP]: key {key} not yet in updating_data. Adding it in now...'
-        debug(err)
-        updating_data[key] = update_dict[key]
-    err = f'[updateRecipeRatings - DATA]: updating_data = {updating_data}'
-    debug(err)
 
-  # Update the user document
-  err = updateDocument('users', user_id, updating_data)
+  # Update the user document to be the new user dictionary
+  err = updateDocument('users', user_id, user_dict)
   if err:
     err = f'[updateRecipeRatings - ERROR]: Unable to update user document with ratings for recipes and ingredients, err: {err}'
     debug(err)
