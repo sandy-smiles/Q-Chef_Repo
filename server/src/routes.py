@@ -543,3 +543,66 @@ def review_recipe():
       debug(err)
       return err
     return ""
+
+################################################################################
+# lookup_user [POST]
+# POST: End point returns the ratings that the user has.
+# - Input:
+#   - (json) {"userID": <user_id>}
+# - Output:
+#   - (json)
+@app.route('/lookup_user', methods=['POST'])
+@cross_origin()
+def lookup_user():
+  debug(f'[lookup_user - INFO]: Starting.')
+  if request.method == 'POST':
+    debug('[lookup_user - INFO]: POST request')
+    request_data, user_id, err = authentication(request)
+    debug(f'[lookup_user - DATA]: request_data: {request_data}')
+    if err:
+      err = f'[lookup_user - ERROR]: Authentication error, err = {err}'
+      debug(err)
+      return err
+    # Run any functions that need to be done before the rest of the request
+    before_request_func()
+
+    user_doc_ref, user_doc, err = retrieveDocument('users', user_id)
+    if err:
+      err = f'[lookup_user - ERROR]: Unable to retrieve the user {user_id} data, err = {err}'
+      debug(err)
+      return err
+    user_dict = user_doc.to_dict()
+
+    user_ratings = {}
+
+    # Obtain a list of all rate recipes
+    # keys of all recipe taste ratings
+    r_ids = request_data['recipe_ids']
+    for r_id in r_ids:
+      # Change into a string (just in case)
+      r_id = str(r_id)
+      # Find the ratings
+      user_recipe_ratings = {}
+      user_recipe_ratings['recipe'] = {
+        'familiarity': getRecipeRating(user_dict, r_id, 'familiarity'),
+        'surprise': getRecipeRating(user_dict, r_id, 'surprise'),
+        'taste': getRecipeRating(user_dict, r_id, 'taste'),
+      }
+
+      # Find the ingredients and the user's ratings of them
+      user_ingredient_ratings = {}
+      i_ids = g.r_data[r_id]["ingredient_ids"]
+      for i_id in i_ids:
+        # Change into a string (just in case)
+        i_id = str(i_id)
+        # Find the ratings
+        user_ingredient_ratings[i_id] = {
+          'familiarity': getIngredientRating(user_dict, i_id, 'familiarity'),
+          'surprise': getIngredientRating(user_dict, i_id, 'surprise'),
+          'taste': getIngredientRating(user_dict, i_id, 'taste'),
+        }
+
+      user_recipe_ratings['ingredient'] = user_ingredient_ratings
+      user_ratings[r_id] = user_recipe_ratings
+
+    return jsonify(user_ratings)

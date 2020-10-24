@@ -21,15 +21,14 @@ rating_types = ['taste',
 # getIngredientRating
 # Returns a json of the recipe info needed to give to the front end.
 # - Input:
-#   - (document) user_doc,
+#   - (dict) user_doc,
 #   - (string) ingredient_id,
 #   - (string) rating_type
 # - Output:
 #   - (float) ingredient preference,
 #   - (string) error
-def getIngredientRating(user_doc, ingredient_id, rating_type):
+def getIngredientRating(user_dict, ingredient_id, rating_type):
   debug(f'[getIngredientRating - {rating_type} - INFO]: Starting.')
-  user_dict = user_doc.to_dict()
   rating_type = rating_type.lower()
 
   if not (rating_type in rating_types):
@@ -55,7 +54,11 @@ def getIngredientRating(user_doc, ingredient_id, rating_type):
       except:
         # TODO(kbona): Figure out how to return an ingredient rating from a closely located rated ingredient.
         # For now, return as if there was no rating.
-        ingredientTasteRating = 0
+        # ingredientTasteRating = 0
+        # Changed to having the algo skip this ingredient's rating.
+        err = f'[getIngredientRating - {rating_type} - HELP]: No saved rating for ingredient_id = {ingredient_id}.'
+        debug(err)
+        return None, err
 
   return ingredientTasteRating, ''
 
@@ -63,13 +66,13 @@ def getIngredientRating(user_doc, ingredient_id, rating_type):
 # getRecipeRating
 # Returns a json of the recipe info needed to give to the front end.
 # - Input:
-#   - (document) user_doc,
+#   - (dict) user_dict,
 #   - (string) recipe_id,
 #   - (string) rating_type
 # - Output:
 #   - (float) recipe preference,
 #   - (string) error
-def getRecipeRating(user_doc, recipe_id, rating_type):
+def getRecipeRating(user_dict, recipe_id, rating_type):
   rating_type = rating_type.lower()
   debug(f'[getRecipeRating - {rating_type} - INFO]: Starting.')
 
@@ -87,13 +90,19 @@ def getRecipeRating(user_doc, recipe_id, rating_type):
   numIngredientRatings = 0
   for ingredient_id in ingredient_ids:
     ingredient_id = str(ingredient_id)
-    ingredientRating, err = getIngredientRating(user_doc, ingredient_id, rating_type)
+    ingredientRating, err = getIngredientRating(user_dict, ingredient_id, rating_type)
     if err:
-      err = f'[getRecipeRating - {rating_type} - WARN]: Unable to get ingredient {ingredient_id} rating for recipe {recipe_id}. Skipping this ingredient...'
+      err = f'[getRecipeRating - {rating_type} - INFO]: Unable to get ingredient {ingredient_id} rating for recipe {recipe_id}. Skipping this ingredient...'
       debug(err)
       continue # Just skip this rating, and hope it doesn't matter.
     sumIngredientRatings += ingredientRating
     numIngredientRatings += 1
+
+
+  if (numIngredientRatings == 0):
+    err = f'[getRecipeRating - {rating_type} - WARN]: No rating available for recipe_id = {recipe_id}.'
+    debug(err)
+    return None, err
 
   return sumIngredientRatings/numIngredientRatings, ''
 
@@ -132,12 +141,12 @@ def getTasteRecipes(user_id, recipes_wanted):
       err = f'[getTasteRecipes - INFO]: For user {user_id}, recipe {recipe_id} has already been rated, therefore continuing...'
       debug(err)
       continue
-    userRecipePref, err = getRecipeRating(user_doc, recipe_id, 'taste')
+    userRecipePref, err = getRecipeRating(user_dict, recipe_id, 'taste')
     if err:
-      err = f'[getTasteRecipes - ERROR]: Unable to find user {user_id} taste preference for recipe {recipe_doc.id}, err = {err}'
+      err = f'[getTasteRecipes - ERROR]: Unable to find user {user_id} taste preference for recipe {recipe_id}, err = {err}'
       debug(err)
       continue # Just ignore this recipe then.
-    userRecipeSurp, err = surpRecipe(user_doc.to_dict(), g.r_data[recipe_id])
+    userRecipeSurp, err = surpRecipe(user_dict, g.r_data[recipe_id])
     if err:
       err = f'[getTasteRecipes - ERROR]: Unable to find user {user_id} surprise preference for recipe {recipe_id}, err = {err}'
       debug(err)

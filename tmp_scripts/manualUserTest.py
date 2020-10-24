@@ -51,6 +51,7 @@ surprise_question_str = """Surprise Question...
 #url_domain = 'https://q-chef-backend-api-server.web.app'
 url_domain = 'http://127.0.0.1:5000'
 
+
 ################################################################################
 # MAIN
 ################################################################################
@@ -68,11 +69,20 @@ def main():
 
   # Import the needed json data
   print("Loading json data...")
+  with open(data_folder+'/qchef_ingredients.json', 'r') as f:
+    i_data = json.load(f)
   with open(data_folder+'/qchef_ingredient_clusters.json', 'r') as f:
     ic_data = json.load(f)
   with open(data_folder+'/qchef_recipes.json', 'r') as f:
     r_data = json.load(f)
   print("Finished json data.")
+
+  # Create a reverse lookup dictionary of names to ingredient ids
+  print("Creating inverse lookup dictionary of i_ids...")
+  i_names = {}
+  for i_id, i_v in i_data.items():
+    i_names[i_v['name'].replace('_', ' ')] = str(i_id)
+  print("Created inverse lookup dictionary of i_ids.")
 
   #-----------------------------------------------------------------------------
 
@@ -91,6 +101,7 @@ def main():
     print(f"Attempting to load {test_folder+url_path+'-'+str(user_name)}.json")
     with open(save_folder+url_path+f'-{user_name}.json', 'r') as f:
       request_data = json.load(f)
+    print(f"Using {test_folder+url_path+'-'+str(user_name)}.json")
   except:
     print(f"Unable to load {test_folder+url_path+'-'+str(user_name)}.json")
     request_data = {
@@ -100,9 +111,11 @@ def main():
     request_data['taste_ratings'] = {}
     request_data['surprise_ratings'] = {}
     for r_key in response_data.keys():
-      print(f"Recipe {response_data[r_key]['title']}\'s ingredients:")
+      print(f"Recipe {r_key} | {response_data[r_key]['title']}\'s ingredients:")
       for i_name in response_data[r_key]['ingredient_names']:
-        print(f" --> {i_name}")
+        i_key = i_names[i_name]
+        i_key = i_key+' '*(5-len(i_key))
+        print(f" --> {i_key} | {i_name}")
 
       print(familiarity_question_str, end='')
       r_fam_rating = ''
@@ -117,7 +130,7 @@ def main():
       print(surprise_question_str, end='')
       r_sur_rating = ''
       while not r_sur_rating:
-        r_sur_rating = input(f"Surpise of {response_data[r_key]['title']}: ")
+        r_sur_rating = input(f"Surprise of {response_data[r_key]['title']}: ")
       request_data['surprise_ratings'][r_key] = min(max(0, int(r_sur_rating)), 2)
       print()
     with open(save_folder+url_path+f'-{user_name}.json', 'a') as f:
@@ -126,7 +139,7 @@ def main():
       f.write(json.dumps(request_data))
 
   response = requests.post(url_domain+url_path, json=request_data)
-  print(f"Sent {request_type} request to {url_domain+url_path}")
+  print(f"Sent {request_type} request to {url_domain+url_path} for user {user_name}")
   print(f"Response Status code: {response.status_code}")
   try:
     print(f"{response.json()}")
@@ -151,6 +164,7 @@ def main():
     print(f"Attempting to load {test_folder+url_path+'-'+str(user_name)}.json")
     with open(save_folder+url_path+f'-{user_name}.json', 'r') as f:
       request_data = json.load(f)
+    print(f"Using {test_folder+url_path+'-'+str(user_name)}.json")
   except:
     print(f"Unable to load {test_folder+url_path+'-'+str(user_name)}.json")
     request_data = {
@@ -162,12 +176,12 @@ def main():
       print(familiarity_question_str, end='')
       ic_fam_rating = ''
       while not ic_fam_rating:
-        ic_fam_rating = input(f"Familiarity of {ic_data[str(ic_key)]['name']}: ")
+        ic_fam_rating = input(f"Familiarity of {ic_key} | {ic_data[str(ic_key)]['name']}: ")
       request_data['familiarity_ratings'][ic_key] = min(max(0, int(ic_fam_rating)), 2)
       print(taste_question_str, end='')
       ic_tas_rating = ''
       while not ic_tas_rating:
-        ic_tas_rating = input(f"Taste of {ic_data[str(ic_key)]['name']}: ")
+        ic_tas_rating = input(f"Taste of {ic_key} | {ic_data[str(ic_key)]['name']}: ")
       request_data['taste_ratings'][ic_key] = min(max(0, int(ic_tas_rating)), 2)
       print()
     with open(save_folder+url_path+f'-{user_name}.json', 'a') as f:
@@ -176,7 +190,7 @@ def main():
       f.write(json.dumps(request_data))
 
   response = requests.post(url_domain+url_path, json=request_data)
-  print(f"Sent {request_type} request to {url_domain+url_path}")
+  print(f"Sent {request_type} request to {url_domain+url_path} for user {user_name}")
   print(f"Response Status code: {response.status_code}")
   try:
     print(f"{response.json()}")
@@ -190,10 +204,18 @@ def main():
   url_path = '/validation_recipe_rating'
   request_type = 'POST'
   response_data = response.json()
+
+  ratings = requests.post(url_domain+'/lookup_user', json={
+    "userID": user_name,
+    "manualID": True,
+    "recipe_ids": list(response_data.keys()),
+  }).json()
+
   try:
     print(f"Attempting to load {test_folder+url_path+'-'+str(user_name)}.json")
     with open(save_folder+url_path+f'-{user_name}.json', 'r') as f:
       request_data = json.load(f)
+    print(f"Using {test_folder+url_path+'-'+str(user_name)}.json")
   except:
     print(f"Unable to load {test_folder+url_path+'-'+str(user_name)}.json")
     request_data = {
@@ -203,9 +225,23 @@ def main():
     request_data['taste_ratings'] = {}
     request_data['surprise_ratings'] = {}
     for r_key in response_data.keys():
-      print(f"Recipe {response_data[r_key]['title']}\'s ingredients:")
+      r_f_r, e = ratings[r_key]["recipe"]["familiarity"]
+      r_s_r, e = ratings[r_key]["recipe"]["surprise"]
+      r_t_r, e = ratings[r_key]["recipe"]["taste"]
+      r_f_r = 'None ' if r_f_r == None else f"{r_f_r:5.2f}"
+      r_s_r = 'None ' if r_s_r == None else f"{r_s_r:5.2f}"
+      r_t_r = 'None ' if r_t_r == None else f"{r_t_r:5.2f}"
+      print(f"Recipe {r_key} | {r_f_r} {r_s_r} {r_t_r} | {response_data[r_key]['title']}\'s ingredients:")
       for i_name in response_data[r_key]['ingredient_names']:
-        print(f" --> {i_name}")
+        i_key = i_names[i_name]
+        i_f_r, e = ratings[r_key]["ingredient"][i_key]["familiarity"]
+        i_s_r, e = ratings[r_key]["ingredient"][i_key]["surprise"]
+        i_t_r, e = ratings[r_key]["ingredient"][i_key]["taste"]
+        i_f_r = 'None ' if i_f_r == None else f"{i_f_r:5.2f}"
+        i_s_r = 'None ' if i_s_r == None else f"{i_s_r:5.2f}"
+        i_t_r = 'None ' if i_t_r == None else f"{i_t_r:5.2f}"
+        i_key = i_key+' '*(5-len(i_key))
+        print(f" --> {i_key} | {i_f_r} {i_s_r} {i_t_r} | {i_name}")
 
       print(familiarity_question_str, end='')
       r_fam_rating = ''
@@ -220,7 +256,7 @@ def main():
       print(surprise_question_str, end='')
       r_sur_rating = ''
       while not r_sur_rating:
-        r_sur_rating = input(f"Surpise of {response_data[r_key]['title']}: ")
+        r_sur_rating = input(f"Surprise of {response_data[r_key]['title']}: ")
       request_data['surprise_ratings'][r_key] = min(max(0, int(r_sur_rating)), 2)
       print()
     with open(save_folder+url_path+f'-{user_name}.json', 'a') as f:
@@ -229,7 +265,7 @@ def main():
       f.write(json.dumps(request_data))
 
   response = requests.post(url_domain+url_path, json=request_data)
-  print(f"Sent {request_type} request to {url_domain+url_path}")
+  print(f"Sent {request_type} request to {url_domain+url_path} for user {user_name}")
   print(f"Response Status code: {response.status_code}")
   try:
     print(f"{response.json()}")
@@ -252,7 +288,7 @@ def main():
       "manualID": True,
       "number_of_recipes": 10}
     response = requests.post(url_domain+url_path, json=request_data)
-    print(f"Sent {request_type} request to {url_domain+url_path}")
+    print(f"Sent {request_type} request to {url_domain+url_path} for user {user_name}")
     print(f"Response Status code: {response.status_code}")
 
     #/validation_recipe_rating POST
@@ -260,6 +296,13 @@ def main():
     url_path = '/validation_recipe_rating'
     request_type = 'POST'
     response_data = response.json()
+
+    ratings = requests.post(url_domain+'/lookup_user', json={
+      "userID": user_name,
+      "manualID": True,
+      "recipe_ids": list(response_data.keys()),
+    }).json()
+
     request_data = {
       "userID": user_name,
       "manualID": True}
@@ -267,9 +310,23 @@ def main():
     request_data['taste_ratings'] = {}
     request_data['surprise_ratings'] = {}
     for r_key in response_data.keys():
-      print(f"Recipe {response_data[r_key]['title']}\'s ingredients:")
+      r_f_r, e = ratings[r_key]["recipe"]["familiarity"]
+      r_s_r, e = ratings[r_key]["recipe"]["surprise"]
+      r_t_r, e = ratings[r_key]["recipe"]["taste"]
+      r_f_r = 'None ' if r_f_r == None else f"{r_f_r:5.2f}"
+      r_s_r = 'None ' if r_s_r == None else f"{r_s_r:5.2f}"
+      r_t_r = 'None ' if r_t_r == None else f"{r_t_r:5.2f}"
+      print(f"Recipe {r_key} | {r_f_r} {r_s_r} {r_t_r} | {response_data[r_key]['title']}\'s ingredients:")
       for i_name in response_data[r_key]['ingredient_names']:
-        print(f" --> {i_name}")
+        i_key = i_names[i_name]
+        i_f_r, e = ratings[r_key]["ingredient"][i_key]["familiarity"]
+        i_s_r, e = ratings[r_key]["ingredient"][i_key]["surprise"]
+        i_t_r, e = ratings[r_key]["ingredient"][i_key]["taste"]
+        i_f_r = 'None ' if i_f_r == None else f"{i_f_r:5.2f}"
+        i_s_r = 'None ' if i_s_r == None else f"{i_s_r:5.2f}"
+        i_t_r = 'None ' if i_t_r == None else f"{i_t_r:5.2f}"
+        i_key = i_key+' '*(5-len(i_key))
+        print(f" --> {i_key} | {i_f_r} {i_s_r} {i_t_r} | {i_name}")
 
       print(familiarity_question_str, end='')
       r_fam_rating = ''
@@ -284,12 +341,12 @@ def main():
       print(surprise_question_str, end='')
       r_sur_rating = ''
       while not r_sur_rating:
-        r_sur_rating = input(f"Surpise of {response_data[r_key]['title']}: ")
+        r_sur_rating = input(f"Surprise of {response_data[r_key]['title']}: ")
       request_data['surprise_ratings'][r_key] = min(max(0, int(r_sur_rating)), 2)
       print()
 
     response = requests.post(url_domain+url_path, json=request_data)
-    print(f"Sent {request_type} request to {url_domain+url_path}")
+    print(f"Sent {request_type} request to {url_domain+url_path} for user {user_name}")
     print(f"Response Status code: {response.status_code}")
     try:
       print(f"{response.json()}")

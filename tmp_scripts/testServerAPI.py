@@ -21,7 +21,8 @@ import time
 ################################################################################
 # Constants
 ################################################################################
-data_folder = './test_requests'
+test_folder = './test_requests'
+data_folder = '../server/src/data'
 
 endpoints = ['/onboarding_recipe_rating GET',
              '/onboarding_recipe_rating POST',
@@ -34,7 +35,7 @@ endpoints = ['/onboarding_recipe_rating GET',
              '/review_recipe POST']
 
 #url_domain = 'https://q-chef-backend-api-server.web.app'
-#url_domain = 'http://127.0.0.1:5000'
+url_domain = 'http://127.0.0.1:5000'
 
 ################################################################################
 # MAIN
