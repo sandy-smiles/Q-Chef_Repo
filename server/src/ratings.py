@@ -146,12 +146,6 @@ def getTasteRecipes(user_id, recipes_wanted):
       err = f'[getTasteRecipes - ERROR]: Unable to find user {user_id} taste preference for recipe {recipe_id}, err = {err}'
       debug(err)
       continue # Just ignore this recipe then.
-    userRecipeSurp, err = surpRecipe(user_dict, g.r_data[recipe_id])
-    if err:
-      err = f'[getTasteRecipes - ERROR]: Unable to find user {user_id} surprise preference for recipe {recipe_id}, err = {err}'
-      debug(err)
-      continue # Just ignore this recipe then.
-    #possibleRecipes.append((userRecipeSurp, recipe_id))
     possibleRecipes.append((userRecipePref, recipe_id))
 
   possibleRecipes.sort(reverse=True)
@@ -167,6 +161,73 @@ def getTasteRecipes(user_id, recipes_wanted):
     recipeInfo, err = getRecipeInformation(recipe_id)
     if err:
       err = f'[getTasteRecipes - WARN]: Unable to get recipe {recipe_id} information, err = {err}. Skipping...'
+      debug(err)
+      continue
+    recipe_info[recipe_id] = recipeInfo
+
+  return recipe_info, ''
+
+
+################################################################################
+# getTasteAndSurpRecipes
+# Returns a constant times wanted number of recipes
+# that we think the user will enjoy but find surprising.
+# - Input:
+#   - (string) user_id,
+#   - (int) recipes_wanted
+#     - number of recipes user wants
+# - Output:
+#   - (dict) recipes and their information,
+#   - (string) error
+def getTasteAndSurpRecipes(user_id, recipes_wanted):
+  debug(f'[getTasteAndSurpRecipes - INFO]: Starting.')
+  numWantedRecipes = TASTE_RECIPES_RETURNED  # recipes_wanted
+
+  ## Collect list of possible recipes to pick from
+  ## Noting that we won't give a user a recipe they have already tried.
+
+  # Retrieve the user document
+  user_doc_ref, user_doc, err = retrieveDocument('users', user_id)
+  if err:
+    return None, err
+  user_dict = user_doc.to_dict()
+  user_recipes = list(user_dict['r_taste'].keys())
+
+  # Retrieve the recipe collection
+  possibleRecipes = []
+  recipe_ids = g.r_data.keys()
+  err = f'[getTasteAndSurpRecipes - HELP]: For user {user_id}, recipe {user_recipes} have already been rated.'
+  debug(err)
+  for recipe_id in recipe_ids:
+    if recipe_id in user_recipes:
+      err = f'[getTasteAndSurpRecipes - INFO]: For user {user_id}, recipe {recipe_id} has already been rated, therefore continuing...'
+      debug(err)
+      continue
+    userRecipePref, err = getRecipeRating(user_dict, recipe_id, 'taste')
+    if err:
+      err = f'[getTasteAndSurpRecipes - ERROR]: Unable to find user {user_id} taste preference for recipe {recipe_id}, err = {err}'
+      debug(err)
+      continue  # Just ignore this recipe then.
+    userRecipeSurp, err = surpRecipe(user_dict, g.r_data[recipe_id])
+    if err:
+      err = f'[getTasteAndSurpRecipes - ERROR]: Unable to find user {user_id} surprise preference for recipe {recipe_id}, err = {err}'
+      debug(err)
+      continue  # Just ignore this recipe then.
+    possibleRecipes.append((userRecipePref*userRecipeSurp, recipe_id))
+
+  possibleRecipes.sort(reverse=True)
+  # Check that there are enough recipes to serve up.
+  numPossibleRecipes = len(possibleRecipes)
+  if numPossibleRecipes > numWantedRecipes:
+    possibleRecipes = possibleRecipes[:numWantedRecipes]
+
+  # Grab the recipe information to be returned in the json
+  recipe_info = {}
+  for pref, recipe_id in possibleRecipes:
+    # Get the recipe information
+    recipeInfo, err = getRecipeInformation(recipe_id)
+    if err:
+      err = f'[getTasteAndSurpRecipes - WARN]: Unable to get recipe {recipe_id} information, err = {err}. Skipping...'
       debug(err)
       continue
     recipe_info[recipe_id] = recipeInfo
