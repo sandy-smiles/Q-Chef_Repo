@@ -5,6 +5,7 @@
 
 from func import *
 from surprise_models import *
+from scipy.stats import gmean
 
 ################################################################################
 # Constants
@@ -213,17 +214,18 @@ def getTasteAndSurpRecipes(user_id, recipes_wanted):
       err = f'[getTasteAndSurpRecipes - ERROR]: Unable to find user {user_id} surprise preference for recipe {recipe_id}, err = {err}'
       debug(err)
       continue  # Just ignore this recipe then.
-    possibleRecipes.append((userRecipePref*userRecipeSurp, recipe_id))
+    #We decided on the geometric mean (sqrt(a*b)) to combine preference and surprise as it biases the rating towards the lower.
+    possibleRecipes.append((gmean(userRecipeSurp,userRecipePref), recipe_id))
 
-  possibleRecipes.sort(reverse=True)
+  recipe_preferences.sort(reverse=True)
   # Check that there are enough recipes to serve up.
-  numPossibleRecipes = len(possibleRecipes)
+  numPossibleRecipes = len(recipe_preferences)
   if numPossibleRecipes > numWantedRecipes:
-    possibleRecipes = possibleRecipes[:numWantedRecipes]
+    possibleRecipes = recipe_preferences[:numWantedRecipes]
 
   # Grab the recipe information to be returned in the json
   recipe_info = {}
-  for pref, recipe_id in possibleRecipes:
+  for pref, recipe_id in recipe_preferences:
     # Get the recipe information
     recipeInfo, err = getRecipeInformation(recipe_id)
     if err:

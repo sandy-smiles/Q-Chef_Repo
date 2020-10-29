@@ -83,13 +83,13 @@ def userArchetypeSurpRatings(user):
     return arch_surps,""
 
 
-# getNN - returns the pretrained classifier used in neural surprise, initialising if needed
+# getModels - returns the pretrained classifier used in neural surprise, initialising if needed
 # Input:
 #  - (string): filename to load
 # Output:
-#  - (model): sklearn BaseEstimator object
+#  - (dict): dict of four sklearn BaseEstimator objects (fam_high,fam_low,surp_pos,surp_neg)
 #  - (string): error
-def getNN(fn="nn_surprise_model.joblib"):
+def getModels(fn="nn_surprise_model.joblib"):
     model = g.get("nn",None)
     if model == None:
         # TODO(kazjon@): Should we be doing something smarter than loading from file?
@@ -165,18 +165,16 @@ def simpleSurpRecipe(user, targetRecipe, sigma=2, delta=1):
     return surprise,""
 
 
-# neuralSurpRecipe - returns the surprise score for a given user-recipe pair
+# advancedSurpRecipe - returns the surprise score for a given user-recipe pair
 # Input:
 #  - (dict): user object
 #  - (dict): recipe object
-# Keyword input:
-#  - simpleSurprise (boolean): Whether to use the simple or neural surprise models.
 # Output:
 #  - (float) calculated surprise score in [0..1]
 #  - (string) error
-def neuralSurpRecipe(user, targetRecipe, simpleSurprise=True):
-    return None,"Neural surprise is not implemented at this time."
-    model = getNN()
+def advancedSurpRecipe(user, targetRecipe):
+    return None,"Advanced (model-based) surprise is not implemented at this time."
+    model = getModels()
     archetype_surp_ratings,error = userArchetypeSurpRatings(user)
     if error is not None:
         return None,error
@@ -205,7 +203,7 @@ def surpRecipe(user, targetRecipe, simpleSurprise=True):
     if simpleSurprise:
         return simpleSurpRecipe(user,targetRecipe)
     else:
-        return neuralSurpRecipe(user,targetRecipe)
+        return advancedSurpRecipe(user,targetRecipe)
 
 
 #rateSurprise - returns surprises and errors for a set of recipes
@@ -221,7 +219,7 @@ def rateSurprise(user, recipes, simpleSurprise=True):
     if simpleSurprise:
         responses = {k:simpleSurpRecipe(user,r) for k,r in recipes}
     else:
-        responses = {k:neuralSurpRecipe(user,r) for k,r in recipes}
+        responses = {k:advancedSurpRecipe(user,r) for k,r in recipes}
     errors = {}
     surprises = {}
     for key,rating in responses.items():
