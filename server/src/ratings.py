@@ -209,7 +209,7 @@ def getTasteAndSurpRecipes(user_id, recipes_wanted):
       err = f'[getTasteAndSurpRecipes - ERROR]: Unable to find user {user_id} taste preference for recipe {recipe_id}, err = {err}'
       debug(err)
       continue  # Just ignore this recipe then.
-    userRecipeSurp, err = surpRecipe(user_dict, g.r_data[recipe_id])
+    userRecipeSurp, err = surpRecipe(user_dict, recipe_id)
     if err:
       err = f'[getTasteAndSurpRecipes - ERROR]: Unable to find user {user_id} surprise preference for recipe {recipe_id}, err = {err}'
       debug(err)

@@ -5,6 +5,7 @@
 
 import time
 import json
+import csv
 
 from app import app, auth_app
 from flask import make_response, request, jsonify, render_template, redirect, url_for, send_file
@@ -106,10 +107,34 @@ def before_request_func():
       g.r_data = data
       return g.r_data
 
+  def get_surp_data():
+    debug(f'[get_surp_data - INFO]: Starting.')
+    if 'surp_data' not in g:
+      data = {}
+      with open('./data/qchef_recipe_surprises.csv', 'r') as f:
+        reader = csv.reader(f)
+        for row in reader:
+          data[row[0].split("_")[-1]] = {"surprise_100": float(row[1]), "surprise_95": float(row[2]), "surprise_90": float(row[3]), "surprise_50": float(row[4])}
+      g.surp_data = data
+      return g.surp_data
+
+  def get_nov_data():
+    debug(f'[get_nov_data - INFO]: Starting.')
+    if 'nov_data' not in g:
+      data = {}
+      with open('./data/qchef_recipe_novelties.csv', 'r') as f:
+        reader = csv.reader(f)
+        for row in reader:
+          data[row[0].split("_")[-1]] = {"novelty_100": float(row[1]), "novelty_95": float(row[2]), "novelty_90": float(row[3]), "novelty_50": float(row[4])}
+      g.nov_data = data
+      return g.nov_data
+
   get_i_data()
   get_is_data()
   get_ic_data()
   get_r_data()
+  get_surp_data()
+  get_nov_data()
 
 ################################################################################
 # Authentication

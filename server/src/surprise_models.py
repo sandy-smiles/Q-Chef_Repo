@@ -3,8 +3,17 @@ from joblib import load
 import csv,math
 from scipy.spatial import distance
 import numpy as np
+import pandas as pd
 
 from func import retrieveDocument
+from sklearn.preprocessing import PolynomialFeatures
+
+model_fns = fns={
+    "fam_high":"best_fam_high_model_10board_poly_final.joblib",
+    "fam_low":"best_fam_low_model_10board_poly_final.joblib",
+    "surp_pos":"best_surp_pos_model_10board_poly_final.joblib",
+    "surp_neg":"best_surp_neg_model_10board_poly_final.joblib"
+}
 
 ######## Surprise Helper Functions ########
 
@@ -84,22 +93,21 @@ def userArchetypeSurpRatings(user):
 
 
 # getModels - returns the pretrained classifier used in neural surprise, initialising if needed
-# Input:
-#  - (string): filename to load
 # Output:
 #  - (dict): dict of four sklearn BaseEstimator objects (fam_high,fam_low,surp_pos,surp_neg)
 #  - (string): error
-def getModels(fn="nn_surprise_model.joblib"):
-    model = g.get("nn",None)
-    if model == None:
-        # TODO(kazjon@): Should we be doing something smarter than loading from file?
-        try:
-            model = load(fn)
-            g.nn = model
-            print("Loaded",fn)
-        except:
-            return None,f"Failed to load model from file. Does {fn} exist?"
-    return model,""
+def getModels():
+    models_dict = g.get("models_dict",None)
+    if models_dict == None:
+        for model_key,model_fn in fns.items():
+            try:
+                models_dict["model_key"] = load(model_fn)
+            except:
+                return None, f"Failed to load model from file. Does {model_fn} exist?"
+            print("Loaded",model_fn)
+
+        g.models_dict = models_dict
+    return models_dict,""
 
 # rawSurpRecipe - returns the ingredient co-occurrence based surprise score for a recipe
 # Input:
@@ -109,7 +117,11 @@ def getModels(fn="nn_surprise_model.joblib"):
 # Output:
 #  - (float: Raw surprise score
 #  - (string): error
-def rawSurpRecipe(recipe,percentile=100):
+def rawSurpRecipe(recipe_id,percentile=100):
+    try:
+        recipe = g.r_data[recipe_id]
+    except:
+        return None,recipe_id + " not found in g.r_data."
     if "surprises" not in recipe.keys() or not len(recipe["surprises"]):
         return None,"No surprises found for this recipe."
     if not str(percentile)+"%" in recipe["surprises"].keys():
@@ -139,15 +151,15 @@ def culinaryExperience(user):
 # simpleSurpRecipe - surprise score for a given user-recipe pair
 # Input:
 #  - (dict): user object
-#  - (dict): recipe object
+#  - (string): recipe id
 # Output:
 #  - (float) calculated surprise score in [0..1]
 #  - (string) error
-def simpleSurpRecipe(user, targetRecipe, sigma=2, delta=1):
+def simpleSurpRecipe(user, recipe_id, sigma=2, delta=1):
     cul_ex,error = culinaryExperience(user)
     if len(error):
         return None,error
-    raw_surprise,error = rawSurpRecipe(targetRecipe)
+    raw_surprise,error = rawSurpRecipe(recipe_id)
     if len(error):
         return None,error
     # The target surprise level varies by culinary experience
@@ -165,23 +177,62 @@ def simpleSurpRecipe(user, targetRecipe, sigma=2, delta=1):
     return surprise,""
 
 
+def predict_many_users_one_recipe(model, users, recipe_id, weight_id = None):
+    X = pd.dataFrame()
+    for col in model["recipe_pset"]:
+        if "nov" in col:
+            try:
+                percentile = col.split("_")[-1]
+                feature = g.nov_data[recipe_id]["novelty_"+percentile]
+            except:
+                return None, col + " is not a supported model feature."
+        elif "surp" in col:
+            try:
+                percentile = col.split("_")[-1]
+                feature = g.surp_data[recipe_id]["surprise_"+percentile]
+            except:
+                return None, col + " is not a supported model feature."
+        else:
+            return None,col+" is not a supported model feature."
+        X[col] = [feature] * len(users)
+    # UNCONVERTED CODE BELOW THIS LINE.
+        # TODO: In the testbed, we've precalculated the onboarding surprise, familiarity and taste weighted for all possible recipes in the validation set.
+        #      here we'll have to do that manually!
+    for col in model["user_pset"]:
+        if "onboarding" in col and weight_id is not None:
+            X[col] = users[col + "_weighted_"+weight_id]
+        else:
+            X[col] = users[col]
+    if model["poly_features"] > 0:
+        X = PolynomialFeatures(model["poly_features"]).fit_transform(X)
+    X_scaled = model["scaler"].transform(X)
+    if "decision_norm" in model.keys():
+        return model["predictor"].decision_function(X_scaled) / model["decision_norm"]
+    else:
+        return model["predictor"].predict_proba(X_scaled)[:,1]
+
 # advancedSurpRecipe - returns the surprise score for a given user-recipe pair
 # Input:
 #  - (dict): user object
-#  - (dict): recipe object
+#  - (string): recipe id
 # Output:
 #  - (float) calculated surprise score in [0..1]
 #  - (string) error
-def advancedSurpRecipe(user, targetRecipe):
+def advancedSurpRecipe(user, recipe_id):
+    model_dict = getModels()
+    recipe_predictions = {}
+    for model_name,model in model_dict.iter():
+        recipe_predictions[model_name] = predict_many_users_one_recipe([user],recipe_id)
+
     return None,"Advanced (model-based) surprise is not implemented at this time."
-    model = getModels()
+    # Old code after this point
     archetype_surp_ratings,error = userArchetypeSurpRatings(user)
     if error is not None:
         return None,error
-    archetype_sims,error = archetypeSimilarities(targetRecipe)
+    archetype_sims,error = archetypeSimilarities(recipe_id)
     if error is not None:
         return None,error
-    recipe_surp,error = rawSurpRecipe(targetRecipe)
+    recipe_surp,error = rawSurpRecipe(recipe_id)
     if error is not None:
         return None,error
 
@@ -193,17 +244,17 @@ def advancedSurpRecipe(user, targetRecipe):
 # surpRecipe - returns the predicted surprise for a given user-recipe pair
 # Input:
 #  - (dict): user object
-#  - (dict): recipe object
+#  - (string): recipe id
 # Keyword input:
 #  - simpleSurprise (boolean): Whether to use the simple or neural surprise models.
 # Output:
 #  - (float) calculated surprise score in [0..1]
 #  - (string) error
-def surpRecipe(user, targetRecipe, simpleSurprise=True):
+def surpRecipe(user, recipe_id, simpleSurprise=True):
     if simpleSurprise:
-        return simpleSurpRecipe(user,targetRecipe)
+        return simpleSurpRecipe(user,recipe_id)
     else:
-        return advancedSurpRecipe(user,targetRecipe)
+        return advancedSurpRecipe(user,recipe_id)
 
 
 #rateSurprise - returns surprises and errors for a set of recipes
