@@ -54,42 +54,68 @@ def archetypeSimilarities(recipe):
     archetype_recipes,error = getRecipeArchetypes()
     if len(error):
         return None,error
-    archetype_ids = sorted(archetype_recipes.keys())
-    sims = [recipeSimilarity(recipe,archetype_recipes[id]) for id in archetype_ids] #this will return a list of similarity,error tuples
+    archetype_ids = archetype_recipes.keys()
+    sims = [max(0,1-recipeSimilarity(recipe,archetype_recipes[id])) for id in archetype_ids] #this will return a list of similarity,error tuples
     if any(len(s[1]) for s in sims):
         return None,"".join([s[1] for s in sims])
     return [s[0] for s in sims],""
-
-# userRecipeSurpriseRating - returns the surprise rating a user has given for a recipe.
-# Input:
-#  - (dict): the user object
-#  - (recipe ID): the recipe ID
-# Output:
-#  - (float): the surprise rating provided by the user
-#  - (string): error
-def userRecipeSurpriseRating(user,recipeID):
-    if not recipeID in user["r_surprise"]:
-        return None,"The surprise of this recipe has not been rated by this user."
-    return user["r_surprise"][recipeID],""
 
 # userArchetypeSurpRatings - returns user ratings of the archetypes (from onboarding)
 # Input:
 #  - (dict): user object
 # Output:
-#  - (list of floats): the user's ratings of the archetypal recipe's surprises (from onboarding)
+#  - (list of floats): the user's surprise ratings of the archetypal recipes (from onboarding)
 #  - (string): error
 def userArchetypeSurpRatings(user):
     archetypes,error = getRecipeArchetypes()
     if len(error):
         return None,error
     arch_surps = []
-    for arch in archetypes:
-        arch_id = arch[""]
-        arch_surp,error = userRecipeSurpriseRating(user,arch_id)
-        if len(error):
-            return None, error
+    for arch_id,arch in archetypes.iter():
+        try:
+            arch_surp = user["r_surprise"][arch_id]
+        except:
+            return None, "No surprise rating for "+arch_id+" found for user "+user
         arch_surps.append(arch_surp)
     return arch_surps,""
+
+# userArchetypeTasteRatings - returns user ratings of the archetypes (from onboarding)
+# Input:
+#  - (dict): user object
+# Output:
+#  - (list of floats): the user's taste ratings of the archetypal recipes (from onboarding)
+#  - (string): error
+def userArchetypeTasteRatings(user):
+    archetypes,error = getRecipeArchetypes()
+    if len(error):
+        return None,error
+    arch_tastes = []
+    for arch_id,arch in archetypes.iter():
+        try:
+            arch_taste,error = user["r_taste"][arch_id]
+        except:
+            return None, "No taste rating for "+arch_id+" found for user "+user
+        arch_tastes.append(arch_taste)
+    return arch_tastes,""
+
+# userArchetypeFamRatings - returns user ratings of the archetypes (from onboarding)
+# Input:
+#  - (dict): user object
+# Output:
+#  - (list of floats): the user's familiarity ratings of the archetypal recipes (from onboarding)
+#  - (string): error
+def userArchetypeFamRatings(user):
+    archetypes,error = getRecipeArchetypes()
+    if len(error):
+        return None,error
+    arch_fams = []
+    for arch_id,arch in archetypes.iter():
+        try:
+            arch_fam,error = user["r_familiarity"][arch_id]
+        except:
+            return None, "No familiarity rating for "+arch_id+" found for user "+user
+        arch_fams.append(arch_fam)
+    return arch_fams,""
 
 
 # getModels - returns the pretrained classifier used in neural surprise, initialising if needed
@@ -195,21 +221,32 @@ def predict_many_users_one_recipe(model, users, recipe_id, weight_id = None):
         else:
             return None,col+" is not a supported model feature."
         X[col] = [feature] * len(users)
-    # UNCONVERTED CODE BELOW THIS LINE.
-        # TODO: In the testbed, we've precalculated the onboarding surprise, familiarity and taste weighted for all possible recipes in the validation set.
-        #      here we'll have to do that manually!
+    archetype_similarities = archetypeSimilarities(g.r_data[recipe_id])
     for col in model["user_pset"]:
-        if "onboarding" in col and weight_id is not None:
-            X[col] = users[col + "_weighted_"+weight_id]
-        else:
-            X[col] = users[col]
+        if not "onboarding" in col:
+                return None, col + " is not a supported model feature."
+        features = []
+        for user in users:
+            if "taste_avg" in col:
+                archetype_ratings, error = userArchetypeTasteRatings(user)
+            elif "surp_avg" in col:
+                archetype_ratings, error = userArchetypeSurpRatings(user)
+            elif "fam_avg" in col:
+                archetype_ratings, error = userArchetypeFamRatings(user)
+            if error is not "":
+                return None, error
+            if weight_id is not None:
+                features.append(np.average(archetype_ratings, weights=archetype_similarities))
+            else:
+                features.append(np.mean(archetype_ratings))
+        X[col] = features
     if model["poly_features"] > 0:
         X = PolynomialFeatures(model["poly_features"]).fit_transform(X)
     X_scaled = model["scaler"].transform(X)
     if "decision_norm" in model.keys():
-        return model["predictor"].decision_function(X_scaled) / model["decision_norm"]
+        return model["predictor"].decision_function(X_scaled) / model["decision_norm"],""
     else:
-        return model["predictor"].predict_proba(X_scaled)[:,1]
+        return model["predictor"].predict_proba(X_scaled)[:,1],""
 
 # advancedSurpRecipe - returns the surprise score for a given user-recipe pair
 # Input:
@@ -219,27 +256,17 @@ def predict_many_users_one_recipe(model, users, recipe_id, weight_id = None):
 #  - (float) calculated surprise score in [0..1]
 #  - (string) error
 def advancedSurpRecipe(user, recipe_id):
-    model_dict = getModels()
+    model_dict,error = getModels()
+    if error is not "":
+        return None,error
     recipe_predictions = {}
     for model_name,model in model_dict.iter():
-        recipe_predictions[model_name] = predict_many_users_one_recipe([user],recipe_id)
-
-    return None,"Advanced (model-based) surprise is not implemented at this time."
-    # Old code after this point
-    archetype_surp_ratings,error = userArchetypeSurpRatings(user)
-    if error is not None:
-        return None,error
-    archetype_sims,error = archetypeSimilarities(recipe_id)
-    if error is not None:
-        return None,error
-    recipe_surp,error = rawSurpRecipe(recipe_id)
-    if error is not None:
-        return None,error
-
-    X = archetype_surp_ratings+archetype_sims+[recipe_surp]
-    y_hat = model.predict(X)
-    return y_hat,""
-
+        recipe_predictions[model_name],error = predict_many_users_one_recipe([user],recipe_id)
+        if error is not "":
+            return None,error
+    net_fam = recipe_predictions["fam_high"] - recipe_predictions["fam_low"]
+    net_surp = recipe_predictions["surp_pos"] - recipe_predictions["surp_neg"]
+    return max(net_fam,net_surp),""
 
 # surpRecipe - returns the predicted surprise for a given user-recipe pair
 # Input:
