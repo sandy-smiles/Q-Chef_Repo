@@ -570,22 +570,22 @@ def review_recipe():
     return ""
 
 ################################################################################
-# lookup_user [POST]
-# POST: End point returns the ratings that the user has.
+# lookup_user_predicted [POST]
+# POST: End point returns the predicted ratings that the user has.
 # - Input:
 #   - (json) {"userID": <user_id>}
 # - Output:
 #   - (json)
-@app.route('/lookup_user', methods=['POST'])
+@app.route('/lookup_user_predicted', methods=['POST'])
 @cross_origin()
-def lookup_user():
-  debug(f'[lookup_user - INFO]: Starting.')
+def lookup_user_predicted():
+  debug(f'[lookup_user_predicted - INFO]: Starting.')
   if request.method == 'POST':
-    debug('[lookup_user - INFO]: POST request')
+    debug('[lookup_user_predicted - INFO]: POST request')
     request_data, user_id, err = authentication(request)
-    debug(f'[lookup_user - DATA]: request_data: {request_data}')
+    debug(f'[lookup_user_predicted - DATA]: request_data: {request_data}')
     if err:
-      err = f'[lookup_user - ERROR]: Authentication error, err = {err}'
+      err = f'[lookup_user_predicted - ERROR]: Authentication error, err = {err}'
       debug(err)
       return err
     # Run any functions that need to be done before the rest of the request
@@ -593,7 +593,7 @@ def lookup_user():
 
     user_doc_ref, user_doc, err = retrieveDocument('users', user_id)
     if err:
-      err = f'[lookup_user - ERROR]: Unable to retrieve the user {user_id} data, err = {err}'
+      err = f'[lookup_user_predicted - ERROR]: Unable to retrieve the user {user_id} data, err = {err}'
       debug(err)
       return err
     user_dict = user_doc.to_dict()
@@ -631,3 +631,37 @@ def lookup_user():
       user_ratings[r_id] = user_recipe_ratings
 
     return jsonify(user_ratings)
+
+
+################################################################################
+# lookup_user_saved [POST]
+# POST: End point returns the saved ratings that the user has.
+# - Input:
+#   - (json) {"userID": <user_id>}
+# - Output:
+#   - (json)
+@app.route('/lookup_user_saved', methods=['POST'])
+@cross_origin()
+def lookup_user_saved():
+  debug(f'[lookup_user_saved - INFO]: Starting.')
+  if request.method == 'POST':
+    debug('[lookup_user_saved - INFO]: POST request')
+    request_data, user_id, err = authentication(request)
+    debug(f'[lookup_user_saved - DATA]: request_data: {request_data}')
+    if err:
+      err = f'[lookup_user_saved - ERROR]: Authentication error, err = {err}'
+      debug(err)
+      return err
+    # Run any functions that need to be done before the rest of the request
+    before_request_func()
+
+    user_doc_ref, user_doc, err = retrieveDocument('users', user_id)
+    if err:
+      err = f'[lookup_user_saved - ERROR]: Unable to retrieve the user {user_id} data, err = {err}'
+      debug(err)
+      return err
+    user_dict = user_doc.to_dict()
+
+    return jsonify(user_dict)
+
+

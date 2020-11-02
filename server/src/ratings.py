@@ -43,7 +43,8 @@ def getIngredientRating(user_dict, ingredient_id, rating_type):
     return None, err
 
   i_id = ingredient_id
-  is_id, ic_id = g.i_data[i_id]['subcluster'], g.i_data[i_id]['cluster']
+  is_id = str(g.i_data[i_id]['subcluster'])
+  ic_id = str(g.i_data[i_id]['cluster'])
   try:
     ingredientTasteRating = user_dict['i_'+rating_type][i_id]['rating']
   except:

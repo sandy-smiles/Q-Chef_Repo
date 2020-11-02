@@ -72,7 +72,7 @@ def main():
   if see_r_ratings:
     # Obtain a list of all rate recipes
     # keys of all recipe taste ratings
-    r_ids = user_dict['r_taste'].keys()
+    r_ids = sorted(user_dict['r_taste'].keys())
     for r_id in r_ids:
       # Change into a string (just in case)
       r_id = str(r_id)
