@@ -233,7 +233,7 @@ def predict_many_users_one_recipe(model, users, recipe_id, weight_id = None):
                 archetype_ratings, error = userArchetypeSurpRatings(user)
             elif "fam_avg" in col:
                 archetype_ratings, error = userArchetypeFamRatings(user)
-            if error is not "":
+            if error != "":
                 return None, error
             if weight_id is not None:
                 features.append(np.average(archetype_ratings, weights=archetype_similarities))
@@ -257,12 +257,12 @@ def predict_many_users_one_recipe(model, users, recipe_id, weight_id = None):
 #  - (string) error
 def advancedSurpRecipe(user, recipe_id):
     model_dict,error = getModels()
-    if error is not "":
+    if error != "":
         return None,error
     recipe_predictions = {}
     for model_name,model in model_dict.iter():
         recipe_predictions[model_name],error = predict_many_users_one_recipe([user],recipe_id)
-        if error is not "":
+        if error != "":
             return None,error
     net_fam = recipe_predictions["fam_high"] - recipe_predictions["fam_low"]
     net_surp = recipe_predictions["surp_pos"] - recipe_predictions["surp_neg"]

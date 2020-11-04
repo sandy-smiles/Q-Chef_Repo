@@ -265,7 +265,6 @@ def updateSingleIngredientRating(user_dict, ingredient_id, ratings, rating_types
 
   # Retrieve the ingredients document
   ingredients_dict = g.i_data[ingredient_id]
-
   # Update the ingredient rating
   for rating_type in rating_types:
     rating = ratings[rating_type]
@@ -444,7 +443,6 @@ def updateRecipeRatings(data, rating_types):
 
   # Retrieve the user document
   user_dict = user_doc.to_dict()
-
   recipe_ids = data[rating_types[0]+'_ratings']
   err = f'[updateRecipeRatings - INFO]: For user {user_id}, saving  {recipe_ids} ratings.'
   debug(err)
@@ -462,7 +460,6 @@ def updateRecipeRatings(data, rating_types):
       err = f'[updateRecipeRatings - WARN]: Unable to update ratings for recipe {recipe_id}, err: {err}'
       debug(err)
       continue
-
   # Update the user document to be the new user dictionary
   err = updateDocument('users', user_id, user_dict)
   if err:

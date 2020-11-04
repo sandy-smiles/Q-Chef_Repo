@@ -172,6 +172,7 @@ def updateDocument(collectionID, documentID, updateData):
   documentID = f'{documentID}'
 
   doc_ref, doc, err = retrieveDocument(collectionID, documentID)
+
   if not doc.exists:
     err = f'[updateDocument - ERROR]: Document {documentID} does not exist in collection {collectionID}.'
     debug(err)
