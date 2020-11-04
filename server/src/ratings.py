@@ -333,6 +333,7 @@ def updateIngredientClusterRatings(data, rating_types):
   # Update the ic values
   ic_ids = data[rating_types[0]+'_ratings']
   for ic_id in ic_ids.keys():
+    ic_id = str(ic_id)
     for rating_type in rating_types:
       # -1 to remap 0 -> 2 into -1 -> 1
       rating = int(data[rating_type+'_ratings'][ic_id])-1
@@ -341,12 +342,12 @@ def updateIngredientClusterRatings(data, rating_types):
         n = user_dict['ic_'+rating_type][ic_id]['n_ratings']
         r = (r*n+rating)/(n+1)
         n += 1
-        updating_data['ic_'+rating_type][ic_id] = {'rating': r, 'n_ratings': n}
+        user_dict['ic_'+rating_type][ic_id] = {'rating': r, 'n_ratings': n}
       except:
-        updating_data['ic_'+rating_type][ic_id] = {'rating': rating, 'n_ratings': 1}
+        user_dict['ic_'+rating_type][ic_id] = {'rating': rating, 'n_ratings': 1}
 
   # Update the user document
-  err = updateDocument('users', user_id, updating_data)
+  err = updateDocument('users', user_id, user_dict)
   if err:
     err = f'[updateIngredientClusterRatings - ERROR]: Unable to update user document with ratings for ingredient clusters rated, err: {err}'
     debug(err)
