@@ -163,7 +163,7 @@ def createRequestData(user_name, response_data, user_pred, user_dict):
     print(f"Recipe's ingredients:")
     # Ingredients
     for i_name in response_data[r_key]['ingredient_names']:
-      i_key = str(i_names[i_name])
+      i_key = str(i_names[i_name.lower()])
       i_key_str = i_key+' '*(5-len(i_key))
       print(f" --> {i_key_str} | {i_name}")
       # Predicted ingredient ratings

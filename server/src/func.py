@@ -216,7 +216,7 @@ def getRecipeInformation(recipe_id):
     if ingredient_id == None:
       continue
     ingredients_dict = g.i_data[str(ingredient_id)]
-    ingredientName = ingredients_dict["name"].replace('_', ' ')
+    ingredientName = ingredients_dict["name"].replace('_', ' ').capitalize()
     if not (ingredientName in ingredientNames):
       ingredientNames.append(ingredientName)
   recipes_dict["ingredient_names"] = ingredientNames
