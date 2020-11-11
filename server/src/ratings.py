@@ -169,7 +169,6 @@ def getTasteRecipes(user_id, recipes_wanted):
 
   return recipe_info, ''
 
-
 ################################################################################
 # getTasteAndSurpRecipes
 # Returns a constant times wanted number of recipes
@@ -236,6 +235,112 @@ def getTasteAndSurpRecipes(user_id, recipes_wanted):
     recipe_info[recipe_id] = recipeInfo
 
   return recipe_info, ''
+
+################################################################################
+# getSurpRecipes
+# Returns a constant times wanted number of recipes
+# that we think the user will find surprising.
+# - Input:
+#   - (string) user_id,
+#   - (int) recipes_wanted
+#     - number of recipes user wants
+# - Output:
+#   - (dict) recipes and their information,
+#   - (string) error
+def getSurpRecipes(user_id, recipes_wanted):
+  debug(f'[getTasteAndSurpRecipes - INFO]: Starting.')
+  numWantedRecipes = TASTE_RECIPES_RETURNED  # recipes_wanted
+
+  ## Collect list of possible recipes to pick from
+  ## Noting that we won't give a user a recipe they have already tried.
+
+  # Retrieve the user document
+  user_doc_ref, user_doc, err = retrieveDocument('users', user_id)
+  if err:
+    return None, err
+  user_dict = user_doc.to_dict()
+  user_recipes = list(user_dict['r_taste'].keys())
+
+  # Retrieve the recipe collection
+  possibleRecipes = []
+  recipe_ids = g.r_data.keys()
+  err = f'[getTasteAndSurpRecipes - HELP]: For user {user_id}, recipe {user_recipes} have already been rated.'
+  debug(err)
+  for recipe_id in recipe_ids:
+    if recipe_id in user_recipes:
+      err = f'[getTasteAndSurpRecipes - INFO]: For user {user_id}, recipe {recipe_id} has already been rated, therefore continuing...'
+      debug(err)
+      continue
+    userRecipeSurp, err = surpRecipe(user_dict, recipe_id)
+    if err:
+      err = f'[getTasteAndSurpRecipes - ERROR]: Unable to find user {user_id} surprise preference for recipe {recipe_id}, err = {err}'
+      debug(err)
+      continue  # Just ignore this recipe then.
+    possibleRecipes.append((userRecipeSurp, recipe_id))
+
+  recipe_preferences.sort(reverse=True)
+  # Check that there are enough recipes to serve up.
+  numPossibleRecipes = len(recipe_preferences)
+  if numPossibleRecipes > numWantedRecipes:
+    possibleRecipes = recipe_preferences[:numWantedRecipes]
+
+  # Grab the recipe information to be returned in the json
+  recipe_info = {}
+  for pref, recipe_id in recipe_preferences:
+    # Get the recipe information
+    recipeInfo, err = getRecipeInformation(recipe_id)
+    if err:
+      err = f'[getTasteAndSurpRecipes - WARN]: Unable to get recipe {recipe_id} information, err = {err}. Skipping...'
+      debug(err)
+      continue
+    recipe_info[recipe_id] = recipeInfo
+
+  return recipe_info, ''
+
+################################################################################
+# getRecipes
+# Returns a constant times wanted number of recipes.
+# - Input:
+#   - (string) user_id,
+#   - (int) recipes_wanted
+#     - number of recipes user wants
+# - Output:
+#   - (dict) recipes and their information,
+#   - (string) error
+def getRecipes(user_id, recipes_wanted):
+  debug(f'[getTasteAndSurpRecipes - INFO]: Starting.')
+  numWantedRecipes = TASTE_RECIPES_RETURNED  # recipes_wanted
+
+  ## Collect list of possible recipes to pick from
+  ## Noting that we won't give a user a recipe they have already tried.
+
+  # Retrieve the server document
+  server_doc_ref, server_doc, err = retrieveDocument('server', 'settings')
+  if err:
+    return None, err
+  server_dict = server_doc.to_dict()
+
+  # Retrieve the user document
+  user_doc_ref, user_doc, err = retrieveDocument('users', user_id)
+  if err:
+    return None, err
+  user_dict = user_doc.to_dict()
+  user_group = int(user_dict['group'])
+
+
+  if server_dict['experimentalState']:
+    expReturn = {0: getTasteRecipes, 1:getTasteAndSurpRecipes}
+    return expReturn[user_group](user_id, recipes_wanted)
+
+  if server_dict['returnTaste'] and server_dict['returnSurprise']:
+    return getTasteAndSurpRecipes(user_id, recipes_wanted)
+
+  if server_dict['returnSurprise']:
+    return getSurpRecipes(user_id, recipes_wanted)
+
+  # Else, default is to return just the tasty recipes.
+  return getTasteRecipes(user_id, recipes_wanted)
+
 
 ################################################################################
 # updateSingleIngredientRating
