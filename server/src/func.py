@@ -13,11 +13,8 @@ from flask import g
 collectionIDs = ['users',
                  'actions',
                  'reviews',
-                 'recipes',
-                 'ingredients',
-                 'ingredient_clusters',
-                 'ingredient_subclusters',
-                 'onboarding']
+                 'onboarding',
+                 'server']
 
 ################################################################################
 # Debugging
