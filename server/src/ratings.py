@@ -12,6 +12,8 @@ from scipy.stats import gmean
 ################################################################################
 TASTE_RECIPES_RETURNED = 10
 
+EXPERIMENTAL_STATE_OVERRIDE = "" # Set to "experimental", "taste","surprise", or "taste+surprise" to override server, or "" to follow server behaviour
+
 rating_types = ['taste',
                 'familiarity',
                 'surprise']
@@ -314,18 +316,31 @@ def getRecipes(user_id, recipes_wanted):
   ## Collect list of possible recipes to pick from
   ## Noting that we won't give a user a recipe they have already tried.
 
-  # Retrieve the server document
-  server_doc_ref, server_doc, err = retrieveDocument('server', 'settings')
-  if err:
-    return None, err
-  server_dict = server_doc.to_dict()
-
   # Retrieve the user document
   user_doc_ref, user_doc, err = retrieveDocument('users', user_id)
   if err:
     return None, err
   user_dict = user_doc.to_dict()
   user_group = int(user_dict['group'])
+
+  if len(EXPERIMENTAL_STATE_OVERRIDE):
+    if EXPERIMENTAL_STATE_OVERRIDE == 'experimental':
+      expReturn = {0: getTasteRecipes, 1: getTasteAndSurpRecipes}
+      return expReturn[user_group](user_id, recipes_wanted)
+    elif EXPERIMENTAL_STATE_OVERRIDE == "taste+surprise":
+      return getTasteAndSurpRecipes(user_id, recipes_wanted)
+    elif EXPERIMENTAL_STATE_OVERRIDE == "taste":
+      return getTasteRecipes(user_id, recipes_wanted)
+    if EXPERIMENTAL_STATE_OVERRIDE == "surprise":
+      return getSurpRecipes(user_id, recipes_wanted)
+
+  # Retrieve the server document
+  server_doc_ref, server_doc, err = retrieveDocument('server', 'settings')
+  if err:
+    return None, err
+  server_dict = server_doc.to_dict()
+
+
 
 
   if server_dict['experimentalState']:
