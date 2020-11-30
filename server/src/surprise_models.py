@@ -4,15 +4,16 @@ import csv,math
 from scipy.spatial import distance
 import numpy as np
 import pandas as pd
+import traceback
 
-from func import retrieveDocument
+from func import *
 from sklearn.preprocessing import PolynomialFeatures
 
 model_fns = fns={
-    "fam_high":"best_fam_high_model_10board_poly_final.joblib",
-    "fam_low":"best_fam_low_model_10board_poly_final.joblib",
-    "surp_pos":"best_surp_pos_model_10board_poly_final.joblib",
-    "surp_neg":"best_surp_neg_model_10board_poly_final.joblib"
+    "fam_high":"./data/best_fam_high_model_10board_poly_final.joblib",
+    "fam_low":"./data/best_fam_low_model_10board_poly_final.joblib",
+    "surp_pos":"./data/best_surp_pos_model_10board_poly_final.joblib",
+    "surp_neg":"./data/best_surp_neg_model_10board_poly_final.joblib"
 }
 
 ######## Surprise Helper Functions ########
@@ -25,7 +26,7 @@ model_fns = fns={
 #  - (float): the similarity
 #  - (string): error
 def recipeSimilarity(recipe1,recipe2):
-    return distance.cdist(recipe1["vector"], recipe2["vector"], "cosine")[0],""
+    return distance.cdist([recipe1["vector"]], [recipe2["vector"]], "cosine")[0].item(),""
 
 # getRecipeArchetypes - returns IDs for the onboarding recipe set, initialising if needed
 # Input:
@@ -36,12 +37,17 @@ def recipeSimilarity(recipe1,recipe2):
 def getRecipeArchetypes():
     archetypes = g.get("archetype_recipes",None)
     if archetypes == None:
-        try:
-            archetype_ids = retrieveDocument("onboarding","recipes")
-            archetypes = {id:retrieveDocument("recipes",id) for id in archetype_ids}
-            g.archetype_recipes = archetypes
-        except:
+        _, archetype_ids, err = retrieveDocument("onboarding","recipes")
+        if err:
             return None, f"Failed to load archetypes from db."
+        archetype_ids = archetype_ids.to_dict().keys()
+        archetypes = {}
+        for a_id in archetype_ids:
+            try:
+                archetypes[a_id] = g.r_data[a_id]
+            except:
+                return None, f"Failed to load archetype recipe id {a_id} from g.r_data."
+        g.archetype_recipes = archetypes
     return archetypes,""
 
 # archetypeSimilarities - returns similarities between a target recipe and the onboarding recipe set
@@ -55,10 +61,13 @@ def archetypeSimilarities(recipe):
     if len(error):
         return None,error
     archetype_ids = archetype_recipes.keys()
-    sims = [max(0,1-recipeSimilarity(recipe,archetype_recipes[id])) for id in archetype_ids] #this will return a list of similarity,error tuples
-    if any(len(s[1]) for s in sims):
-        return None,"".join([s[1] for s in sims])
-    return [s[0] for s in sims],""
+    sims = []
+    for id in archetype_ids:
+        sim, err = recipeSimilarity(recipe,archetype_recipes[id])
+        if err:
+            return None,err
+        sims.append(max(0,1-sim))
+    return sims
 
 # userArchetypeSurpRatings - returns user ratings of the archetypes (from onboarding)
 # Input:
@@ -71,9 +80,9 @@ def userArchetypeSurpRatings(user):
     if len(error):
         return None,error
     arch_surps = []
-    for arch_id,arch in archetypes.iter():
+    for arch_id,arch in archetypes.items():
         try:
-            arch_surp = user["r_surprise"][arch_id]
+            arch_surp = user["r_surprise"][arch_id]["rating"]
         except:
             return None, "No surprise rating for "+arch_id+" found for user "+user
         arch_surps.append(arch_surp)
@@ -90,9 +99,9 @@ def userArchetypeTasteRatings(user):
     if len(error):
         return None,error
     arch_tastes = []
-    for arch_id,arch in archetypes.iter():
+    for arch_id,arch in archetypes.items():
         try:
-            arch_taste,error = user["r_taste"][arch_id]
+            arch_taste = user["r_taste"][arch_id]["rating"]
         except:
             return None, "No taste rating for "+arch_id+" found for user "+user
         arch_tastes.append(arch_taste)
@@ -109,9 +118,9 @@ def userArchetypeFamRatings(user):
     if len(error):
         return None,error
     arch_fams = []
-    for arch_id,arch in archetypes.iter():
+    for arch_id,arch in archetypes.items():
         try:
-            arch_fam,error = user["r_familiarity"][arch_id]
+            arch_fam = user["r_familiarity"][arch_id]["rating"]
         except:
             return None, "No familiarity rating for "+arch_id+" found for user "+user
         arch_fams.append(arch_fam)
@@ -125,10 +134,12 @@ def userArchetypeFamRatings(user):
 def getModels():
     models_dict = g.get("models_dict",None)
     if models_dict == None:
+        models_dict = {}
         for model_key,model_fn in fns.items():
             try:
-                models_dict["model_key"] = load(model_fn)
+                models_dict[model_key] = load(model_fn)
             except:
+                traceback.print_exc()
                 return None, f"Failed to load model from file. Does {model_fn} exist?"
             print("Loaded",model_fn)
 
@@ -200,11 +211,12 @@ def simpleSurpRecipe(user, recipe_id, sigma=2, delta=1):
     surprise = abs(surprise / sigma)  # Gets the number of "sigmas" away from target
     surprise = min(surprise, 1)
     surprise = 1 - surprise
+    debug(f'[simpleSurpRecipe - DATA]: surprise for {recipe_id} :{surprise}')
     return surprise,""
 
 
 def predict_many_users_one_recipe(model, users, recipe_id, weight_id = None):
-    X = pd.dataFrame()
+    X = pd.DataFrame()
     for col in model["recipe_pset"]:
         if "nov" in col:
             try:
@@ -260,13 +272,23 @@ def advancedSurpRecipe(user, recipe_id):
     if error != "":
         return None,error
     recipe_predictions = {}
-    for model_name,model in model_dict.iter():
-        recipe_predictions[model_name],error = predict_many_users_one_recipe([user],recipe_id)
+    for model_name,model in model_dict.items():
+        recipe_predictions[model_name],error = predict_many_users_one_recipe(model, [user],recipe_id, weight_id=recipe_id)
         if error != "":
             return None,error
-    net_fam = recipe_predictions["fam_high"] - recipe_predictions["fam_low"]
+    net_fam = recipe_predictions["fam_low"] - recipe_predictions["fam_high"]
+
+    #debug(f'[advancedSurpRecipe - DATA]: fam_high for {recipe_id} :{recipe_predictions["fam_high"]}')
+    #debug(f'[advancedSurpRecipe - DATA]: fam_low for {recipe_id} :{recipe_predictions["fam_low"]}')
+    debug(f'[advancedSurpRecipe - DATA]: net_fam for {recipe_id} :{net_fam}')
     net_surp = recipe_predictions["surp_pos"] - recipe_predictions["surp_neg"]
-    return max(net_fam,net_surp),""
+    #debug(f'[advancedSurpRecipe - DATA]: surp_pos for {recipe_id} :{recipe_predictions["surp_pos"]}')
+    #debug(f'[advancedSurpRecipe - DATA]: surp_neg for {recipe_id} :{recipe_predictions["surp_neg"]}')
+    debug(f'[advancedSurpRecipe - DATA]: net_surp for {recipe_id} :{net_surp}')
+
+    surprise = max(net_fam,net_surp).item()
+    debug(f'[advancedSurpRecipe - DATA]: surprise for {recipe_id} :{surprise}')
+    return surprise,""
 
 # surpRecipe - returns the predicted surprise for a given user-recipe pair
 # Input:

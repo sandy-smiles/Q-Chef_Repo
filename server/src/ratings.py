@@ -211,7 +211,7 @@ def getTasteAndSurpRecipes(user_id, recipes_wanted):
       err = f'[getTasteAndSurpRecipes - ERROR]: Unable to find user {user_id} taste preference for recipe {recipe_id}, err = {err}'
       debug(err)
       continue  # Just ignore this recipe then.
-    userRecipeSurp, err = surpRecipe(user_dict, recipe_id)
+    userRecipeSurp, err = surpRecipe(user_dict, recipe_id, simpleSurprise=False)
     if err:
       err = f'[getTasteAndSurpRecipes - ERROR]: Unable to find user {user_id} surprise preference for recipe {recipe_id}, err = {err}'
       debug(err)
@@ -219,15 +219,15 @@ def getTasteAndSurpRecipes(user_id, recipes_wanted):
     #We decided on the geometric mean (sqrt(a*b)) to combine preference and surprise as it biases the rating towards the lower.
     possibleRecipes.append((gmean(userRecipeSurp,userRecipePref), recipe_id))
 
-  recipe_preferences.sort(reverse=True)
+  possibleRecipes.sort(reverse=True)
   # Check that there are enough recipes to serve up.
-  numPossibleRecipes = len(recipe_preferences)
+  numPossibleRecipes = len(possibleRecipes)
   if numPossibleRecipes > numWantedRecipes:
-    possibleRecipes = recipe_preferences[:numWantedRecipes]
+    possibleRecipes = possibleRecipes[:numWantedRecipes]
 
   # Grab the recipe information to be returned in the json
   recipe_info = {}
-  for pref, recipe_id in recipe_preferences:
+  for pref, recipe_id in possibleRecipes:
     # Get the recipe information
     recipeInfo, err = getRecipeInformation(recipe_id)
     if err:
@@ -250,7 +250,7 @@ def getTasteAndSurpRecipes(user_id, recipes_wanted):
 #   - (dict) recipes and their information,
 #   - (string) error
 def getSurpRecipes(user_id, recipes_wanted):
-  debug(f'[getTasteAndSurpRecipes - INFO]: Starting.')
+  debug(f'[getSurpRecipes - INFO]: Starting.')
   numWantedRecipes = TASTE_RECIPES_RETURNED  # recipes_wanted
 
   ## Collect list of possible recipes to pick from
@@ -266,29 +266,30 @@ def getSurpRecipes(user_id, recipes_wanted):
   # Retrieve the recipe collection
   possibleRecipes = []
   recipe_ids = g.r_data.keys()
-  err = f'[getTasteAndSurpRecipes - HELP]: For user {user_id}, recipe {user_recipes} have already been rated.'
+  err = f'[getSurpRecipes - HELP]: For user {user_id}, recipe {user_recipes} have already been rated.'
   debug(err)
   for recipe_id in recipe_ids:
     if recipe_id in user_recipes:
-      err = f'[getTasteAndSurpRecipes - INFO]: For user {user_id}, recipe {recipe_id} has already been rated, therefore continuing...'
+      err = f'[getSurpRecipes - INFO]: For user {user_id}, recipe {recipe_id} has already been rated, therefore continuing...'
       debug(err)
       continue
-    userRecipeSurp, err = surpRecipe(user_dict, recipe_id)
+    userRecipeSurp, err = surpRecipe(user_dict, recipe_id, simpleSurprise=False)
+    debug(f'[getSurpRecipes - DATA]: userRecipeSurp :{userRecipeSurp}')
     if err:
-      err = f'[getTasteAndSurpRecipes - ERROR]: Unable to find user {user_id} surprise preference for recipe {recipe_id}, err = {err}'
+      err = f'[getSurpRecipes - ERROR]: Unable to find user {user_id} surprise preference for recipe {recipe_id}, err = {err}'
       debug(err)
       continue  # Just ignore this recipe then.
     possibleRecipes.append((userRecipeSurp, recipe_id))
 
-  recipe_preferences.sort(reverse=True)
+  possibleRecipes.sort(reverse=True)
   # Check that there are enough recipes to serve up.
-  numPossibleRecipes = len(recipe_preferences)
+  numPossibleRecipes = len(possibleRecipes)
   if numPossibleRecipes > numWantedRecipes:
-    possibleRecipes = recipe_preferences[:numWantedRecipes]
+    possibleRecipes = possibleRecipes[:numWantedRecipes]
 
   # Grab the recipe information to be returned in the json
   recipe_info = {}
-  for pref, recipe_id in recipe_preferences:
+  for pref, recipe_id in possibleRecipes:
     # Get the recipe information
     recipeInfo, err = getRecipeInformation(recipe_id)
     if err:
@@ -310,7 +311,7 @@ def getSurpRecipes(user_id, recipes_wanted):
 #   - (dict) recipes and their information,
 #   - (string) error
 def getRecipes(user_id, recipes_wanted):
-  debug(f'[getTasteAndSurpRecipes - INFO]: Starting.')
+  debug(f'[getRecipes - INFO]: Starting.')
   numWantedRecipes = TASTE_RECIPES_RETURNED  # recipes_wanted
 
   ## Collect list of possible recipes to pick from
@@ -321,11 +322,14 @@ def getRecipes(user_id, recipes_wanted):
   if err:
     return None, err
   user_dict = user_doc.to_dict()
-  user_group = int(user_dict['group'])
 
   if len(EXPERIMENTAL_STATE_OVERRIDE):
     if EXPERIMENTAL_STATE_OVERRIDE == 'experimental':
       expReturn = {0: getTasteRecipes, 1: getTasteAndSurpRecipes}
+      try:
+        user_group = int(user_dict['group'])
+      except:
+        return None,"No experimental group assignment found in user's record."
       return expReturn[user_group](user_id, recipes_wanted)
     elif EXPERIMENTAL_STATE_OVERRIDE == "taste+surprise":
       return getTasteAndSurpRecipes(user_id, recipes_wanted)
@@ -333,6 +337,11 @@ def getRecipes(user_id, recipes_wanted):
       return getTasteRecipes(user_id, recipes_wanted)
     if EXPERIMENTAL_STATE_OVERRIDE == "surprise":
       return getSurpRecipes(user_id, recipes_wanted)
+
+  try:
+    user_group = int(user_dict['group'])
+  except:
+    return None,"No experimental group assignment found in user's record."
 
   # Retrieve the server document
   server_doc_ref, server_doc, err = retrieveDocument('server', 'settings')

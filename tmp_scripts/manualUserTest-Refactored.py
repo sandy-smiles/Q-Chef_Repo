@@ -129,6 +129,7 @@ def createRequestData(user_name, response_data, user_pred, user_dict):
   shift_indent = 8
   rate_indent = shift_indent*5
   name_indent = shift_indent*2
+  types_to_print_for_ings = ["familiarity","taste"]
 
   r_types = ["familiarity", "surprise", "taste"]
   request_data = {
@@ -168,7 +169,7 @@ def createRequestData(user_name, response_data, user_pred, user_dict):
       print(f" --> {i_key_str} | {i_name}")
       # Predicted ingredient ratings
       i_r_str = ''
-      for r_type in r_types:
+      for r_type in types_to_print_for_ings:
         i_r = 'None '
         try:
           i_r, e = user_pred[i_key]["ingredient"][r_type]
@@ -179,7 +180,7 @@ def createRequestData(user_name, response_data, user_pred, user_dict):
       print(' '*rate_indent+f" --> pred <=> {i_r_str}")
       # Saved ingredient ratings
       i_r_str = ''
-      for r_type in r_types:
+      for r_type in types_to_print_for_ings:
         i_r = 'None '
         try:
           i_r = user_dict["i_"+r_type][i_key]['rating']
@@ -200,7 +201,7 @@ def createRequestData(user_name, response_data, user_pred, user_dict):
       print(' '*name_indent+f" --> {is_key_str} | {is_name}")
       # Saved ingredient subcluster ratings
       is_r_str = ''
-      for r_type in r_types:
+      for r_type in types_to_print_for_ings:
         is_r = 'None '
         try:
           is_r = user_dict["is_"+r_type][is_key]['rating']
@@ -221,7 +222,7 @@ def createRequestData(user_name, response_data, user_pred, user_dict):
       print(' '*name_indent+f" --> {ic_key_str} | {ic_name}")
       # Saved ingredient subcluster ratings
       ic_r_str = ''
-      for r_type in r_types:
+      for r_type in types_to_print_for_ings:
         ic_r = 'None '
         try:
           ic_r = user_dict["ic_"+r_type][ic_key]['rating']

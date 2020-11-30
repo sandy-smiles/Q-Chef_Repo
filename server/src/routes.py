@@ -432,7 +432,7 @@ def get_meal_plan_selection():
     num_wanted_recipes = recipesReturned
     # Update user's document with ingredient ratings
     # Return json of test recipes that a user should liked
-    taste_recipes, err = getTasteRecipes(user_id, num_wanted_recipes)
+    taste_recipes, err = getRecipes(user_id, num_wanted_recipes)
     if err:
       err = f'[get_meal_plan_selection - ERROR]: Unable to find any recipes for user {user_id}, err = {err}'
       debug(err)
@@ -610,9 +610,11 @@ def lookup_user_predicted():
       user_recipe_ratings = {}
       user_recipe_ratings['recipe'] = {
         'familiarity': getRecipeRating(user_dict, r_id, 'familiarity'),
-        'surprise': getRecipeRating(user_dict, r_id, 'surprise'),
+        'surprise': surpRecipe(user_dict, r_id, simpleSurprise=False),
         'taste': getRecipeRating(user_dict, r_id, 'taste'),
       }
+
+      debug(f'[lookup_user_predicted - DATA]: user_recipe_ratings[{r_id}]: {user_recipe_ratings}')
 
       # Find the ingredients and the user's ratings of them
       user_ingredient_ratings = {}
