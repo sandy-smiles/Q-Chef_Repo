@@ -99,6 +99,11 @@ def getRecipeRating(user_dict, recipe_id, rating_type):
       err = f'[getRecipeRating - {rating_type} - INFO]: Unable to get ingredient {ingredient_id} rating for recipe {recipe_id}. Skipping this ingredient...'
       debug(err)
       continue # Just skip this rating, and hope it doesn't matter.
+
+    #The ratings engine isn't realising that some people hate individual ingredients a lot.  These weights adjust for that by emphasising negative ratings.
+    if ingredientRating < 0:
+      ingredientRating *= 2
+
     sumIngredientRatings += ingredientRating
     numIngredientRatings += 1
 
@@ -207,14 +212,17 @@ def getTasteAndSurpRecipes(user_dict):
       debug(err)
       continue  # Just ignore this recipe then.
     #We decided on the geometric mean (sqrt(a*b)) to combine preference and surprise as it biases the rating towards the lower.
-    debug(f'[getTasteAndSurpRecipes - DATA]: for user {user_id} and recipe {recipe_id} userRecipeSurp was {userRecipeSurp} and userRecipePref was {userRecipePref}')
-    possibleRecipes.append((gmean([userRecipeSurp,userRecipePref]), recipe_id))
+    #taste_and_surp = gmean([userRecipeSurp,userRecipePref])
+    taste_and_surp = (userRecipeSurp+userRecipePref)/2.
+    debug(f'[getTasteAndSurpRecipes - DATA]: for user {user_id} and recipe {recipe_id} userRecipeSurp was {userRecipeSurp} and userRecipePref was {userRecipePref}, mean={taste_and_surp}')
+    possibleRecipes.append((taste_and_surp, recipe_id))
 
   possibleRecipes.sort(reverse=True)
   # Check that there are enough recipes to serve up.
   numPossibleRecipes = len(possibleRecipes)
   if numPossibleRecipes > numWantedRecipes:
     possibleRecipes = possibleRecipes[:numWantedRecipes]
+  debug(f"[getTasteAndSurpRecipes - DATA]: Found possibleRecipes: {possibleRecipes}")
 
   # Grab the recipe information to be returned in the json
   recipe_info = {}
@@ -226,7 +234,7 @@ def getTasteAndSurpRecipes(user_dict):
       debug(err)
       continue
     recipe_info[recipe_id] = recipeInfo
-
+  debug(f"[getTasteAndSurpRecipes - DATA]: Returning recipe_info: {recipe_info}")
   return recipe_info, ''
 
 ################################################################################
