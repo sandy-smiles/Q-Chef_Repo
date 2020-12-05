@@ -5,3 +5,5 @@ flask
 flask_cors
 firebase_admin
 gunicorn
+scikit-learn
+pandas

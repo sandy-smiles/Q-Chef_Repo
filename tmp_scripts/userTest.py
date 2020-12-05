@@ -11,8 +11,13 @@
 # $ bash
 # $ for i in {0..9}
 # > do
-# > (python3 userTest.py userID${i} > userTest-output-userID${i}.txt) &
+# > (python3 userTest.py userID${i} > ./tmp-output/userTest-output-userID${i}.txt) &
 # > done
+
+# for i in {0..99}; do (python3 userTest.py userID${i} > ./tmp-output/userTest-output-userID${i}.txt) & done; wait; echo "All finished!"
+
+# This script is used for server load testing by pretending to be a user 
+# through randomly picking ratings.
 
 ################################################################################
 # Imports
@@ -37,7 +42,8 @@ endpoints = ['/onboarding_ingredient_rating',
              '/retrieve_meal_plan',
              '/review_recipe']
 
-url_domain = 'https://q-chef-backend-api-server.web.app'
+#url_domain = 'https://q-chef-backend-api-server.web.app'
+url_domain = 'http://127.0.0.1:5000'
 
 ################################################################################
 # MAIN
@@ -67,52 +73,6 @@ def main():
 
   #-----------------------------------------------------------------------------
 
-  #/onboarding_ingredient_rating GET
-  url_path = '/onboarding_ingredient_rating'
-  request_type = 'GET'
-  response = requests.get(url_domain+url_path)
-  print(f"{user_name} - {url_path} {request_type}: Sent {request_type} request to {url_domain+url_path}")
-  print(f"{user_name} - {url_path} {request_type}: Response Status code: {response.status_code}")
-
-  #/onboarding_ingredient_rating POST
-  url_path = '/onboarding_ingredient_rating'
-  request_type = 'POST'
-  try:
-    response_data = response.json()
-  except:
-    print(f"{user_name} - {url_path} {request_type}: Unable to obtain response.json()")
-    print(f"{user_name} - {url_path} {request_type}: Ending program now.")
-    return
-  try:
-    print(f"{user_name} - {url_path} {request_type}: Attempting to load {test_folder+url_path+'-'+str(user_name)}.json")
-    with open(test_folder+url_path+f'-{user_name}.json', 'r') as f:
-      request_data = json.load(f)
-  except:
-    print(f"{user_name} - {url_path} {request_type}: Unable to load {test_folder+url_path+'-'+str(user_name)}.json")
-    request_data = {
-      "userID": user_name,
-      "manualID": True}
-    request_data['familiarity_ratings'] = {}
-    request_data['taste_ratings'] = {}
-    for ic_key in response_data.keys():
-      request_data['familiarity_ratings'][ic_key] = rand.randint(0, 2)
-      request_data['taste_ratings'][ic_key] = rand.randint(0, 2)
-    with open(save_folder+url_path+f'-{user_name}.json', 'a') as f:
-      f.write('')
-    with open(save_folder+url_path+f'-{user_name}.json', 'w') as f:
-      f.write(json.dumps(request_data))
-
-  response = requests.post(url_domain+url_path, json=request_data)
-  print(f"{user_name} - {url_path} {request_type}: Sent {request_type} request to {url_domain+url_path}")
-  print(f"{user_name} - {url_path} {request_type}: Response Status code: {response.status_code}")
-  try:
-    print(f"{user_name} - {url_path} {request_type}: {response.json()}")
-  except:
-    print(f"{user_name} - {url_path} {request_type}: No response json data")
-    print(f"{user_name} - {url_path} {request_type}: {response.text}")
-
-  #-----------------------------------------------------------------------------
-
   #/onboarding_recipe_rating GET
   url_path = '/onboarding_recipe_rating'
   request_type = 'GET'
@@ -129,26 +89,53 @@ def main():
     print(f"{user_name} - {url_path} {request_type}: Unable to obtain response.json()")
     print(f"{user_name} - {url_path} {request_type}: Ending program now.")
     return
+  
+  request_data = {
+    "userID": user_name,
+    "manualID": True}
+  request_data['familiarity_ratings'] = {}
+  request_data['taste_ratings'] = {}
+  request_data['surprise_ratings'] = {}
+  for r_key in response_data.keys():
+    request_data['familiarity_ratings'][r_key] = rand.randint(0, 2)
+    request_data['taste_ratings'][r_key] = rand.randint(0, 2)
+    request_data['surprise_ratings'][r_key] = rand.randint(0, 2)
+
+  response = requests.post(url_domain+url_path, json=request_data)
+  print(f"{user_name} - {url_path} {request_type}: Sent {request_type} request to {url_domain+url_path}")
+  print(f"{user_name} - {url_path} {request_type}: Response Status code: {response.status_code}")
   try:
-    print(f"{user_name} - {url_path} {request_type}: Attempting to load {test_folder+url_path+'-'+str(user_name)}.json")
-    with open(test_folder+url_path+f'-{user_name}.json', 'r') as f:
-      request_data = json.load(f)
+    print(f"{user_name} - {url_path} {request_type}: {response.json()}")
   except:
-    print(f"{user_name} - {url_path} {request_type}: Unable to load {test_folder+url_path+'-'+str(user_name)}.json")
-    request_data = {
-      "userID": user_name,
-      "manualID": True}
-    request_data['familiarity_ratings'] = {}
-    request_data['taste_ratings'] = {}
-    request_data['surprise_ratings'] = {}
-    for r_key in response_data.keys():
-      request_data['familiarity_ratings'][r_key] = rand.randint(0, 2)
-      request_data['taste_ratings'][r_key] = rand.randint(0, 2)
-      request_data['surprise_ratings'][r_key] = rand.randint(0, 2)
-    with open(save_folder+url_path+f'-{user_name}.json', 'a') as f:
-      f.write('')
-    with open(save_folder+url_path+f'-{user_name}.json', 'w') as f:
-      f.write(json.dumps(request_data))
+    print(f"{user_name} - {url_path} {request_type}: No response json data")
+    print(f"{user_name} - {url_path} {request_type}: {response.text}")
+
+  #-----------------------------------------------------------------------------
+
+  #/onboarding_ingredient_rating GET
+  url_path = '/onboarding_ingredient_rating'
+  request_type = 'GET'
+  response = requests.get(url_domain+url_path)
+  print(f"{user_name} - {url_path} {request_type}: Sent {request_type} request to {url_domain+url_path}")
+  print(f"{user_name} - {url_path} {request_type}: Response Status code: {response.status_code}")
+
+  #/onboarding_ingredient_rating POST
+  url_path = '/onboarding_ingredient_rating'
+  request_type = 'POST'
+  try:
+    response_data = response.json()
+  except:
+    print(f"{user_name} - {url_path} {request_type}: Unable to obtain response.json()")
+    print(f"{user_name} - {url_path} {request_type}: Ending program now.")
+    return
+  request_data = {
+    "userID": user_name,
+    "manualID": True}
+  request_data['familiarity_ratings'] = {}
+  request_data['taste_ratings'] = {}
+  for ic_key in response_data.keys():
+    request_data['familiarity_ratings'][ic_key] = rand.randint(0, 2)
+    request_data['taste_ratings'][ic_key] = rand.randint(0, 2)
 
   response = requests.post(url_domain+url_path, json=request_data)
   print(f"{user_name} - {url_path} {request_type}: Sent {request_type} request to {url_domain+url_path}")
@@ -177,14 +164,9 @@ def main():
   request_data['taste_ratings'] = {}
   request_data['surprise_ratings'] = {}
   for r_key in response_data.keys():
-    for r_key in response_data.keys():
-      request_data['familiarity_ratings'][r_key] = rand.randint(0, 2)
-      request_data['taste_ratings'][r_key] = rand.randint(0, 2)
-      request_data['surprise_ratings'][r_key] = rand.randint(0, 2)
-  with open(save_folder+url_path+f'-{user_name}.json', 'a') as f:
-    f.write('')
-  with open(save_folder+url_path+f'-{user_name}.json', 'w') as f:
-    f.write(json.dumps(request_data))
+    request_data['familiarity_ratings'][r_key] = rand.randint(0, 2)
+    request_data['taste_ratings'][r_key] = rand.randint(0, 2)
+    request_data['surprise_ratings'][r_key] = rand.randint(0, 2)
 
   response = requests.post(url_domain+url_path, json=request_data)
   print(f"{user_name} - {url_path} {request_type}: Sent {request_type} request to {url_domain+url_path}")

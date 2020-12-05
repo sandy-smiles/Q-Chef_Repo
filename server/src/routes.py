@@ -5,9 +5,11 @@
 
 import time
 import json
+import csv
+import random
 
 from app import app, auth_app
-from flask import make_response, request, jsonify, render_template, redirect, url_for, send_file
+from flask import make_response, request, jsonify, render_template, redirect, url_for, send_file, abort
 from flask_cors import CORS, cross_origin
 from firebase_admin import auth
 
@@ -34,6 +36,8 @@ userStartingDoc = {
   'r_surprise' : {},
   'pickedRecipes': {'latest': -1}
 }
+
+user_groups = [0, 1]
 
 recipesReturned = 10
 
@@ -106,26 +110,63 @@ def before_request_func():
       g.r_data = data
       return g.r_data
 
+  def get_surp_data():
+    debug(f'[get_surp_data - INFO]: Starting.')
+    if 'surp_data' not in g:
+      data = {}
+      with open('./data/qchef_recipe_surprises.csv', 'r') as f:
+        reader = csv.reader(f)
+        for row in reader:
+          rid = row[0].split("_")[-1]
+          if len(rid)<5:
+            rid = "0"+rid
+          data[rid] = {"surprise_100": float(row[1]), "surprise_95": float(row[2]), "surprise_90": float(row[3]), "surprise_50": float(row[4])}
+      g.surp_data = data
+      return g.surp_data
+
+  def get_nov_data():
+    debug(f'[get_nov_data - INFO]: Starting.')
+    if 'nov_data' not in g:
+      data = {}
+      with open('./data/qchef_recipe_novelties.csv', 'r') as f:
+        reader = csv.reader(f)
+        for row in reader:
+          rid = row[0].split("_")[-1]
+          if len(rid)<5:
+            rid = "0"+rid
+          data[rid] = {"novelty_100": float(row[1]), "novelty_95": float(row[2]), "novelty_90": float(row[3]), "novelty_50": float(row[4])}
+      g.nov_data = data
+      return g.nov_data
+
   get_i_data()
   get_is_data()
   get_ic_data()
   get_r_data()
+  get_surp_data()
+  get_nov_data()
 
 ################################################################################
 # Authentication
 ################################################################################
 # Returns (request_data, user_id, err)
-def authentication(request):
+def authentication(request, server_settings):
   request_data = json.loads(request.data)
   id_token = ''
   user_id = None
   err = ''
 
+  requ = f'[auth - REQUEST | {request.url}]: request.method = {request.method}'
+  debug(requ)
+  requ = f'[auth - REQUEST | {request.url}]: request.data = {request_data}'
+  debug(requ)
+  requ = f'[auth - REQUEST | {request.url}]: request.headers = {request.headers}'
+  debug(requ)
+
   if request.method == 'GET':
     return request_data, user_id, err
 
   #request.method == 'POST':
-  # Is there a token?
+  # Using manual override?
   try:
     if request_data['manualID']:
       user_id = request_data['userID']
@@ -133,6 +174,18 @@ def authentication(request):
   except:
     # Allow there to be no manual override of ID
     pass
+
+  # Check if using auth for cookies or tokens
+  if server_settings['useSessionCookies']:
+    return authCookies(request_data)
+  return authTokens(request_data)
+
+################################################################################
+# Returns (request_data, user_id, err)
+def authTokens(request_data):
+  id_token = ''
+  user_id = None
+  err = ''
 
   try:
     # Extract the firebase token from the HTTP header
@@ -170,6 +223,138 @@ def authentication(request):
   return request_data, user_id, err
 
 ################################################################################
+# Returns (request_data, user_id, err)
+def authCookies(request_data):
+  session_cookie = ''
+  user_id = None
+  err = ''
+
+  try:
+    # Extract the firebase token from the HTTP header
+    session_cookie = request.cookies.get('session')
+  except:
+    err = f'No "session" cookie information given.'
+    # else return an error
+    return request_data, user_id, err
+
+  # Verify the cookie while checking if the cookie is revoked by
+  # passing check_revoked=True.
+  try:
+    # Validate the cookie
+    decoded_cookie = auth.verify_session_cookie(session_cookie, app=auth_app, check_revoked=True)
+    # Token is valid and not revoked.
+    user_id = decoded_cookie['uid']
+    request_data['userID'] = user_id
+#    except auth.RevokedIdTokenError:
+#      # Token revoked, inform the user to reauthenticate or signOut().
+#      err = f'Token revoked, inform the user to reauthenticate or signOut()'
+#    except auth.InvalidIdTokenError:
+#      # Token is invalid
+#      err = f'Token is invalid'
+  except Exception as e:
+    err = f'Unable to authenticate the user, err = {e}'
+  # else return an error
+  return request_data, user_id, err
+
+################################################################################
+# Session URLs
+################################################################################
+# onboarding_ingredient_rating [POST]
+# POST: Returns a user's Firebase session cookie.
+# - Input:
+#   - (json)
+# - Output:
+#   - (string) error
+@app.route('/sessionLogin', methods=['POST'])
+@cross_origin()
+def session_login():
+  debug(f'[session_login - INFO]: Starting.')
+  # Get the ID token sent by the client
+  id_token = request.json['idToken']
+  # Set session expiration to 5 days.
+  expires_in = datetime.timedelta(days=365)
+  try:
+    # Create the session cookie. This will also verify the ID token in the process.
+    # The session cookie will have the same claims as the ID token.
+    session_cookie = auth.create_session_cookie(id_token, app=auth_app, expires_in=expires_in)
+    response = jsonify({'status': 'success'})
+    # Set cookie policy for session cookie.
+    expires = datetime.datetime.now() + expires_in
+    response.set_cookie(
+      'session', session_cookie, expires=expires, httponly=True, secure=True)
+    return response
+  except exceptions.FirebaseError:
+    debug(f'[session_login - ERROR]: Something went wrong.')
+    return abort(401, 'Failed to create a session cookie')
+
+################################################################################
+# Server API Helper Functions
+################################################################################
+# Obtains the server settings document from the database.
+# server_settings, err = getServerSettings()
+def getServerSettings():
+  func_name = "getServerSettings"
+  doc_ref, doc, err = retrieveDocument('server', 'settings')
+  if err:
+    err = f"[{func_name} - ERROR]: Unable to retrieve server settings, err = {err}"
+    debug(err)
+    return None, err
+  return doc.to_dict(), err
+
+#-------------------------------------------------------------------------------
+# Obtains the user's document.
+# If create_flag is set, then if document is not available,
+# then they are created.
+# user_doc_ref, user_doc, err = getUserDocument(user_id)
+def getUserDocument(user_id, server_settings, create_flag=False):
+  func_name = "getUserDocument"
+  user_doc_ref, user_doc, err = retrieveDocument('users', user_id)
+  if err:
+    err = f"[{func_name} - WARN]: Unable to retrieve document for {user_id}, err = {err}\nCreating documents now..."
+    debug(err)
+
+    if not create_flag:
+      return None, None, err
+
+    # else create_flag: # Create the new documents
+     # known only 2 groups
+    num_group_0 = server_settings['groupNum']['0']
+    num_group_1 = server_settings['groupNum']['1']
+    if num_group_0 == num_group_1:
+      int_user_group = random.choice(user_groups)
+    else:
+      if num_group_0 > num_group_1:
+        int_user_group = 1;
+      else:
+        int_user_group = 0;
+    userStartingDoc['group'] = int_user_group
+    err = createDocument('users', user_id, userStartingDoc)
+    if err:
+      err = f"[{func_name} - ERROR]: Unable to create user document for {user_id}, err = {err}"
+      debug(err)
+      return None, None, err
+     # user document creation successful, update server settings
+    server_settings['groupNum'][str(int_user_group)] += 1
+    err = updateDocument('server', 'settings', server_settings);
+    if err:
+      err = f"[{func_name} - ERROR]: Unable to server settings document, err = {err}"
+      debug(err)
+      return None, None, err
+
+    err = createDocument('actions', user_id, {})
+    if err:
+      err = f"[{func_name} - ERROR]: Unable to create action document for {user_id}, err = {err}"
+      debug(err)
+      return None, None, err
+    err = createDocument('reviews', user_id, {})
+    if err:
+      err = f"[{func_name} - ERROR]: Unable to create review document for {user_id}, err = {err}"
+      debug(err)
+      return None, None, err
+
+  return user_doc_ref, user_doc, err
+
+################################################################################
 # Server API URLs
 ################################################################################
 # onboarding_ingredient_rating [GET|POST]
@@ -189,41 +374,57 @@ def authentication(request):
 @app.route('/onboarding_ingredient_rating', methods=['GET', 'POST'])
 @cross_origin()
 def onboarding_ingredient_rating():
-  debug(f'[onboarding_ingredient_rating - INFO]: Starting.')
+  func_name = "onboarding_ingredient_rating"
+  debug(f"[{func_name} - INFO]: Starting.")
   if request.method == 'POST':
-    debug('[onboarding_ingredient_rating - INFO]: POST request')
-    request_data, user_id, err = authentication(request)
-    debug(f'[onboarding_ingredient_rating - DATA]: request_data: {request_data}')
+    debug(f"[{func_name} - INFO]: POST request")
+
+    # Attempt to grab server settings document
+    server_settings, err = getServerSettings()
     if err:
-      err = f'[onboarding_ingredient_rating - ERROR]: Authentication error, err = {err}'
+      err = f"[{func_name} - ERROR]: Unable to retrieve settings, err = {err}."
+      debug(err)
+      return err
+
+    request_data, user_id, err = authentication(request, server_settings)
+    debug(f"[{func_name} - DATA]: request_data: {request_data}")
+    if err:
+      err = f"[{func_name} - ERROR]: Authentication error, err = {err}"
       debug(err)
       return err
     # Run any functions that need to be done before the rest of the request
     before_request_func()
 
-    # Attempt to grab user's document (as this is the first endpoint)
-    err = createDocument('users', user_id, userStartingDoc)
-    err = createDocument('actions', user_id, {})
-    err = createDocument('reviews', user_id, {})
+    # Attempt to grab user's document
+    user_doc_ref, user_doc, err = getUserDocument(user_id, server_settings, create_flag=1)
     if err:
-      err = f'[onboarding_ingredient_rating - ERROR]: Unable to create document for {user_id}, err = {err}'
+      err = f"[{func_name} - ERROR]: Unable to retrieve document for {user_id}, err = {err}."
       debug(err)
       return err
+    user_dict = user_doc.to_dict()
+    user_dict['user_id'] = user_id
 
-    # Update user's document with recipe ratings
+    # Update user's document with ingredient ratings
     rating_types = ['taste', 'familiarity']
     err = updateIngredientClusterRatings(request_data, rating_types)
     if err:
-      err = f'[onboarding_recipe_rating - ERROR]: Unable to update ingredient ratings, err = {err}'
+      err = f"[{func_name} - ERROR]: Unable to update ingredient ratings, err = {err}"
       debug(err)
       return err
-    return ''
 
-  debug('[onboarding_ingredient_rating - INFO]: GET request')
+    # Return json of test recipes that a user should liked
+    onboarding_recipes2, err = getRecipes(user_dict, server_settings)
+    if err:
+      err = f"[{func_name} - ERROR]: Unable to find any recipes for user {user_id}, err = {err}"
+      debug(err)
+      return err
+    return jsonify(onboarding_recipes2)
+
+  debug(f"[{func_name} - INFO]: GET request")
   # Attempt to grab onboarding recipes list.
   doc_ref, doc, err = retrieveDocument('onboarding', 'ingredients')
   if err:
-    err = f'[onboarding_ingredient_rating - ERROR]: Unable to retrieve ingredients for onboarding, err = {err}'
+    err = f"[{func_name} - ERROR]: Unable to retrieve ingredients for onboarding, err = {err}"
     debug(err)
     return err
 
@@ -257,51 +458,53 @@ def onboarding_ingredient_rating():
 @app.route('/onboarding_recipe_rating', methods=['GET', 'POST'])
 @cross_origin()
 def onboarding_recipe_rating():
-  debug(f'[onboarding_recipe_rating - INFO]: Starting.')
+  func_name = "onboarding_recipe_rating"
+  debug(f"[{func_name} - INFO]: Starting.")
   if request.method == 'POST':
-    debug('[onboarding_recipe_rating - INFO]: POST request')
-    request_data, user_id, err = authentication(request)
-    debug(f'[onboarding_recipe_rating - DATA]: request_data: {request_data}')
+    debug(f"[{func_name} - INFO]: POST request")
+
+    # Attempt to grab server settings document
+    server_settings, err = getServerSettings()
     if err:
-      err = f'[onboarding_recipe_rating - ERROR]: Authentication error, err = {err}'
+      err = f"[{func_name} - ERROR]: Unable to retrieve settings, err = {err}."
+      debug(err)
+      return err
+
+    request_data, user_id, err = authentication(request, server_settings)
+    debug(f"[{func_name} - DATA]: request_data: {request_data}")
+    if err:
+      err = f"[{func_name} - ERROR]: Authentication error, err = {err}"
       debug(err)
       return err
     # Run any functions that need to be done before the rest of the request
     before_request_func()
 
+    # Attempt to grab user's document
+    user_doc_ref, user_doc, err = getUserDocument(user_id, server_settings, create_flag=1)
+    if err:
+      err = f"[{func_name} - ERROR]: Unable to retrieve document for {user_id}, err = {err}."
+      debug(err)
+      return err
+
     # Update user's document with recipe ratings
     rating_types = ['taste', 'familiarity', 'surprise']
     err = updateRecipeRatings(request_data, rating_types)
     if err:
-      err = f'[onboarding_recipe_rating - ERROR]: Unable to update recipe ratings, err = {err}'
+      err = f"[{func_name} - ERROR]: Unable to update recipe ratings, err = {err}"
       debug(err)
       return err
 
-    # Return json of test recipes that a user should liked
-    onboarding_recipes2, err = getTasteRecipes(user_id, recipesReturned)
-    if err:
-      err = f'[onboarding_recipe_rating - ERROR]: Unable to find any recipes for user {user_id}, err = {err}'
-      debug(err)
-      return err
-    return jsonify(onboarding_recipes2)
+    return ''
 
-  debug('[onboarding_recipe_rating - INFO]: GET request')
+  debug(f"[{func_name} - INFO]: GET request")
   # Attempt to grab onboarding recipes list.
   doc_ref, doc, err = retrieveDocument('onboarding', 'recipes')
   if err:
-    err = f'[onboarding_recipe_rating - ERROR]: Unable to retrieve recipes for onboarding, err = {err}'
+    err = f"[{func_name} - ERROR]: Unable to retrieve recipes for onboarding, err = {err}"
     debug(err)
     return err
 
-  onboarding_recipes = {}
   doc_dict = doc.to_dict()
-#  for recipe_id in doc_dict['recipe_ids']:
-#    recipe_info, err = getRecipeInformation(recipe_id)
-#    if err:
-#      err = f'[onboarding_recipe_rating - ERROR]: Unable to retrieve recipe {recipe_id} for onboarding, err = {err}'
-#      debug(err)
-#      continue
-#    onboarding_recipes[recipe_id] = recipe_info
   return jsonify(doc_dict)
 
 ################################################################################
@@ -315,13 +518,22 @@ def onboarding_recipe_rating():
 @app.route('/validation_recipe_rating', methods=['POST'])
 @cross_origin()
 def validation_recipe_rating():
-  debug(f'[validation_recipe_rating - INFO]: Starting.')
+  func_name = "validation_recipe_rating"
+  debug(f"[{func_name} - INFO]: Starting.")
   if request.method == 'POST':
-    debug('[validation_recipe_rating - INFO]: POST request')
-    request_data, user_id, err = authentication(request)
-    debug(f'[validation_recipe_rating - DATA]: request_data: {request_data}')
+    debug(f"[{func_name} - INFO]: POST request")
+
+    # Attempt to grab server settings document
+    server_settings, err = getServerSettings()
     if err:
-      err = f'[validation_recipe_rating - ERROR]: Authentication error, err = {err}'
+      err = f"[{func_name} - ERROR]: Unable to retrieve settings, err = {err}."
+      debug(err)
+      return err
+
+    request_data, user_id, err = authentication(request, server_settings)
+    debug(f"[{func_name} - DATA]: request_data: {request_data}")
+    if err:
+      err = f"[{func_name} - ERROR]: Authentication error, err = {err}"
       debug(err)
       return err
     # Run any functions that need to be done before the rest of the request
@@ -331,7 +543,7 @@ def validation_recipe_rating():
     rating_types = ['taste', 'familiarity', 'surprise']
     err = updateRecipeRatings(request_data, rating_types)
     if err:
-      err = f'[onboarding_recipe_rating - ERROR]: Unable to update recipe ratings, err = {err}'
+      err = f"[{func_name} - ERROR]: Unable to update recipe ratings, err = {err}"
       debug(err)
       return err
     return ""
@@ -349,27 +561,48 @@ def validation_recipe_rating():
 @app.route('/get_meal_plan_selection', methods=['POST'])
 @cross_origin()
 def get_meal_plan_selection():
-  debug(f'[get_meal_plan_selection - INFO]: Starting.')
+  func_name = "get_meal_plan_selection"
+  debug(f"[{func_name} - INFO]: Starting.")
   if request.method == 'POST':
-    debug('[get_meal_plan_selection - INFO]: POST request')
-    request_data, user_id, err = authentication(request)
-    debug(f'[get_meal_plan_selection - DATA]: request_data: {request_data}')
+    debug(f"[{func_name} - INFO]: POST request")
+
+    # Attempt to grab server settings document
+    server_settings, err = getServerSettings()
     if err:
-      err = f'[get_meal_plan_selection - ERROR]: Authentication error, err = {err}'
+      err = f"[{func_name} - ERROR]: Unable to retrieve settings, err = {err}."
+      debug(err)
+      return err
+
+    request_data, user_id, err = authentication(request, server_settings)
+    debug(f"[{func_name} - DATA]: request_data: {request_data}")
+    if err:
+      err = f"[{func_name} - ERROR]: Authentication error, err = {err}"
       debug(err)
       return err
     # Run any functions that need to be done before the rest of the request
     before_request_func()
 
-    num_wanted_recipes = request_data['number_of_recipes']
-    # Update user's document with ingredient ratings
-    # Return json of test recipes that a user should liked
-    taste_recipes, err = getTasteRecipes(user_id, num_wanted_recipes)
+    # Attempt to grab user's document
+    user_doc_ref, user_doc, err = getUserDocument(user_id, server_settings)
     if err:
-      err = f'[onboarding_recipe_rating - ERROR]: Unable to find any recipes for user {user_id}, err = {err}'
+      err = f"[{func_name} - ERROR]: Unable to retrieve document for {user_id}, err = {err}."
       debug(err)
       return err
-    return jsonify(taste_recipes)
+    user_dict = user_doc.to_dict()
+    user_dict['user_id'] = user_id
+
+    #num_wanted_recipes = request_data['number_of_recipes']
+    num_wanted_recipes = recipesReturned
+    # Update user's document with ingredient ratings
+    # Return json of test recipes that a user should liked
+
+    # Return json of test recipes that a user should liked
+    ret_recipes, err = getRecipes(user_dict, server_settings)
+    if err:
+      err = f"[{func_name} - ERROR]: Unable to find any recipes for user {user_id}, err = {err}"
+      debug(err)
+      return err
+    return jsonify(ret_recipes)
 
 ################################################################################
 # save_meal_plan [POST]
@@ -383,37 +616,49 @@ def get_meal_plan_selection():
 @app.route('/save_meal_plan', methods=['POST'])
 @cross_origin()
 def save_meal_plan():
-  debug(f'[save_meal_plan - INFO]: Starting.')
+  func_name = "save_meal_plan"
+  debug(f"[{func_name} - INFO]: Starting.")
   if request.method == 'POST':
-    debug('[save_meal_plan - INFO]: POST request')
-    request_data, user_id, err = authentication(request)
-    debug(f'[save_meal_plan - DATA]: request_data: {request_data}')
+    debug(f"[{func_name} - INFO]: POST request")
+
+    # Attempt to grab server settings document
+    server_settings, err = getServerSettings()
     if err:
-      err = f'[save_meal_plan - ERROR]: Authentication error, err = {err}'
+      err = f"[{func_name} - ERROR]: Unable to retrieve settings, err = {err}."
+      debug(err)
+      return err
+
+    request_data, user_id, err = authentication(request, server_settings)
+    debug(f"[{func_name} - DATA]: request_data: {request_data}")
+    if err:
+      err = f"[{func_name} - ERROR]: Authentication error, err = {err}"
       debug(err)
       return err
     # Run any functions that need to be done before the rest of the request
     before_request_func()
 
-    user_doc_ref, user_doc, err = retrieveDocument('users', user_id)
+    # Attempt to grab user's document
+    user_doc_ref, user_doc, err = getUserDocument(user_id, server_settings)
     if err:
-      err = f'[save_meal_plan - ERROR]: Unable to retrieve the user {user_id} data, err = {err}'
+      err = f"[{func_name} - ERROR]: Unable to retrieve document for {user_id}, err = {err}."
       debug(err)
       return err
+    user_dict = user_doc.to_dict()
+    user_dict['user_id'] = user_id
 
-    pickedRecipes = user_doc.to_dict()['pickedRecipes']
+    pickedRecipes = user_dict['pickedRecipes']
     pickedRecipes['latest'] += 1
     pickedRecipes[str(pickedRecipes['latest'])] = request_data['picked']
     updateData = {'pickedRecipes': pickedRecipes}
     err = updateDocument('users', user_id, updateData)
     if err:
-      err = f'[save_meal_plan - ERROR]: Unable to update the data {updateData} for user {user_id}, err = {err}'
+      err = f"[{func_name} - ERROR]: Unable to update the data {updateData} for user {user_id}, err = {err}"
       debug(err)
       return err
 
     err = updateActionLog(request_data)
     if err:
-      err = f'[save_meal_plan - ERROR]: Unable to update recipe(s) action log, err = {err}'
+      err = f"[{func_name} - ERROR]: Unable to update recipe(s) action log, err = {err}"
       debug(err)
       return err
     return ''
@@ -428,26 +673,38 @@ def save_meal_plan():
 @app.route('/retrieve_meal_plan', methods=['POST'])
 @cross_origin()
 def retrieve_meal_plan():
-  debug(f'[retrieve_meal_plan - INFO]: Starting.')
+  func_name = "retrieve_meal_plan"
+  debug(f"[{func_name} - INFO]: Starting.")
   if request.method == 'POST':
-    debug('[retrieve_meal_plan - INFO]: POST request')
-    request_data, user_id, err = authentication(request)
-    debug(f'[retrieve_meal_plan - DATA]: request_data: {request_data}')
+    debug(f"[{func_name} - INFO]: POST request")
+
+    # Attempt to grab server settings document
+    server_settings, err = getServerSettings()
     if err:
-      err = f'[review_rretrieve_meal_planecipe - ERROR]: Authentication error, err = {err}'
+      err = f"[{func_name} - ERROR]: Unable to retrieve settings, err = {err}."
+      debug(err)
+      return err
+
+    request_data, user_id, err = authentication(request, server_settings)
+    debug(f"[{func_name} - DATA]: request_data: {request_data}")
+    if err:
+      err = f"[{func_name} - ERROR]: Authentication error, err = {err}"
       debug(err)
       return err
     # Run any functions that need to be done before the rest of the request
     before_request_func()
 
-    user_doc_ref, user_doc, err = retrieveDocument('users', user_id)
+    # Attempt to grab user's document
+    user_doc_ref, user_doc, err = getUserDocument(user_id, server_settings)
     if err:
-      err = f'[retrieve_meal_plan - ERROR]: Unable to retrieve the user {user_id} data, err = {err}'
+      err = f"[{func_name} - ERROR]: Unable to retrieve document for {user_id}, err = {err}."
       debug(err)
       return err
+    user_dict = user_doc.to_dict()
+    user_dict['user_id'] = user_id
 
     # Grab the recipe information to be returned in the json
-    pickedRecipes = user_doc.to_dict()['pickedRecipes']
+    pickedRecipes = user_dict['pickedRecipes']
     latest = pickedRecipes['latest']
     if latest == -1:
       return 'No recipes selected.'
@@ -457,7 +714,7 @@ def retrieve_meal_plan():
       # Get the recipe information
       recipeInfo, err = getRecipeInformation(recipe_id)
       if err:
-        err = f'[retrieve_meal_plan - ERROR]: Unable to get recipe {recipe_id} information, err = {err}'
+        err = f"[{func_name} - ERROR]: Unable to get recipe {recipe_id} information, err = {err}"
         debug(err)
         continue
       recipe_info[recipe_id] = recipeInfo
@@ -474,13 +731,22 @@ def retrieve_meal_plan():
 @app.route('/review_recipe', methods=['POST'])
 @cross_origin()
 def review_recipe():
-  debug(f'[review_recipe - INFO]: Starting.')
+  func_name = "review_recipe"
+  debug(f"[{func_name} - INFO]: Starting.")
   if request.method == 'POST':
-    debug('[review_recipe - INFO]: POST request')
-    request_data, user_id, err = authentication(request)
-    debug(f'[review_recipe - DATA]: request_data: {request_data}')
+    debug(f"[{func_name} - INFO]: POST request")
+
+    # Attempt to grab server settings document
+    server_settings, err = getServerSettings()
     if err:
-      err = f'[review_recipe - ERROR]: Authentication error, err = {err}'
+      err = f"[{func_name} - ERROR]: Unable to retrieve settings, err = {err}."
+      debug(err)
+      return err
+
+    request_data, user_id, err = authentication(request, server_settings)
+    debug(f"[{func_name} - DATA]: request_data: {request_data}")
+    if err:
+      err = f"[{func_name} - ERROR]: Authentication error, err = {err}"
       debug(err)
       return err
     # Run any functions that need to be done before the rest of the request
@@ -490,13 +756,132 @@ def review_recipe():
     rating_types = ['taste', 'familiarity']
     err = updateRecipeRatings(request_data, rating_types)
     if err:
-      err = f'[onboarding_recipe_rating - ERROR]: Unable to update recipe(s) ratings, err = {err}'
+      err = f"[{func_name} - ERROR]: Unable to update recipe(s) ratings, err = {err}"
       debug(err)
       return err
 
     err = updateRecipeReviews(request_data)
     if err:
-      err = f'[onboarding_recipe_rating - ERROR]: Unable to update recipe(s) review, err = {err}'
+      err = f"[{func_name} - ERROR]: Unable to update recipe(s) review, err = {err}"
       debug(err)
       return err
     return ""
+
+################################################################################
+# lookup_user_predicted [POST]
+# POST: End point returns the predicted ratings that the user has.
+# - Input:
+#   - (json) {"userID": <user_id>}
+# - Output:
+#   - (json)
+@app.route('/lookup_user_predicted', methods=['POST'])
+@cross_origin()
+def lookup_user_predicted():
+  func_name = "lookup_user_predicted"
+  debug(f"[{func_name} - INFO]: Starting.")
+  if request.method == 'POST':
+    debug(f"[{func_name} - INFO]: POST request")
+
+    # Attempt to grab server settings document
+    server_settings, err = getServerSettings()
+    if err:
+      err = f"[{func_name} - ERROR]: Unable to retrieve settings, err = {err}."
+      debug(err)
+      return err
+
+    request_data, user_id, err = authentication(request, server_settings)
+    debug(f"[{func_name} - DATA]: request_data: {request_data}")
+    if err:
+      err = f"[{func_name} - ERROR]: Authentication error, err = {err}"
+      debug(err)
+      return err
+    # Run any functions that need to be done before the rest of the request
+    before_request_func()
+
+    # Attempt to grab user's document
+    user_doc_ref, user_doc, err = getUserDocument(user_id, server_settings)
+    if err:
+      err = f"[{func_name} - ERROR]: Unable to retrieve document for {user_id}, err = {err}."
+      debug(err)
+      return err
+    user_dict = user_doc.to_dict()
+
+    user_ratings = {}
+
+    # Obtain a list of all rate recipes
+    # keys of all recipe taste ratings
+    r_ids = request_data['recipe_ids']
+    for r_id in r_ids:
+      # Change into a string (just in case)
+      r_id = str(r_id)
+      # Find the ratings
+      user_recipe_ratings = {}
+      user_recipe_ratings['recipe'] = {
+        'familiarity': getRecipeRating(user_dict, r_id, 'familiarity'),
+        'surprise': surpRecipe(user_dict, r_id, simpleSurprise=False),
+        'taste': getRecipeRating(user_dict, r_id, 'taste'),
+      }
+
+      debug(f'[lookup_user_predicted - DATA]: user_recipe_ratings[{r_id}]: {user_recipe_ratings}')
+
+      # Find the ingredients and the user's ratings of them
+      user_ingredient_ratings = {}
+      i_ids = g.r_data[r_id]["ingredient_ids"]
+      for i_id in i_ids:
+        # Change into a string (just in case)
+        i_id = str(i_id)
+        # Find the ratings
+        user_ingredient_ratings[i_id] = {
+          'familiarity': getIngredientRating(user_dict, i_id, 'familiarity'),
+          'surprise': getIngredientRating(user_dict, i_id, 'surprise'),
+          'taste': getIngredientRating(user_dict, i_id, 'taste'),
+        }
+
+      user_recipe_ratings['ingredient'] = user_ingredient_ratings
+      user_ratings[r_id] = user_recipe_ratings
+
+    return jsonify(user_ratings)
+
+
+################################################################################
+# lookup_user_saved [POST]
+# POST: End point returns the saved ratings that the user has.
+# - Input:
+#   - (json) {"userID": <user_id>}
+# - Output:
+#   - (json)
+@app.route('/lookup_user_saved', methods=['POST'])
+@cross_origin()
+def lookup_user_saved():
+  func_name = "lookup_user_saved"
+  debug(f"[{func_name} - INFO]: Starting.")
+  if request.method == 'POST':
+    debug(f"[{func_name} - INFO]: POST request")
+
+    # Attempt to grab server settings document
+    server_settings, err = getServerSettings()
+    if err:
+      err = f"[{func_name} - ERROR]: Unable to retrieve settings, err = {err}."
+      debug(err)
+      return err
+
+    request_data, user_id, err = authentication(request, server_settings)
+    debug(f"[{func_name} - DATA]: request_data: {request_data}")
+    if err:
+      err = f"[{func_name} - ERROR]: Authentication error, err = {err}"
+      debug(err)
+      return err
+    # Run any functions that need to be done before the rest of the request
+    before_request_func()
+
+    # Attempt to grab user's document
+    user_doc_ref, user_doc, err = getUserDocument(user_id, server_settings)
+    if err:
+      err = f"[{func_name} - ERROR]: Unable to retrieve document for {user_id}, err = {err}."
+      debug(err)
+      return err
+    user_dict = user_doc.to_dict()
+
+    return jsonify(user_dict)
+
+

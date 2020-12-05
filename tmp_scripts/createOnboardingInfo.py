@@ -1,24 +1,34 @@
 ################################################################################
+
+# Q-Chef API Server Onboarding Data Creation
+# Authors: K. di Bona
+
+# In order to run this file alone:
+# $ python createOnboardingInfo.py
+
+# Change the lists within `Constants`, ic_ids (ingredient cluster ids) and r_ids
+#  (recipe ids) to those for onboarding.
+
+# This script runs through all ingredient cluster ids listed in ic_ids, and sets
+# the database onboarding ingredients document as the created json containing 
+# the ids' information. 
+# This script also runs through all recipe ids listed in r_ids, and sets the 
+# database onboarding recipes document as the created json containing the ids'
+# information.
+
+################################################################################
 # Imports
 ################################################################################
-import json
+import json, time
 
 import firebase_admin
 from firebase_admin import credentials
 from firebase_admin import firestore
 
+
 ################################################################################
 # Constants
 ################################################################################
-i_data, ic_data, r_data = {}, {}, {}
-# Grab the data from their jsons
-with open('../server/src/data/qchef_ingredients.json', 'r') as f:
-  i_data = json.load(f)
-with open('../server/src/data/qchef_ingredient_clusters.json', 'r') as f:
-  ic_data = json.load(f)
-with open('../server/src/data/qchef_recipes.json', 'r') as f:
-  r_data = json.load(f)
-
 # Holds the onboarding ingredient cluster ids
 ic_ids = ['219',
 '233',
@@ -77,55 +87,8 @@ r_ids = ['86478',
 ################################################################################
 # Helper Functions
 ################################################################################
-# getIngredientInformation
-# Returns a name of the ingredient (needed to give to the front end).
-# - Input:
-#   - (string) ingredient_id
-# - Output:
-#   - (string) ingredient's information (which is just the name),
-#   - (string) error
-def getIngredientInformation(ingredient_id):
-  print(f'[getIngredientInformation - INFO]: Starting.')
-  ingredients_dict = ic_data[ingredient_id]
-  ingredientName = ingredients_dict["name"].replace('_', ' ')
-  return ingredientName, ''
 
-################################################################################
-# getRecipeInformation
-# Returns a json of the recipe info needed to give to the front end.
-# - Input:
-#   - (string) recipe_id
-# - Output:
-#   - (dict) recipe's information,
-#   - (string) error
-def getRecipeInformation(recipe_id):
-  print(f'[getRecipeInformation - INFO]: Starting.')
-  recipes_dict = r_data[recipe_id]
-
-  # Change the ingredient ids to ingredient names
-  ingredientNames = []
-  for ingredient_id in recipes_dict["ingredient_ids"]:
-    # Retrieve the recipe information
-    ingredients_dict = i_data[str(ingredient_id)]
-    ingredientName = ingredients_dict["name"].replace('_', ' ')
-    if not (ingredientName in ingredientNames):
-      ingredientNames.append(ingredientName)
-  recipes_dict["ingredient_names"] = ingredientNames
-
-  # Remove the image field
-  del recipes_dict["image"]
-  # Remove the ingredient_ids field
-  del recipes_dict["ingredient_ids"]
-  # Remove the surprises field
-  del recipes_dict["surprises"]
-  # Remove the url field
-  del recipes_dict["url"]
-  # Remove the vector field
-  del recipes_dict["vector"]
-  # Remove the vegetarian field
-  del recipes_dict["vegetarian"]
-
-  return recipes_dict, ''
+from helpFunc import *
 
 ################################################################################
 # MAIN
@@ -137,7 +100,7 @@ if __name__ == "__main__":
   for ic_id in ic_ids:
     ic_id = str(ic_id)
     try:
-      ic_onboarding[ic_id], err = getIngredientInformation(ic_id)
+      ic_onboarding[ic_id], err = getIngredientClusterInformation(ic_id)
     except:
       print(f'Unable to find ingredient cluster {ic_id}')
 
@@ -147,12 +110,8 @@ if __name__ == "__main__":
     try:
       r_onboarding[r_id], err = getRecipeInformation(r_id)
     except:
-      print(f'Unable to find ingredient cluster {r_id}')
+      print(f'Unable to find recipe cluster {r_id}')
 
-  print('ic_onboarding')
-  print(ic_onboarding)
-  print('r_onboarding')
-  print(type(r_onboarding))
 
   # Use the application default credentials
   cred = credentials.Certificate("../server/src/keyKey.json")

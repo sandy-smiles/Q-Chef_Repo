@@ -13,11 +13,8 @@ from flask import g
 collectionIDs = ['users',
                  'actions',
                  'reviews',
-                 'recipes',
-                 'ingredients',
-                 'ingredient_clusters',
-                 'ingredient_subclusters',
-                 'onboarding']
+                 'onboarding',
+                 'server']
 
 ################################################################################
 # Debugging
@@ -25,8 +22,9 @@ collectionIDs = ['users',
 DEBUG = True
 WARN = True
 INFO = False
-DATA = False
 HELP = False
+DATA = False
+REQU = True
 
 def debug(fString):
   if not DEBUG:
@@ -36,7 +34,7 @@ def debug(fString):
     print(fString)
     return
 
-  if WARN and 'WARNING' in fString:
+  if WARN and 'WARN' in fString:
     print(fString)
     return
 
@@ -44,11 +42,15 @@ def debug(fString):
     print(fString)
     return
 
+  if HELP and 'HELP' in fString:
+    print(fString)
+    return
+
   if DATA and 'DATA' in fString:
     print(fString)
     return
 
-  if HELP and 'HELP' in fString:
+  if REQU and 'REQU' in fString:
     print(fString)
     return
 
@@ -167,6 +169,7 @@ def updateDocument(collectionID, documentID, updateData):
   documentID = f'{documentID}'
 
   doc_ref, doc, err = retrieveDocument(collectionID, documentID)
+
   if not doc.exists:
     err = f'[updateDocument - ERROR]: Document {documentID} does not exist in collection {collectionID}.'
     debug(err)
@@ -206,9 +209,11 @@ def getRecipeInformation(recipe_id):
   # Change the ingredient ids to ingredient names
   ingredientNames = []
   for ingredient_id in recipes_dict["ingredient_ids"]:
-    # Retrieve the recipe information
+    # Retrieve the recipe's ingredient information
+    if ingredient_id == None:
+      continue
     ingredients_dict = g.i_data[str(ingredient_id)]
-    ingredientName = ingredients_dict["name"].replace('_', ' ')
+    ingredientName = ingredients_dict["name"].replace('_', ' ').capitalize()
     if not (ingredientName in ingredientNames):
       ingredientNames.append(ingredientName)
   recipes_dict["ingredient_names"] = ingredientNames
