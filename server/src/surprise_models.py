@@ -217,6 +217,7 @@ def simpleSurpRecipe(user, recipe_id, sigma=2, delta=1):
 
 def predict_many_users_one_recipe(model, users, recipe_id, weight_id = None):
     X = pd.DataFrame()
+    debug(f'[predict_many_users_one_recipe - INFO]: Starting, model= {model}')
     for col in model["recipe_pset"]:
         if "nov" in col:
             try:

@@ -117,7 +117,10 @@ def before_request_func():
       with open('./data/qchef_recipe_surprises.csv', 'r') as f:
         reader = csv.reader(f)
         for row in reader:
-          data[row[0].split("_")[-1]] = {"surprise_100": float(row[1]), "surprise_95": float(row[2]), "surprise_90": float(row[3]), "surprise_50": float(row[4])}
+          rid = row[0].split("_")[-1]
+          if len(rid)<5:
+            rid = "0"+rid
+          data[rid] = {"surprise_100": float(row[1]), "surprise_95": float(row[2]), "surprise_90": float(row[3]), "surprise_50": float(row[4])}
       g.surp_data = data
       return g.surp_data
 
@@ -128,7 +131,10 @@ def before_request_func():
       with open('./data/qchef_recipe_novelties.csv', 'r') as f:
         reader = csv.reader(f)
         for row in reader:
-          data[row[0].split("_")[-1]] = {"novelty_100": float(row[1]), "novelty_95": float(row[2]), "novelty_90": float(row[3]), "novelty_50": float(row[4])}
+          rid = row[0].split("_")[-1]
+          if len(rid)<5:
+            rid = "0"+rid
+          data[rid] = {"novelty_100": float(row[1]), "novelty_95": float(row[2]), "novelty_90": float(row[3]), "novelty_50": float(row[4])}
       g.nov_data = data
       return g.nov_data
 
