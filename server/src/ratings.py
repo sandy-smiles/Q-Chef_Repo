@@ -207,7 +207,8 @@ def getTasteAndSurpRecipes(user_dict):
       debug(err)
       continue  # Just ignore this recipe then.
     #We decided on the geometric mean (sqrt(a*b)) to combine preference and surprise as it biases the rating towards the lower.
-    possibleRecipes.append((gmean(userRecipeSurp,userRecipePref), recipe_id))
+    debug(f'[getTasteAndSurpRecipes - DATA]: for user {user_id} and recipe {recipe_id} userRecipeSurp was {userRecipeSurp} and userRecipePref was {userRecipePref}')
+    possibleRecipes.append((gmean([userRecipeSurp,userRecipePref]), recipe_id))
 
   possibleRecipes.sort(reverse=True)
   # Check that there are enough recipes to serve up.
@@ -316,10 +317,6 @@ def getRecipes(user_dict, server_settings):
     if EXPERIMENTAL_STATE_OVERRIDE == "surprise":
       return getSurpRecipes(user_dict)
 
-  try:
-    user_group = int(user_dict['group'])
-  except:
-    return None,"No experimental group assignment found in user's record."
 
   # Retrieve the server document
   server_doc_ref, server_doc, err = retrieveDocument('server', 'settings')
@@ -330,6 +327,10 @@ def getRecipes(user_dict, server_settings):
 
   if server_dict['experimentalState']:
     debug(f'[getRecipes - REQU]: state = experimentalState')
+    try:
+      user_group = int(user_dict['group'])
+    except:
+      return None, "No experimental group assignment found in user's record."
     expReturn = {0: getTasteRecipes, 1:getTasteAndSurpRecipes}
     return expReturn[user_group](user_dict)
 
