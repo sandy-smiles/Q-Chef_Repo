@@ -12,7 +12,7 @@ from scipy.stats import gmean
 ################################################################################
 TASTE_RECIPES_RETURNED = 10
 
-EXPERIMENTAL_STATE_OVERRIDE = "" # Set to "experimental", "taste","surprise", or "taste+surprise" to override server, or "" to follow server behaviour
+EXPERIMENTAL_STATE_OVERRIDE = "taste+surprise" # Set to "experimental", "taste","surprise", or "taste+surprise" to override server, or "" to follow server behaviour
 
 rating_types = ['taste',
                 'familiarity',
@@ -197,27 +197,33 @@ def getTasteAndSurpRecipes(user_id, recipes_wanted):
   user_recipes = list(user_dict['r_taste'].keys())
 
   # Retrieve the recipe collection
-  possibleRecipes = []
   recipe_ids = g.r_data.keys()
   err = f'[getTasteAndSurpRecipes - HELP]: For user {user_id}, recipe {user_recipes} have already been rated.'
   debug(err)
+  userRecipePrefs = []
+  idsForSurp = []
   for recipe_id in recipe_ids:
     if recipe_id in user_recipes:
       err = f'[getTasteAndSurpRecipes - INFO]: For user {user_id}, recipe {recipe_id} has already been rated, therefore continuing...'
       debug(err)
       continue
+    idsForSurp.append(recipe_id)
     userRecipePref, err = getRecipeRating(user_dict, recipe_id, 'taste')
     if err:
       err = f'[getTasteAndSurpRecipes - ERROR]: Unable to find user {user_id} taste preference for recipe {recipe_id}, err = {err}'
       debug(err)
       continue  # Just ignore this recipe then.
-    userRecipeSurp, err = surpRecipe(user_dict, recipe_id, simpleSurprise=False)
-    if err:
-      err = f'[getTasteAndSurpRecipes - ERROR]: Unable to find user {user_id} surprise preference for recipe {recipe_id}, err = {err}'
-      debug(err)
-      continue  # Just ignore this recipe then.
-    #We decided on the geometric mean (sqrt(a*b)) to combine preference and surprise as it biases the rating towards the lower.
-    possibleRecipes.append((gmean(userRecipeSurp,userRecipePref), recipe_id))
+    userRecipePrefs.append(userRecipePref)
+
+  userRecipeSurps, err = surpRecipes(user_dict, idsForSurp, simpleSurprise=False)
+  if err:
+    err = f'[getTasteAndSurpRecipes - ERROR]: Unable to find user {user_id} surprise preference for at least one recipe, err = {err}'
+    debug(err)
+
+  #TODO: Parallelise below
+  #We decided on the geometric mean (sqrt(a*b)) to combine preference and surprise as it biases the rating towards the lower.
+  #possibleRecipes.append((gmean(userRecipeSurp,userRecipePref), recipe_id))
+  possibleRecipes = [(gmean(s,p),i) for s,p,i in zip(userRecipeSurps,userRecipePrefs,idsForSurp)]
 
   possibleRecipes.sort(reverse=True)
   # Check that there are enough recipes to serve up.
@@ -337,6 +343,7 @@ def getRecipes(user_id, recipes_wanted):
       return getTasteRecipes(user_id, recipes_wanted)
     if EXPERIMENTAL_STATE_OVERRIDE == "surprise":
       return getSurpRecipes(user_id, recipes_wanted)
+
 
   try:
     user_group = int(user_dict['group'])

@@ -21,8 +21,8 @@ collectionIDs = ['users',
 ################################################################################
 DEBUG = True
 WARN = True
-INFO = False
-HELP = False
+INFO = True
+HELP = True
 DATA = True
 REQU = True
 
@@ -121,7 +121,12 @@ def retrieveDocument(collectionID, documentID):
     return None, None, err
 
   doc_ref = db.collection(collectionID).document(documentID)
+
+  debug("INFO: doc_ref: "+str(doc_ref))
+
   doc = doc_ref.get()
+
+  debug("INFO: doc: "+str(doc))
   if not doc.exists:
     err = f'[retrieveDocument - ERROR]: Document {documentID} does not exist in collection {collectionID}.'
     debug(err)

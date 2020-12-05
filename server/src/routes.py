@@ -167,7 +167,7 @@ def authentication(request, server_settings):
     pass
 
   # Check if using auth for cookies or tokens
-  if server_settings['useSessionCookies']
+  if server_settings['useSessionCookies']:
     return authCookies(request_data)
   return authTokens(request_data)
 
@@ -565,6 +565,7 @@ def get_meal_plan_selection():
     num_wanted_recipes = recipesReturned
     # Update user's document with ingredient ratings
     # Return json of test recipes that a user should liked
+
 
     # Return json of test recipes that a user should liked
     ret_recipes, err = getRecipes(user_dict, server_settings)
