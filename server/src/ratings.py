@@ -115,24 +115,19 @@ def getRecipeRating(user_dict, recipe_id, rating_type):
 # Returns a constant times wanted number of recipes 
 # that we think the user will enjoy.
 # - Input:
-#   - (string) user_id,
-#   - (int) recipes_wanted
-#     - number of recipes user wants
+#   - (dict) user_dict
 # - Output:
 #   - (dict) recipes and their information,
 #   - (string) error
-def getTasteRecipes(user_id, recipes_wanted):
+def getTasteRecipes(user_dict):
   debug(f'[getTasteRecipes - INFO]: Starting.')
+  user_id = user_dict['user_id']
   numWantedRecipes = TASTE_RECIPES_RETURNED #recipes_wanted
 
   ## Collect list of possible recipes to pick from
   ## Noting that we won't give a user a recipe they have already tried.
 
-  # Retrieve the user document
-  user_doc_ref, user_doc, err = retrieveDocument('users', user_id)
-  if err:
-    return None, err
-  user_dict = user_doc.to_dict()
+  # Retrieve the user's info
   user_recipes = list(user_dict['r_taste'].keys())
   
   # Retrieve the recipe collection
@@ -176,24 +171,19 @@ def getTasteRecipes(user_id, recipes_wanted):
 # Returns a constant times wanted number of recipes
 # that we think the user will enjoy but find surprising.
 # - Input:
-#   - (string) user_id,
-#   - (int) recipes_wanted
-#     - number of recipes user wants
+#   - (dict) user_dict
 # - Output:
 #   - (dict) recipes and their information,
 #   - (string) error
-def getTasteAndSurpRecipes(user_id, recipes_wanted):
+def getTasteAndSurpRecipes(user_dict):
   debug(f'[getTasteAndSurpRecipes - INFO]: Starting.')
+  user_id = user_dict['user_id']
   numWantedRecipes = TASTE_RECIPES_RETURNED  # recipes_wanted
 
   ## Collect list of possible recipes to pick from
   ## Noting that we won't give a user a recipe they have already tried.
 
-  # Retrieve the user document
-  user_doc_ref, user_doc, err = retrieveDocument('users', user_id)
-  if err:
-    return None, err
-  user_dict = user_doc.to_dict()
+  # Retrieve the user's info
   user_recipes = list(user_dict['r_taste'].keys())
 
   # Retrieve the recipe collection
@@ -243,24 +233,19 @@ def getTasteAndSurpRecipes(user_id, recipes_wanted):
 # Returns a constant times wanted number of recipes
 # that we think the user will find surprising.
 # - Input:
-#   - (string) user_id,
-#   - (int) recipes_wanted
-#     - number of recipes user wants
+#   - (dict) user_dict
 # - Output:
 #   - (dict) recipes and their information,
 #   - (string) error
-def getSurpRecipes(user_id, recipes_wanted):
+def getSurpRecipes(user_dict):
   debug(f'[getSurpRecipes - INFO]: Starting.')
+  user_id = user_dict['user_id']
   numWantedRecipes = TASTE_RECIPES_RETURNED  # recipes_wanted
 
   ## Collect list of possible recipes to pick from
   ## Noting that we won't give a user a recipe they have already tried.
 
-  # Retrieve the user document
-  user_doc_ref, user_doc, err = retrieveDocument('users', user_id)
-  if err:
-    return None, err
-  user_dict = user_doc.to_dict()
+  # Retrieve the user's info
   user_recipes = list(user_dict['r_taste'].keys())
 
   # Retrieve the recipe collection
@@ -304,25 +289,18 @@ def getSurpRecipes(user_id, recipes_wanted):
 # getRecipes
 # Returns a constant times wanted number of recipes.
 # - Input:
-#   - (string) user_id,
-#   - (int) recipes_wanted
-#     - number of recipes user wants
+#   - (dict) user_dict,
+#   - (dict) server_settings
 # - Output:
 #   - (dict) recipes and their information,
 #   - (string) error
-def getRecipes(user_id, recipes_wanted):
+def getRecipes(user_dict, server_settings):
   debug(f'[getRecipes - INFO]: Starting.')
-  numWantedRecipes = TASTE_RECIPES_RETURNED  # recipes_wanted
 
   ## Collect list of possible recipes to pick from
   ## Noting that we won't give a user a recipe they have already tried.
 
-  # Retrieve the user document
-  user_doc_ref, user_doc, err = retrieveDocument('users', user_id)
-  if err:
-    return None, err
-  user_dict = user_doc.to_dict()
-
+  ## Check current hard_code server setting override.
   if len(EXPERIMENTAL_STATE_OVERRIDE):
     if EXPERIMENTAL_STATE_OVERRIDE == 'experimental':
       expReturn = {0: getTasteRecipes, 1: getTasteAndSurpRecipes}
@@ -330,13 +308,13 @@ def getRecipes(user_id, recipes_wanted):
         user_group = int(user_dict['group'])
       except:
         return None,"No experimental group assignment found in user's record."
-      return expReturn[user_group](user_id, recipes_wanted)
+      return expReturn[user_group](user_dict)
     elif EXPERIMENTAL_STATE_OVERRIDE == "taste+surprise":
-      return getTasteAndSurpRecipes(user_id, recipes_wanted)
+      return getTasteAndSurpRecipes(user_dict)
     elif EXPERIMENTAL_STATE_OVERRIDE == "taste":
-      return getTasteRecipes(user_id, recipes_wanted)
+      return getTasteRecipes(user_dict)
     if EXPERIMENTAL_STATE_OVERRIDE == "surprise":
-      return getSurpRecipes(user_id, recipes_wanted)
+      return getSurpRecipes(user_dict)
 
   try:
     user_group = int(user_dict['group'])
@@ -350,20 +328,22 @@ def getRecipes(user_id, recipes_wanted):
   server_dict = server_doc.to_dict()
 
 
-
-
   if server_dict['experimentalState']:
+    debug(f'[getRecipes - REQU]: state = experimentalState')
     expReturn = {0: getTasteRecipes, 1:getTasteAndSurpRecipes}
-    return expReturn[user_group](user_id, recipes_wanted)
+    return expReturn[user_group](user_dict)
 
   if server_dict['returnTaste'] and server_dict['returnSurprise']:
-    return getTasteAndSurpRecipes(user_id, recipes_wanted)
+    debug(f'[getRecipes - REQU]: state = tasteAndSurpState')
+    return getTasteAndSurpRecipes(user_dict)
 
   if server_dict['returnSurprise']:
-    return getSurpRecipes(user_id, recipes_wanted)
+    debug(f'[getRecipes - REQU]: state = surpState')
+    return getSurpRecipes(user_dict)
 
   # Else, default is to return just the tasty recipes.
-  return getTasteRecipes(user_id, recipes_wanted)
+  debug(f'[getRecipes - REQU]: state = tasteState')
+  return getTasteRecipes(user_dict)
 
 
 ################################################################################

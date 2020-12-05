@@ -23,7 +23,7 @@ DEBUG = True
 WARN = True
 INFO = False
 HELP = False
-DATA = True
+DATA = False
 REQU = True
 
 def debug(fString):

@@ -6,6 +6,7 @@
 import time
 import json
 import csv
+import random
 
 from app import app, auth_app
 from flask import make_response, request, jsonify, render_template, redirect, url_for, send_file, abort
@@ -35,6 +36,8 @@ userStartingDoc = {
   'r_surprise' : {},
   'pickedRecipes': {'latest': -1}
 }
+
+user_groups = [0, 1]
 
 recipesReturned = 10
 
@@ -167,7 +170,7 @@ def authentication(request, server_settings):
     pass
 
   # Check if using auth for cookies or tokens
-  if server_settings['useSessionCookies']
+  if server_settings['useSessionCookies']:
     return authCookies(request_data)
   return authTokens(request_data)
 
@@ -297,7 +300,7 @@ def getServerSettings():
 # If create_flag is set, then if document is not available,
 # then they are created.
 # user_doc_ref, user_doc, err = getUserDocument(user_id)
-def getUserDocument(user_id, create_flag=False):
+def getUserDocument(user_id, server_settings, create_flag=False):
   func_name = "getUserDocument"
   user_doc_ref, user_doc, err = retrieveDocument('users', user_id)
   if err:
@@ -308,11 +311,30 @@ def getUserDocument(user_id, create_flag=False):
       return None, None, err
 
     # else create_flag: # Create the new documents
+     # known only 2 groups
+    num_group_0 = server_settings['groupNum']['0']
+    num_group_1 = server_settings['groupNum']['1']
+    if num_group_0 == num_group_1:
+      int_user_group = random.choice(user_groups)
+    else:
+      if num_group_0 > num_group_1:
+        int_user_group = 1;
+      else:
+        int_user_group = 0;
+    userStartingDoc['group'] = int_user_group
     err = createDocument('users', user_id, userStartingDoc)
     if err:
       err = f"[{func_name} - ERROR]: Unable to create user document for {user_id}, err = {err}"
       debug(err)
       return None, None, err
+     # user document creation successful, update server settings
+    server_settings['groupNum'][str(int_user_group)] += 1
+    err = updateDocument('server', 'settings', server_settings);
+    if err:
+      err = f"[{func_name} - ERROR]: Unable to server settings document, err = {err}"
+      debug(err)
+      return None, None, err
+
     err = createDocument('actions', user_id, {})
     if err:
       err = f"[{func_name} - ERROR]: Unable to create action document for {user_id}, err = {err}"
@@ -368,12 +390,13 @@ def onboarding_ingredient_rating():
     before_request_func()
 
     # Attempt to grab user's document
-    user_doc_ref, user_doc, err = getUserDocument(user_id, create_flag=1)
+    user_doc_ref, user_doc, err = getUserDocument(user_id, server_settings, create_flag=1)
     if err:
       err = f"[{func_name} - ERROR]: Unable to retrieve document for {user_id}, err = {err}."
       debug(err)
       return err
     user_dict = user_doc.to_dict()
+    user_dict['user_id'] = user_id
 
     # Update user's document with ingredient ratings
     rating_types = ['taste', 'familiarity']
@@ -451,7 +474,7 @@ def onboarding_recipe_rating():
     before_request_func()
 
     # Attempt to grab user's document
-    user_doc_ref, user_doc, err = getUserDocument(user_id, create_flag=1)
+    user_doc_ref, user_doc, err = getUserDocument(user_id, server_settings, create_flag=1)
     if err:
       err = f"[{func_name} - ERROR]: Unable to retrieve document for {user_id}, err = {err}."
       debug(err)
@@ -554,12 +577,13 @@ def get_meal_plan_selection():
     before_request_func()
 
     # Attempt to grab user's document
-    user_doc_ref, user_doc, err = getUserDocument(user_id, create_flag=1)
+    user_doc_ref, user_doc, err = getUserDocument(user_id, server_settings)
     if err:
       err = f"[{func_name} - ERROR]: Unable to retrieve document for {user_id}, err = {err}."
       debug(err)
       return err
     user_dict = user_doc.to_dict()
+    user_dict['user_id'] = user_id
 
     #num_wanted_recipes = request_data['number_of_recipes']
     num_wanted_recipes = recipesReturned
@@ -608,12 +632,13 @@ def save_meal_plan():
     before_request_func()
 
     # Attempt to grab user's document
-    user_doc_ref, user_doc, err = getUserDocument(user_id)
+    user_doc_ref, user_doc, err = getUserDocument(user_id, server_settings)
     if err:
       err = f"[{func_name} - ERROR]: Unable to retrieve document for {user_id}, err = {err}."
       debug(err)
       return err
     user_dict = user_doc.to_dict()
+    user_dict['user_id'] = user_id
 
     pickedRecipes = user_dict['pickedRecipes']
     pickedRecipes['latest'] += 1
@@ -664,12 +689,13 @@ def retrieve_meal_plan():
     before_request_func()
 
     # Attempt to grab user's document
-    user_doc_ref, user_doc, err = getUserDocument(user_id)
+    user_doc_ref, user_doc, err = getUserDocument(user_id, server_settings)
     if err:
       err = f"[{func_name} - ERROR]: Unable to retrieve document for {user_id}, err = {err}."
       debug(err)
       return err
     user_dict = user_doc.to_dict()
+    user_dict['user_id'] = user_id
 
     # Grab the recipe information to be returned in the json
     pickedRecipes = user_dict['pickedRecipes']
@@ -767,7 +793,7 @@ def lookup_user_predicted():
     before_request_func()
 
     # Attempt to grab user's document
-    user_doc_ref, user_doc, err = getUserDocument(user_id)
+    user_doc_ref, user_doc, err = getUserDocument(user_id, server_settings)
     if err:
       err = f"[{func_name} - ERROR]: Unable to retrieve document for {user_id}, err = {err}."
       debug(err)
@@ -843,7 +869,7 @@ def lookup_user_saved():
     before_request_func()
 
     # Attempt to grab user's document
-    user_doc_ref, user_doc, err = getUserDocument(user_id)
+    user_doc_ref, user_doc, err = getUserDocument(user_id, server_settings)
     if err:
       err = f"[{func_name} - ERROR]: Unable to retrieve document for {user_id}, err = {err}."
       debug(err)
