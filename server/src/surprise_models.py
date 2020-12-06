@@ -84,7 +84,7 @@ def userArchetypeSurpRatings(user):
         try:
             arch_surp = user["r_surprise"][arch_id]["rating"]
         except:
-            return None, "No surprise rating for "+arch_id+" found for user "+user
+            return None, f"No surprise rating for {arch_id} found for user {user}"
         arch_surps.append(arch_surp)
     return arch_surps,""
 
@@ -103,7 +103,7 @@ def userArchetypeTasteRatings(user):
         try:
             arch_taste = user["r_taste"][arch_id]["rating"]
         except:
-            return None, "No taste rating for "+arch_id+" found for user "+user
+            return None, "No taste rating for {arch_id} found for user {user}"
         arch_tastes.append(arch_taste)
     return arch_tastes,""
 
@@ -122,7 +122,7 @@ def userArchetypeFamRatings(user):
         try:
             arch_fam = user["r_familiarity"][arch_id]["rating"]
         except:
-            return None, "No familiarity rating for "+arch_id+" found for user "+user
+            return None, "No familiarity rating for {arch_id} found for user {user}"
         arch_fams.append(arch_fam)
     return arch_fams,""
 
