@@ -355,7 +355,9 @@ def getRecipes(user_dict, server_settings):
     try:
       user_group = int(user_dict['group'])
     except:
-      return None, "No experimental group assignment found in user's record."
+      # if there is not specified group, assume they're a test user
+      debug(f'[getRecipes - REQU]: no testing group found, assuming group 1')
+      user_group = 1 
     expReturn = {0: getTasteRecipes, 1:getTasteAndSurpRecipes}
     return expReturn[user_group](user_dict)
 
