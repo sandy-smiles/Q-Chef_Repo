@@ -56,15 +56,32 @@ def getIngredientRating(user_dict, ingredient_id, rating_type):
       try:
         ingredientTasteRating = user_dict['ic_'+rating_type][ic_id]['rating']
       except:
-        # TODO(kbona): Figure out how to return an ingredient rating from a closely located rated ingredient.
-        # For now, return as if there was no rating.
-        # ingredientTasteRating = 0
-        # Changed to having the algo skip this ingredient's rating.
-        err = f'[getIngredientRating - {rating_type} - HELP]: No saved rating for ingredient_id = {ingredient_id}.'
-        debug(err)
-        return None, err
+        try:
+          cluster_ratings_dict = {k:v["rating"] for k,v in user_dict['ic_'+rating_type].items()}
+          ingredientTasteRating = getIngredientRatingByNeighbour(user_dict['ic_'+rating_type][ic_id],cluster_ratings_dict)
+        except:
+          # For now, return as if there was no rating.
+          # ingredientTasteRating = 0
+          # Changed to having the algo skip this ingredient's rating.
+          err = f'[getIngredientRating - {rating_type} - HELP]: No saved rating for ingredient_id = {ingredient_id}.'
+          debug(err)
+          return None, err
+
 
   return ingredientTasteRating, ''
+
+################################################################################
+# getIngredientRatingByNeighbour
+# Uses vector-based nearest neighbours to estimate a user's rating of an unrated cluster from ratings of nearby clusters.
+# - Input:
+#   - (string) ID of the cluster to estimate a rating for,
+#   - (dict) of ingredient id:rating, the user's ratings for all ingredient clusters,
+#   - (list) of weights to use for the closest, second closest, and third closest ingredients.
+# - Output:
+#   - (float) estimated ingredient cluster preference,
+#   - (string) error
+def getIngredientRatingByNeighbour(ingredient_id, all_ingredient_ratings, weights = [0.4, 0.3, 0.2]):
+  raise NotImplementedError
 
 ################################################################################
 # getRecipeRating
