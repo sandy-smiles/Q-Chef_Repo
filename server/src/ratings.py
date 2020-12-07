@@ -7,6 +7,7 @@ from func import *
 from surprise_models import *
 from scipy.stats import gmean
 from sklearn.preprocessing import minmax_scale
+import numpy as np
 
 ################################################################################
 # Constants
@@ -14,6 +15,7 @@ from sklearn.preprocessing import minmax_scale
 TASTE_RECIPES_RETURNED = 10
 
 EXPERIMENTAL_STATE_OVERRIDE = "" # Set to "experimental", "taste","surprise", or "taste+surprise" to override server, or "" to follow server behaviour
+USE_VECTOR_ESTIMATOR = True
 
 rating_types = ['taste',
                 'familiarity',
@@ -57,13 +59,13 @@ def getIngredientRating(user_dict, ingredient_id, rating_type):
       try:
         ingredientTasteRating = user_dict['ic_'+rating_type][ic_id]['rating']
       except:
-        if rating_type != "taste":
+        if rating_type != "taste" or not USE_VECTOR_ESTIMATOR:
           err = f'[getIngredientRating - {rating_type} - HELP]: No saved rating for ingredient_id = {ingredient_id}.'
           debug(err)
           return None, err
         try:
           ingredientTasteRating = getIngredientRatingByNeighbour(ic_id,user_dict['ic_'+rating_type])
-          debug(f'[getIngredientRating - {rating_type} - REQU]: ingredientTasteRating = {ingredientTasteRating}')
+          debug(f'[getIngredientRating - {rating_type} - DATA]: ingredientTasteRating inferred from neighbour estimate = {ingredientTasteRating}')
         except:
           err = f'[getIngredientRating - {rating_type} - HELP]: No saved rating for ingredient_id = {ingredient_id} and neighbour estimation failed.'
           debug(err)
@@ -141,8 +143,8 @@ def getRecipeRating(user_dict, recipe_id, rating_type):
       continue # Just skip this rating, and hope it doesn't matter.
 
     #The ratings engine isn't realising that some people hate individual ingredients a lot.  These weights adjust for that by emphasising negative ratings.
-    #if ingredientRating < 0:
-    #  ingredientRating *= 2
+    if ingredientRating < 0:
+      ingredientRating *= 2
 
     sumIngredientRatings += ingredientRating
     numIngredientRatings += 1
@@ -233,6 +235,9 @@ def getTasteAndSurpRecipes(user_dict):
 
   # Retrieve the recipe collection
   possibleRecipes = []
+  userRecipeSurps = []
+  userRecipePrefs = []
+  recipe_ids_kept = []
   recipe_ids = g.r_data.keys()
   err = f'[getTasteAndSurpRecipes - HELP]: For user {user_id}, recipe {user_recipes} have already been rated.'
   debug(err)
@@ -253,9 +258,23 @@ def getTasteAndSurpRecipes(user_dict):
       continue  # Just ignore this recipe then.
     #We decided on the geometric mean (sqrt(a*b)) to combine preference and surprise as it biases the rating towards the lower.
     #taste_and_surp = gmean([userRecipeSurp,userRecipePref])
-    taste_and_surp = (userRecipeSurp+userRecipePref)/2.
-    debug(f'[getTasteAndSurpRecipes - DATA]: for user {user_id} and recipe {recipe_id} userRecipeSurp was {userRecipeSurp} and userRecipePref was {userRecipePref}, mean={taste_and_surp}')
-    possibleRecipes.append((taste_and_surp, recipe_id))
+    #taste_and_surp = (userRecipeSurp+userRecipePref)/2.
+    #debug(f'[getTasteAndSurpRecipes - DATA]: for user {user_id} and recipe {recipe_id} userRecipeSurp was {userRecipeSurp} and userRecipePref was {userRecipePref}, mean={taste_and_surp}')
+    recipe_ids_kept.append(recipe_id)
+    userRecipeSurps.append(userRecipeSurp)
+    userRecipePrefs.append(userRecipePref)
+    #possibleRecipes.append((userRecipeSurp,userRecipePref, recipe_id))
+
+  userRecipeSurps = minmax_scale(userRecipeSurps)
+  user_surp_thresh = np.median(userRecipeSurps)
+  userRecipePrefs = minmax_scale(userRecipePrefs)
+  user_pref_thresh = np.median(userRecipePrefs)
+
+  #possibleRecipes = [(gmean([surp,pref]),rid) for surp,pref,rid in zip(userRecipeSurps,userRecipePrefs,recipe_ids_kept)]
+  # possibleRecipes = [(gmean([surp, pref]), rid) for surp, pref, rid in
+  #                   zip(userRecipeSurps, userRecipePrefs, recipe_ids_kept) if surp > user_surp_thresh and pref > user_pref_thresh]
+  possibleRecipes = [((surp+pref)/2., rid) for surp, pref, rid in
+                     zip(userRecipeSurps, userRecipePrefs, recipe_ids_kept) if surp > user_surp_thresh and pref > user_pref_thresh]
 
   possibleRecipes.sort(reverse=True)
   # Check that there are enough recipes to serve up.
