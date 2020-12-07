@@ -138,12 +138,21 @@ def before_request_func():
       g.nov_data = data
       return g.nov_data
 
+  def get_neighbours_data():
+    debug(f'[get_neghbours_data - INFO]: Starting.')
+    if "neighbours" not in g:
+      with open('./data/qchef_ingredient_cluster_neighbours.csv') as test_neighbours_file:
+          neighbours_data = list(csv.DictReader(test_neighbours_file))
+      g.neighbours = neighbours_data
+      debug(f'[get_neghbours_data - INFO]: {g.neighbours}')
+
   get_i_data()
   get_is_data()
   get_ic_data()
   get_r_data()
   get_surp_data()
   get_nov_data()
+  get_neighbours_data()
 
 ################################################################################
 # Authentication

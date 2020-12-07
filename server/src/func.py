@@ -19,10 +19,10 @@ collectionIDs = ['users',
 ################################################################################
 # Debugging
 ################################################################################
-DEBUG = True
+DEBUG = False
 WARN = True
 INFO = False
-HELP = False
+HELP = True
 DATA = False
 REQU = True
 

@@ -1,0 +1,372 @@
+ingredient_id,ingredient_name,most_similar,most_similar_id,second_most_similar,second_most_similar_id,third_most_similar,third_most_similar_id
+0,african/middle eastern spice mix,sumac,321,saffron,285,hummus,161
+1,agar agar,protein powder,263,malt,189,lecithin,176
+2,ajwain,seeds,298,fenugreek,128,asafoetida,15
+3,alfredo sauce,bechamel,32,hollandaise sauce,158,pesto,245
+4,allspice,cardamom,61,cider,86,pickling spice,247
+5,almonds,pistachios,251,hazelnuts,155,cashews,63
+6,american cheese and cheese products,cheddar and other firm cheeses,72,non-dairy cheese,210,soup,309
+7,anchovies,capers,57,artichoke,13,anise liqueur,9
+8,anise,sichuan pepper,304,five spice,133,licorice/anise,182
+9,anise liqueur,shellfish,301,fennel,127,squid/octopus,314
+10,annatto,plantains,254,chilies,81,chili,79
+11,apple,cider,86,cranberries,106,pears,240
+12,apricots,prunes,264,marmalade,194,plum,255
+13,artichoke,pesto,245,sun dried tomatoes,322,asparagus,16
+14,artificial sweetener,protein powder,263,sugar,320,egg substitute,122
+15,asafoetida,fenugreek,128,ajwain,2,tamarind,327
+16,asparagus,artichoke,13,pesto,245,broccoli,46
+17,avocado,other fresh cheese,226,corn/tortilla chips and hard tacos,101,tequila,330
+18,bacon,ham,154,sausages,293,cajun seasoning,54
+19,baking mix,quick bread,267,pancakes,230,stuffing,319
+20,baking powder,mixed spice,202,chocolate,83,white chocolate,357
+21,balsamic vinegar,red wine vinegar,273,sherry vinegar,302,cider vinegar,87
+22,bamboo,oyster sauce,229,bean sprouts,30,gai lan,139
+23,bananas,vanilla,343,instant pudding,165,other fruits,227
+24,barbecue seasonings and rubs,steak sauce/seasoning,316,jerk seasoning,169,seasoning,296
+25,barbecue/steak sauce,barbecue seasonings and rubs,24,teriyaki,331,bechamel,32
+26,barley,quinoa,269,wheat,355,buckwheat,49
+27,basil,pesto,245,mixed herbs,201,mozzarella,205
+28,bay/curry leaves,leaves,175,liver/kidneys/pate and other organ meats,185,pork stock,259
+29,bean paste,oyster sauce,229,miso,200,rice wine/sake,278
+30,bean sprouts,sesame,300,rice paper,276,gai lan,139
+31,beans,green beans,148,chilies,81,capsicum,58
+32,bechamel,hollandaise sauce,158,chili sauce/paste,80,barbecue/steak sauce,25
+33,beef,game meats,140,turkey,340,lamb,173
+34,beef stock,stock,317,pork stock,259,chicken and other poultry stock,77
+35,beer,barbecue seasonings and rubs,24,smoke,305,beef stock,34
+36,beetroot,root vegetables,281,radish,270,endives,124
+37,bitters,gin and other infused spirits,142,herbal liqueur,156,citrus liqueur,89
+38,black tea,chai tea,70,green tea,150,gin and other infused spirits,142
+39,blackberry,other berries,224,blueberry,42,raspberries,271
+40,blackcurrants/redcurrants,dessert wine,115,marmalade,194,plum,255
+41,blue cheese,soft cheese,306,goat's cheese,144,cheddar and other firm cheeses,72
+42,blueberry,other berries,224,blackberry,39,raspberries,271
+43,brandy,dessert wine,115,fruit liqueur,138,whiskey,356
+44,bread,quick bread,267,breadcrumbs,45,pastry,237
+45,breadcrumbs,bread,44,crackers,105,stuffing,319
+46,broccoli,gai lan,139,peas,241,asparagus,16
+47,brown sugar,sugar,320,maple syrup,192,molasses,204
+48,brussels sprouts,kale,170,endives,124,chard,71
+49,buckwheat,wheat,355,other grains,228,quinoa,269
+50,butter,shortening,303,oil,217,cream,107
+51,buttermilk,milk,198,sour cream,310,cream of tartar,110
+52,cabbage,celeriac,66,root vegetables,281,bean sprouts,30
+53,cactus,epazote,125,annatto,10,chard,71
+54,cajun seasoning,seafood seasoning,295,barbecue seasonings and rubs,24,seasoning,296
+55,cake,pancakes,230,instant pudding,165,cookies,97
+56,candy/lollies,icing,163,caramel,59,white chocolate,357
+57,capers,anchovies,7,anise liqueur,9,artichoke,13
+58,capsicum,chilies,81,green beans,148,beans,31
+59,caramel,candy/lollies,56,icing,163,ice cream,162
+60,caraway,sauerkraut/kimchi,292,celery seeds,68,fennel,127
+61,cardamom,cinnamon,88,fenugreek,128,anise,8
+62,carrot,mixed vegetables,203,barley,26,vegetable stock,346
+63,cashews,sunflower seeds,323,almonds,5,indian spice mix,164
+64,cauliflower,lentils,180,chicken,76,potatoes,260
+65,caviar/roe,sorrel,308,chervil,74,chives,82
+66,celeriac,celery,67,root vegetables,281,celery seeds,68
+67,celery,celeriac,66,celery seeds,68,cabbage,52
+68,celery seeds,celeriac,66,caraway,60,pickling spice,247
+69,cereal,oats,216,crackers,105,wheat,355
+70,chai tea,black tea,38,green tea,150,flowers,137
+71,chard,kale,170,brussels sprouts,48,spinach,313
+72,cheddar and other firm cheeses,american cheese and cheese products,6,non-dairy cheese,210,soft cheese,306
+73,cherry,other berries,224,cranberries,106,raspberries,271
+74,chervil,sorrel,308,tarragon,329,truffle,339
+75,chestnuts,water chestnuts,353,dessert wine,115,hazelnuts,155
+76,chicken,turkey,340,duck,118,white fish,358
+77,chicken and other poultry stock,stock,317,vegetable stock,346,pork stock,259
+78,chicken soup,soup,309,chicken and other poultry stock,77,alfredo sauce,3
+79,chili,chilies,81,chili sauce/paste,80,capsicum,58
+80,chili sauce/paste,bechamel,32,chili,79,chilies,81
+81,chilies,chili,79,capsicum,58,chili sauce/paste,80
+82,chives,caviar/roe,65,chervil,74,tarragon,329
+83,chocolate,white chocolate,357,coffee,94,vanilla,343
+84,chocolate liqueur,herbal liqueur,156,liqueur,184,coffee liqueur,95
+85,chutney,mango,191,japanese curry,167,papaya,231
+86,cider,apple,11,maple syrup,192,cider vinegar,87
+87,cider vinegar,vinegar,348,red wine vinegar,273,rice vinegar,277
+88,cinnamon,cardamom,61,mixed spice,202,pumpkin,265
+89,citrus liqueur,liqueur,184,fruit liqueur,138,herbal liqueur,156
+90,citrus peel/zest,lemon,178,orange,222,pistachios,251
+91,cloves,allspice,4,anise,8,cider,86
+92,cocktail sauce,chili sauce/paste,80,bechamel,32,hollandaise sauce,158
+93,coconut,macadamias,188,lemongrass,179,peanuts,239
+94,coffee,coffee liqueur,95,chocolate,83,malt,189
+95,coffee liqueur,chocolate liqueur,84,coffee,94,cream liqueur,109
+96,condensed milk,candy/lollies,56,ice cream,162,white chocolate,357
+97,cookies,cake,55,white chocolate,357,vanilla,343
+98,coriander,chilies,81,capsicum,58,lime,183
+99,corn,taco seasoning,326,corn/tortilla chips and hard tacos,101,beans,31
+100,corn meal/flour,quick bread,267,sourdough starter,311,corn/tortilla chips and hard tacos,101
+101,corn/tortilla chips and hard tacos,tortillas/pita/flat breads,338,taco seasoning,326,salsa,290
+102,cottage cheese,ricotta,279,non-dairy cheese,210,cream cheese,108
+103,couscous,quinoa,269,rice,275,quince,268
+104,crab,lobster,186,white fish,358,shellfish,301
+105,crackers,quick bread,267,breadcrumbs,45,cereal,69
+106,cranberries,other berries,224,cherry,73,apple,11
+107,cream,cream liqueur,109,cream cheese,108,sour cream,310
+108,cream cheese,cottage cheese,102,non-dairy cheese,210,soft cheese,306
+109,cream liqueur,chocolate liqueur,84,coffee liqueur,95,cream,107
+110,cream of tartar,white chocolate,357,chocolate,83,baking powder,20
+111,cucumbers,radish,270,lettuce,181,hummus,161
+112,cumin,ajwain,2,taco seasoning,326,beans,31
+113,custard,mustard,207,malt,189,five spice,133
+114,dates,dried fruit,117,prunes,264,figs,131
+115,dessert wine,brandy,43,red wine,272,rose wine,282
+116,dill,tarragon,329,caviar/roe,65,chives,82
+117,dried fruit,dates,114,prunes,264,apricots,12
+118,duck,poultry,261,chicken,76,game meats,140
+119,dumpling wrappers,rice paper,276,pastry,237,noodles,212
+120,egg,egg substitute,122,egg nog,121,milk,198
+121,egg nog,egg,120,coffee liqueur,95,milk,198
+122,egg substitute,egg,120,artificial sweetener,14,non-dairy milk alternatives,211
+123,eggplant,lamb,173,pine nuts,249,basil,27
+124,endives,watercress,354,rocket,280,greens,151
+125,epazote,other fresh cheese,226,annatto,10,tomatillo,335
+126,escargot,lobster,186,shellfish,301,white fish,358
+127,fennel,anise liqueur,9,rosemary,283,chard,71
+128,fenugreek,ajwain,2,asafoetida,15,cardamom,61
+129,fermented sauces,bechamel,32,barbecue/steak sauce,25,seasoning,296
+130,feta and halloumi,goat's cheese,144,soft cheese,306,blue cheese,41
+131,figs,pears,240,prunes,264,other citrus,225
+132,fish/seafood stock,stock,317,pork stock,259,chicken and other poultry stock,77
+133,five spice,hoisin sauce,157,sichuan pepper,304,sesame,300
+134,flavoured yoghurt,plain yoghurt,253,vanilla,343,blueberry,42
+135,flax seeds,seeds,298,protein powder,263,sunflower seeds,323
+136,flour,baking mix,19,pancakes,230,quick bread,267
+137,flowers,pistachios,251,other citrus,225,blackberry,39
+138,fruit liqueur,liqueur,184,citrus liqueur,89,chocolate liqueur,84
+139,gai lan,broccoli,46,bean sprouts,30,sesame,300
+140,game meats,beef,33,poultry,261,duck,118
+141,garlic,capsicum,58,chilies,81,tomato-based sauce,336
+142,gin and other infused spirits,bitters,37,herbal liqueur,156,black tea,38
+143,ginger/galangal,five spice,133,thai curry paste,332,tamarind,327
+144,goat's cheese,soft cheese,306,blue cheese,41,feta and halloumi,130
+145,grapefruit,tangerines,328,orange,222,passionfruit,235
+146,grapes,mandarins,190,grapefruit,145,melon,197
+147,gravy,beef stock,34,soup,309,seasoning,296
+148,green beans,beans,31,capsicum,58,mixed vegetables,203
+149,green onions,onion,221,nigella,209,chives,82
+150,green tea,chai tea,70,black tea,38,agar agar,1
+151,greens,lettuce,181,rocket,280,watercress,354
+152,guava,passionfruit,235,tequila,330,mango,191
+153,gums/gels/thickeners,syrup,325,vanilla,343,sugar,320
+154,ham,bacon,18,sausages,293,beef,33
+155,hazelnuts,walnuts,350,almonds,5,pistachios,251
+156,herbal liqueur,chocolate liqueur,84,liqueur,184,citrus liqueur,89
+157,hoisin sauce,teriyaki,331,soy sauce,312,sesame,300
+158,hollandaise sauce,bechamel,32,cocktail sauce,92,fermented sauces,129
+159,honey,maple syrup,192,brown sugar,47,marmalade,194
+160,horseradish,pickles,246,radish,270,dill,116
+161,hummus,tzatziki,342,sumac,321,feta and halloumi,130
+162,ice cream,chocolate liqueur,84,fruit liqueur,138,liqueur,184
+163,icing,instant pudding,165,candy/lollies,56,white chocolate,357
+164,indian spice mix,japanese curry,167,thai curry paste,332,turmeric,341
+165,instant pudding,icing,163,vanilla,343,cake,55
+166,jam,blackcurrants/redcurrants,40,plum,255,other fruits,227
+167,japanese curry,indian spice mix,164,thai curry paste,332,turmeric,341
+168,jelly,cake,55,cookies,97,instant pudding,165
+169,jerk seasoning,steak sauce/seasoning,316,barbecue seasonings and rubs,24,seasoning,296
+170,kale,chard,71,brussels sprouts,48,spinach,313
+171,ketchup,barbecue/steak sauce,25,smoke,305,barbecue seasonings and rubs,24
+172,kiwifruit,melon,197,papaya,231,grapes,146
+173,lamb,game meats,140,beef,33,pork,258
+174,lard/animal fats,pork stock,259,veal,344,poultry,261
+175,leaves,bay/curry leaves,28,sichuan pepper,304,lemongrass,179
+176,lecithin,flax seeds,135,protein powder,263,agar agar,1
+177,leeks,root vegetables,281,celeriac,66,anise liqueur,9
+178,lemon,citrus peel/zest,90,sherry vinegar,302,grapefruit,145
+179,lemongrass,thai curry paste,332,rice paper,276,tamarind,327
+180,lentils,beans,31,barley,26,quinoa,269
+181,lettuce,greens,151,rocket,280,watercress,354
+182,licorice/anise,anise,8,white chocolate,357,icing,163
+183,lime,rice vinegar,277,mango,191,lemongrass,179
+184,liqueur,fruit liqueur,138,citrus liqueur,89,chocolate liqueur,84
+185,liver/kidneys/pate and other organ meats,pork stock,259,veal stock,345,veal,344
+186,lobster,shellfish,301,crab,104,white fish,358
+187,lychee,soft cheese,306,cheddar and other firm cheeses,72,goat's cheese,144
+188,macadamias,coconut,93,pecans,242,papaya,231
+189,malt,agar agar,1,syrup,325,protein powder,263
+190,mandarins,grapes,146,orange,222,tangerines,328
+191,mango,papaya,231,passionfruit,235,melon,197
+192,maple syrup,honey,159,brown sugar,47,syrup,325
+193,marjoram,savory,294,rosemary,283,sage,286
+194,marmalade,orange,222,honey,159,apricots,12
+195,mayonnaise,salad dressing,287,pickles,246,hollandaise sauce,158
+196,meat substitutes,non-dairy cheese,210,removed tofu,-1,mixed vegetables,203
+197,melon,papaya,231,kiwifruit,172,mango,191
+198,milk,non-dairy milk alternatives,211,buttermilk,51,cream,107
+199,mint,sumac,321,pomegranate,256,melon,197
+200,miso,seaweed,297,rice wine/sake,278,bean paste,29
+201,mixed herbs,pesto,245,basil,27,parmesan and other hard cheeses,233
+202,mixed spice,cinnamon,88,maple syrup,192,baking powder,20
+203,mixed vegetables,green beans,148,meat substitutes,196,capsicum,58
+204,molasses,brown sugar,47,malt,189,maple syrup,192
+205,mozzarella,non-dairy cheese,210,cheddar and other firm cheeses,72,parmesan and other hard cheeses,233
+206,mushrooms,chicken soup,78,soup,309,parmesan and other hard cheeses,233
+207,mustard,custard,113,barbecue seasonings and rubs,24,hollandaise sauce,158
+208,natto,seaweed,297,bean paste,29,miso,200
+209,nigella,seeds,298,ajwain,2,chilies,81
+210,non-dairy cheese,cheddar and other firm cheeses,72,soft cheese,306,mozzarella,205
+211,non-dairy milk alternatives,milk,198,tofu,334,lecithin,176
+212,noodles,pasta,236,rice,275,dumpling wrappers,119
+213,nut liqueur,liqueur,184,fruit liqueur,138,chocolate liqueur,84
+214,nutmeg,mixed spice,202,pumpkin,265,cardamom,61
+215,nuts,walnuts,350,pecans,242,macadamias,188
+216,oats,wheat,355,buckwheat,49,cereal,69
+217,oil,olive oil,219,shortening,303,butter,50
+218,okra,cajun seasoning,54,shellfish,301,seafood seasoning,295
+219,olive oil,oil,217,sun dried tomatoes,322,olives,220
+220,olives,salami,288,sun dried tomatoes,322,artichoke,13
+221,onion,green onions,149,nigella,209,leeks,177
+222,orange,marmalade,194,tangerines,328,grapefruit,145
+223,oregano,mixed herbs,201,tomato-based sauce,336,sun dried tomatoes,322
+224,other berries,blueberry,42,blackberry,39,raspberries,271
+225,other citrus,figs,131,flowers,137,prunes,264
+226,other fresh cheese,epazote,125,tomatillo,335,cheddar and other firm cheeses,72
+227,other fruits,passionfruit,235,other berries,224,bananas,23
+228,other grains,flax seeds,135,wheat,355,buckwheat,49
+229,oyster sauce,hoisin sauce,157,soy sauce,312,bechamel,32
+230,pancakes,cake,55,baking mix,19,quick bread,267
+231,papaya,mango,191,passionfruit,235,melon,197
+232,paprika,barbecue seasonings and rubs,24,smoke,305,beer,35
+233,parmesan and other hard cheeses,cheddar and other firm cheeses,72,mozzarella,205,soft cheese,306
+234,parsley,mixed herbs,201,chard,71,rosemary,283
+235,passionfruit,papaya,231,grapefruit,145,mango,191
+236,pasta,noodles,212,pastry,237,bread,44
+237,pastry,pie crust,248,bread,44,pasta,236
+238,peaches/nectarines,pears,240,plum,255,blueberry,42
+239,peanuts,bean sprouts,30,sesame,300,rice paper,276
+240,pears,figs,131,peaches/nectarines,238,plum,255
+241,peas,green beans,148,broccoli,46,gai lan,139
+242,pecans,walnuts,350,nuts,215,macadamias,188
+243,pepper,capsicum,58,chilies,81,chili,79
+244,persimmon,other citrus,225,figs,131,pomegranate,256
+245,pesto,mixed herbs,201,sun dried tomatoes,322,basil,27
+246,pickles,horseradish,160,mayonnaise,195,radish,270
+247,pickling spice,celery seeds,68,allspice,4,barbecue seasonings and rubs,24
+248,pie crust,pastry,237,cookies,97,baking mix,19
+249,pine nuts,pistachios,251,walnuts,350,cashews,63
+250,pineapple,mango,191,mandarins,190,marmalade,194
+251,pistachios,flowers,137,almonds,5,pine nuts,249
+252,pizza,pastry,237,bread,44,pasta,236
+253,plain yoghurt,flavoured yoghurt,134,african/middle eastern spice mix,0,lemon,178
+254,plantains,annatto,10,epazote,125,tortillas/pita/flat breads,338
+255,plum,peaches/nectarines,238,pears,240,figs,131
+256,pomegranate,grapefruit,145,orange,222,bitters,37
+257,poppy seeds,sunflower seeds,323,mandarins,190,seeds,298
+258,pork,turkey,340,duck,118,game meats,140
+259,pork stock,stock,317,veal stock,345,beef stock,34
+260,potatoes,sweet potatoes,324,pasta,236,root vegetables,281
+261,poultry,duck,118,game meats,140,pork,258
+262,prawns/shrimp,lobster,186,shellfish,301,white fish,358
+263,protein powder,flax seeds,135,agar agar,1,lecithin,176
+264,prunes,figs,131,apricots,12,dates,114
+265,pumpkin,pumpkin seeds,266,sweet potatoes,324,mixed spice,202
+266,pumpkin seeds,seeds,298,sunflower seeds,323,pumpkin,265
+267,quick bread,stuffing,319,bread,44,baking mix,19
+268,quince,quinoa,269,couscous,103,pomegranate,256
+269,quinoa,couscous,103,quince,268,wheat,355
+270,radish,horseradish,160,watercress,354,beetroot,36
+271,raspberries,other berries,224,blackberry,39,strawberry,318
+272,red wine,white wine,359,rose wine,282,dessert wine,115
+273,red wine vinegar,sherry vinegar,302,balsamic vinegar,21,vinegar,348
+274,rhubarb,blueberry,42,blackberry,39,other berries,224
+275,rice,couscous,103,noodles,212,pasta,236
+276,rice paper,rice vinegar,277,dumpling wrappers,119,bean sprouts,30
+277,rice vinegar,vinegar,348,red wine vinegar,273,cider vinegar,87
+278,rice wine/sake,miso,200,bean paste,29,seaweed,297
+279,ricotta,cottage cheese,102,goat's cheese,144,mozzarella,205
+280,rocket,endives,124,greens,151,watercress,354
+281,root vegetables,celeriac,66,leeks,177,beetroot,36
+282,rose wine,white wine,359,red wine,272,dessert wine,115
+283,rosemary,sage,286,marjoram,193,fennel,127
+284,rum,liqueur,184,fruit liqueur,138,citrus liqueur,89
+285,saffron,african/middle eastern spice mix,0,anise liqueur,9,fennel,127
+286,sage,rosemary,283,savory,294,marjoram,193
+287,salad dressing,vinaigrette,347,mayonnaise,195,alfredo sauce,3
+288,salami,mozzarella,205,olives,220,sun dried tomatoes,322
+289,salmon and other oily fish,white fish,358,crab,104,chicken,76
+290,salsa,taco seasoning,326,corn/tortilla chips and hard tacos,101,chilies,81
+291,salt,seasoning,296,malt,189,chard,71
+292,sauerkraut/kimchi,caraway,60,cabbage,52,pickles,246
+293,sausages,tomato-based sauce,336,salami,288,cajun seasoning,54
+294,savory,marjoram,193,sage,286,rosemary,283
+295,seafood seasoning,cajun seasoning,54,seasoning,296,barbecue seasonings and rubs,24
+296,seasoning,barbecue seasonings and rubs,24,steak sauce/seasoning,316,jerk seasoning,169
+297,seaweed,miso,200,natto,208,wasabi,351
+298,seeds,flax seeds,135,ajwain,2,pumpkin seeds,266
+299,seitan (wheat gluten),agar agar,1,lecithin,176,other grains,228
+300,sesame,hoisin sauce,157,teriyaki,331,bean sprouts,30
+301,shellfish,lobster,186,white fish,358,squid/octopus,314
+302,sherry vinegar,red wine vinegar,273,balsamic vinegar,21,vinegar,348
+303,shortening,butter,50,oil,217,baking mix,19
+304,sichuan pepper,five spice,133,anise,8,oyster sauce,229
+305,smoke,barbecue seasonings and rubs,24,barbecue/steak sauce,25,ketchup,171
+306,soft cheese,goat's cheese,144,blue cheese,41,cheddar and other firm cheeses,72
+307,soft drink,baking powder,20,gin and other infused spirits,142,black tea,38
+308,sorrel,chervil,74,caviar/roe,65,anise liqueur,9
+309,soup,chicken soup,78,american cheese and cheese products,6,cheddar and other firm cheeses,72
+310,sour cream,cream,107,cream cheese,108,buttermilk,51
+311,sourdough starter,seitan (wheat gluten),299,other grains,228,yeast,360
+312,soy sauce,teriyaki,331,hoisin sauce,157,oyster sauce,229
+313,spinach,chard,71,greens,151,kale,170
+314,squid/octopus,shellfish,301,white fish,358,anise liqueur,9
+315,starch,bamboo,22,five spice,133,oyster sauce,229
+316,steak sauce/seasoning,barbecue seasonings and rubs,24,jerk seasoning,169,seasoning,296
+317,stock,pork stock,259,veal stock,345,fish/seafood stock,132
+318,strawberry,other berries,224,raspberries,271,blueberry,42
+319,stuffing,quick bread,267,baking mix,19,breadcrumbs,45
+320,sugar,brown sugar,47,artificial sweetener,14,syrup,325
+321,sumac,african/middle eastern spice mix,0,hummus,161,lamb,173
+322,sun dried tomatoes,tomatoes,337,pesto,245,parmesan and other hard cheeses,233
+323,sunflower seeds,seeds,298,flax seeds,135,pumpkin seeds,266
+324,sweet potatoes,potatoes,260,pumpkin,265,root vegetables,281
+325,syrup,maple syrup,192,malt,189,white chocolate,357
+326,taco seasoning,salsa,290,corn/tortilla chips and hard tacos,101,jerk seasoning,169
+327,tamarind,lemongrass,179,thai curry paste,332,sichuan pepper,304
+328,tangerines,orange,222,grapefruit,145,pomegranate,256
+329,tarragon,chervil,74,chives,82,dill,116
+330,tequila,guava,152,tomatillo,335,vodka,349
+331,teriyaki,soy sauce,312,hoisin sauce,157,barbecue/steak sauce,25
+332,thai curry paste,indian spice mix,164,japanese curry,167,lemongrass,179
+333,thyme,mixed herbs,201,veal stock,345,sage,286
+334,tofu,meat substitutes,196,non-dairy milk alternatives,211,seitan (wheat gluten),299
+335,tomatillo,other fresh cheese,226,epazote,125,annatto,10
+336,tomato-based sauce,tomatoes,337,beans,31,seasoning,296
+337,tomatoes,sun dried tomatoes,322,tomato-based sauce,336,tomatillo,335
+338,tortillas/pita/flat breads,corn/tortilla chips and hard tacos,101,dumpling wrappers,119,tomatillo,335
+339,truffle,chervil,74,caviar/roe,65,sorrel,308
+340,turkey,chicken,76,pork,258,duck,118
+341,turmeric,indian spice mix,164,japanese curry,167,fenugreek,128
+342,tzatziki,hummus,161,sumac,321,teriyaki,331
+343,vanilla,white chocolate,357,instant pudding,165,chocolate,83
+344,veal,veal stock,345,liver/kidneys/pate and other organ meats,185,game meats,140
+345,veal stock,stock,317,pork stock,259,veal,344
+346,vegetable stock,chicken and other poultry stock,77,stock,317,beef stock,34
+347,vinaigrette,salad dressing,287,alfredo sauce,3,capsicum,58
+348,vinegar,cider vinegar,87,red wine vinegar,273,rice vinegar,277
+349,vodka,herbal liqueur,156,tequila,330,gin and other infused spirits,142
+350,walnuts,pecans,242,nuts,215,hazelnuts,155
+351,wasabi,seaweed,297,caviar/roe,65,miso,200
+352,water,non-dairy milk alternatives,211,vegetable stock,346,chicken and other poultry stock,77
+353,water chestnuts,chestnuts,75,bamboo,22,gai lan,139
+354,watercress,endives,124,greens,151,rocket,280
+355,wheat,buckwheat,49,flax seeds,135,quinoa,269
+356,whiskey,brandy,43,maple syrup,192,syrup,325
+357,white chocolate,chocolate,83,vanilla,343,chocolate liqueur,84
+358,white fish,salmon and other oily fish,289,shellfish,301,lobster,186
+359,white wine,rose wine,282,red wine,272,dessert wine,115
+360,yeast,baking powder,20,sourdough starter,311,pizza,252
+361,yeast spreads,meat substitutes,196,tofu removed,-1,vegetable stock,346
+362,zucchini and squash,green beans,148,barley,26,meat substitutes,196
+363,lovage,sage,286,celeriac,66,cabbage,52
+364,frog_legs,poultry,261,duck,118,chicken,76
+365,spirulina,spinach,313,buckwheat,49,kale,170
+366,hearts_of_palm,artichoke,13,endives,124,greens,151
+367,juniper_berries,lovage,363,dessert wine,115,cider,86
+368,falafel,hummus,161,sumac,321,african/middle eastern spice mix,0
+369,lemon_verbena,lemon,178,citrus peel/zest,90,falafel,368
+370,mitsuba,rice wine/sake,278,seaweed,297,miso,200

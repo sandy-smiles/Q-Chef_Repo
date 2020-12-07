@@ -6,6 +6,7 @@
 from func import *
 from surprise_models import *
 from scipy.stats import gmean
+from sklearn.preprocessing import minmax_scale
 
 ################################################################################
 # Constants
@@ -56,18 +57,17 @@ def getIngredientRating(user_dict, ingredient_id, rating_type):
       try:
         ingredientTasteRating = user_dict['ic_'+rating_type][ic_id]['rating']
       except:
-        try:
-          cluster_ratings_dict = {k:v["rating"] for k,v in user_dict['ic_'+rating_type].items()}
-          ingredientTasteRating = getIngredientRatingByNeighbour(user_dict['ic_'+rating_type][ic_id],cluster_ratings_dict)
-        except:
-          # For now, return as if there was no rating.
-          # ingredientTasteRating = 0
-          # Changed to having the algo skip this ingredient's rating.
+        if rating_type != "taste":
           err = f'[getIngredientRating - {rating_type} - HELP]: No saved rating for ingredient_id = {ingredient_id}.'
           debug(err)
           return None, err
-
-
+        try:
+          ingredientTasteRating = getIngredientRatingByNeighbour(ic_id,user_dict['ic_'+rating_type])
+          debug(f'[getIngredientRating - {rating_type} - REQU]: ingredientTasteRating = {ingredientTasteRating}')
+        except:
+          err = f'[getIngredientRating - {rating_type} - HELP]: No saved rating for ingredient_id = {ingredient_id} and neighbour estimation failed.'
+          debug(err)
+          return None, err
   return ingredientTasteRating, ''
 
 ################################################################################
@@ -79,9 +79,32 @@ def getIngredientRating(user_dict, ingredient_id, rating_type):
 #   - (list) of weights to use for the closest, second closest, and third closest ingredients.
 # - Output:
 #   - (float) estimated ingredient cluster preference,
-#   - (string) error
-def getIngredientRatingByNeighbour(ingredient_id, all_ingredient_ratings, weights = [0.4, 0.3, 0.2]):
-  raise NotImplementedError
+def getIngredientRatingByNeighbour(ingredient_id, ratings, weights=[0.5, 0.3, 0.2]):
+  debug(f'[getIngredientRatingByNeighbour - INFO]: Starting for ingredient {ingredient_id}.')
+  my_neighbours = g.neighbours[int(ingredient_id)]
+  debug(f'[getIngredientRatingByNeighbour - DATA]: Retrieved neghbours for ingredient {ingredient_id} of: {my_neighbours}')
+  debug(f'[getIngredientRatingByNeighbour - DATA]: Provided ratings ingredient {ingredient_id} of: {ratings}')
+  names = ['most_similar_id', 'second_most_similar_id', 'third_most_similar_id']
+
+  # get neighbour ratings unless id is -1 in which case we have manually removed that neighbour from the precomputed file
+  my_neighbour_ratings = [ratings[my_neighbours[n]]['rating'] if my_neighbours[n] in ratings.keys() and my_neighbours[n] != -1 else None for n in names]
+
+  # convert to floats unless removed in which case return None
+  my_neighbour_ratings = [float(r) if r is not None else None for r in my_neighbour_ratings]
+
+  # fancy normalising dot product
+  score = 0
+  total_weight = 0
+  for index, weight in enumerate(weights):
+    if my_neighbour_ratings[index] is not None:
+      score += weight * my_neighbour_ratings[index]
+      total_weight += weight
+
+  if total_weight == 0:
+    raise ValueError('No ratings found for any neighbour ingredients')
+  else:
+    debug(f'[getIngredientRatingByNeighbour - INFO]: Returning {score * 1 / total_weight} for ingredient {ingredient_id}.')
+    return score * 1 / total_weight  # normalize
 
 ################################################################################
 # getRecipeRating
