@@ -81,7 +81,7 @@ def getIngredientRating(user_dict, ingredient_id, rating_type):
 #   - (list) of weights to use for the closest, second closest, and third closest ingredients.
 # - Output:
 #   - (float) estimated ingredient cluster preference,
-def getIngredientRatingByNeighbour(ingredient_id, ratings, weights=[0.5, 0.3, 0.2]):
+def getIngredientRatingByNeighbour(ingredient_id, ratings, weights=[0.5, 0.3, 0.2], discount_factor = 0.75):
   debug(f'[getIngredientRatingByNeighbour - INFO]: Starting for ingredient {ingredient_id}.')
   my_neighbours = g.neighbours[int(ingredient_id)]
   debug(f'[getIngredientRatingByNeighbour - DATA]: Retrieved neghbours for ingredient {ingredient_id} of: {my_neighbours}')
@@ -106,7 +106,7 @@ def getIngredientRatingByNeighbour(ingredient_id, ratings, weights=[0.5, 0.3, 0.
     raise ValueError('No ratings found for any neighbour ingredients')
   else:
     debug(f'[getIngredientRatingByNeighbour - INFO]: Returning {score * 1 / total_weight} for ingredient {ingredient_id}.')
-    return score * 1 / total_weight  # normalize
+    return (score * 1 / total_weight) * discount_factor  # normalize
 
 ################################################################################
 # getRecipeRating
