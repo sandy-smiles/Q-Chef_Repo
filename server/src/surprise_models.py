@@ -214,6 +214,15 @@ def simpleSurpRecipe(user, recipe_id, sigma=2, delta=1):
     debug(f'[simpleSurpRecipe - DATA]: surprise for {recipe_id} :{surprise}')
     return surprise,""
 
+# simpleSurpRecipe - surprise score for a given user-recipe pair
+# Input:
+#  - (dict): user object
+#  - (lit of strings): recipe id
+# Output:
+#  - (list of floats) calculated surprise scores in [0..1]
+#  - (string) error
+def simpleSurpRecipes(user, recipe_ids, sigma=2, delta=1):
+    raise NotImplementedError
 
 def predict_many_users_one_recipe(model, users, recipe_id, weight_id = None):
     X = pd.DataFrame()
@@ -261,6 +270,51 @@ def predict_many_users_one_recipe(model, users, recipe_id, weight_id = None):
     else:
         return model["predictor"].predict_proba(X_scaled)[:,1],""
 
+def predict_one_user_many_recipes(model, user, recipe_ids, weight_ids = None):
+    X = pd.DataFrame()
+    debug(f'[predict_one_user_many_recipes - INFO]: Starting, model= {model}')
+    for col in model["recipe_pset"]:
+        if "nov" in col:
+            try:
+                percentile = col.split("_")[-1]
+                features = [g.nov_data[recipe_id]["novelty_"+percentile] for recipe_id in recipe_ids]
+            except:
+                return None, col + " is not a supported model feature."
+        elif "surp" in col:
+            try:
+                percentile = col.split("_")[-1]
+                features = [g.surp_data[recipe_id]["surprise_"+percentile] for recipe_id in recipe_ids]
+            except:
+                return None, col + " is not a supported model feature."
+        else:
+            return None,col+" is not a supported model feature."
+        X[col] = features
+    for col in model["user_pset"]:
+        if not "onboarding" in col:
+                return None, col + " is not a supported model feature."
+        if "taste_avg" in col:
+            archetype_ratings, error = userArchetypeTasteRatings(user)
+        elif "surp_avg" in col:
+            archetype_ratings, error = userArchetypeSurpRatings(user)
+        elif "fam_avg" in col:
+            archetype_ratings, error = userArchetypeFamRatings(user)
+        if error != "":
+            return None, error
+        if weight_ids is not None:
+            archetype_similarities_list = [archetypeSimilarities(g.r_data[recipe_id]) for recipe_id in recipe_ids]
+            features = [np.average(archetype_ratings, weights=arch_sim) for arch_sim in archetype_similarities_list]
+        else:
+            features = [np.mean(archetype_ratings)] * len(recipe_ids)
+        X[col] = features
+    if model["poly_features"] > 0:
+        X = PolynomialFeatures(model["poly_features"]).fit_transform(X)
+    X_scaled = model["scaler"].transform(X)
+    if "decision_norm" in model.keys():
+        return model["predictor"].decision_function(X_scaled) / model["decision_norm"],""
+    else:
+        return model["predictor"].predict_proba(X_scaled)[:,1],""
+
+
 # advancedSurpRecipe - returns the surprise score for a given user-recipe pair
 # Input:
 #  - (dict): user object
@@ -277,18 +331,42 @@ def advancedSurpRecipe(user, recipe_id):
         recipe_predictions[model_name],error = predict_many_users_one_recipe(model, [user],recipe_id, weight_id=recipe_id)
         if error != "":
             return None,error
-    net_fam = recipe_predictions["fam_low"] - recipe_predictions["fam_high"]
+    net_unfam = recipe_predictions["fam_low"] - recipe_predictions["fam_high"]
 
     #debug(f'[advancedSurpRecipe - DATA]: fam_high for {recipe_id} :{recipe_predictions["fam_high"]}')
     #debug(f'[advancedSurpRecipe - DATA]: fam_low for {recipe_id} :{recipe_predictions["fam_low"]}')
-    debug(f'[advancedSurpRecipe - DATA]: net_fam for {recipe_id} :{net_fam}')
+    debug(f'[advancedSurpRecipe - DATA]: net_unfam for {recipe_id} :{net_unfam}')
     net_surp = recipe_predictions["surp_pos"] - recipe_predictions["surp_neg"]
     #debug(f'[advancedSurpRecipe - DATA]: surp_pos for {recipe_id} :{recipe_predictions["surp_pos"]}')
     #debug(f'[advancedSurpRecipe - DATA]: surp_neg for {recipe_id} :{recipe_predictions["surp_neg"]}')
     debug(f'[advancedSurpRecipe - DATA]: net_surp for {recipe_id} :{net_surp}')
 
-    surprise = max(net_fam,net_surp).item()
+    surprise = max(net_unfam,net_surp).item()
     debug(f'[advancedSurpRecipe - DATA]: surprise for {recipe_id} :{surprise}')
+    return surprise,""
+
+# advancedSurpRecipes - returns the surprise score for a given user-recipe pair
+# Input:
+#  - (dict): user object
+#  - (list of strings): recipe ids
+# Output:
+#  - (list of floats) calculated surprise scores in [0..1]
+#  - (string) error
+def advancedSurpRecipes(user, recipe_ids):
+    raise NotImplementedError
+    model_dict,error = getModels()
+    if error != "":
+        return None,error
+    recipe_predictions = {}
+    for model_name,model in model_dict.items():
+        recipe_predictions[model_name],error = predict_one_user_many_recipes(model, user,recipe_ids)
+        if error != "":
+            return None,error
+
+    net_unfams = [fl - fh for fl,fh in zip(recipe_predictions["fam_low"],recipe_predictions["fam_high"])]
+    net_surps = [sp - sn for sp,sn in zip(recipe_predictions["surp_pos"],recipe_predictions["surp_neg"])]
+    surprises = [max(net_unfam,net_surp) for net_unfam,net_surp in zip(net_unfams,net_surps)]
+
     return surprise,""
 
 # surpRecipe - returns the predicted surprise for a given user-recipe pair
@@ -306,26 +384,17 @@ def surpRecipe(user, recipe_id, simpleSurprise=True):
     else:
         return advancedSurpRecipe(user,recipe_id)
 
-
-#rateSurprise - returns surprises and errors for a set of recipes
+# surpRecipes - returns the predicted surprise for a user and list of recipes
 # Input:
 #  - (dict): user object
-#  - (dict of dicts): list of recipe objects by id
+#  - (list of strings): recipe ids
 # Keyword input:
 #  - simpleSurprise (boolean): Whether to use the simple or neural surprise models.
 # Output:
-#  - (dict of id:float) per-recipe surprise
-#  - (dict of id:string) per-recipe error
-def rateSurprise(user, recipes, simpleSurprise=True):
+#  - (list of floats) calculated surprise scores in [0..1]
+#  - (string) error
+def surpRecipes(user, recipe_ids, simpleSurprise=True):
     if simpleSurprise:
-        responses = {k:simpleSurpRecipe(user,r) for k,r in recipes}
+        return simpleSurpRecipes(user,recipe_ids)
     else:
-        responses = {k:advancedSurpRecipe(user,r) for k,r in recipes}
-    errors = {}
-    surprises = {}
-    for key,rating in responses.items():
-        errors[key] = rating[0]
-        surprises[key] = rating[1]
-    return surprises,errors
-
-#If I need to update something in the DB I need to call "update document" with a collection ID and a userID.
+        return advancedSurpRecipes(user,recipe_ids)

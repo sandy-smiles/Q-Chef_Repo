@@ -252,7 +252,9 @@ def getTasteAndSurpRecipes(user_dict):
       continue  # Just ignore this recipe then.
 
     userRecipePrefs.append(userRecipePref)
+    kept_recipe_ids.append(recipe_id)
 
+    ''' # Old, serial recipe suprise code, left here in case I broke something bad.
     userRecipeSurp, err = surpRecipe(user_dict, recipe_id, simpleSurprise=False)
     if err:
       err = f'[getTasteAndSurpRecipes - ERROR]: Unable to find user {user_id} surprise preference for recipe {recipe_id}, err = {err}'
@@ -260,7 +262,10 @@ def getTasteAndSurpRecipes(user_dict):
       continue  # Just ignore this recipe then.
     debug(f'[getTasteAndSurpRecipes - DATA]: for user {user_id} and recipe {recipe_id} userRecipeSurp was {userRecipeSurp} and userRecipePref was {userRecipePref}')
     userRecipeSurps.append(userRecipeSurp)
-    kept_recipe_ids.append(recipe_id)
+    '''
+  userRecipeSurps, error = surpRecipes(user_dict,kept_recipe_ids, simpleSurprise=False)
+  if error != "":
+    return None,error
 
   userRecipeSurps = minmax_scale(userRecipeSurps)
   user_surp_thresh = np.median(userRecipeSurps)
