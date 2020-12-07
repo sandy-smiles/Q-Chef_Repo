@@ -144,7 +144,7 @@ def getRecipeRating(user_dict, recipe_id, rating_type):
 
     #The ratings engine isn't realising that some people hate individual ingredients a lot.  These weights adjust for that by emphasising negative ratings.
     if ingredientRating < 0:
-      ingredientRating *= 2
+      ingredientRating *= 1.5
 
     sumIngredientRatings += ingredientRating
     numIngredientRatings += 1
