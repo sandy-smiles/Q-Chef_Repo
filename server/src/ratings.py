@@ -14,7 +14,7 @@ import numpy as np
 ################################################################################
 TASTE_RECIPES_RETURNED = 10
 
-EXPERIMENTAL_STATE_OVERRIDE = "" # Set to "experimental", "taste","surprise", or "taste+surprise" to override server, or "" to follow server behaviour
+EXPERIMENTAL_STATE_OVERRIDE = "taste+surprise" # Set to "experimental", "taste","surprise", or "taste+surprise" to override server, or "" to follow server behaviour
 USE_VECTOR_ESTIMATOR = True
 
 rating_types = ['taste',
@@ -89,7 +89,7 @@ def getIngredientRatingByNeighbour(ingredient_id, ratings, weights=[0.5, 0.3, 0.
   names = ['most_similar_id', 'second_most_similar_id', 'third_most_similar_id']
 
   # get neighbour ratings unless id is -1 in which case we have manually removed that neighbour from the precomputed file
-  my_neighbour_ratings = [ratings[my_neighbours[n]]['rating'] if my_neighbours[n] in ratings.keys() and my_neighbours[n] != -1 else None for n in names]
+  my_neighbour_ratings = [ratings[my_neighbours[n]]['rating'] if my_neighbours[n] in ratings else None for n in names]
 
   # convert to floats unless removed in which case return None
   my_neighbour_ratings = [float(r) if r is not None else None for r in my_neighbour_ratings]
@@ -234,10 +234,9 @@ def getTasteAndSurpRecipes(user_dict):
   user_recipes = list(user_dict['r_taste'].keys())
 
   # Retrieve the recipe collection
-  possibleRecipes = []
   userRecipeSurps = []
   userRecipePrefs = []
-  recipe_ids_kept = []
+  kept_recipe_ids = []
   recipe_ids = g.r_data.keys()
   err = f'[getTasteAndSurpRecipes - HELP]: For user {user_id}, recipe {user_recipes} have already been rated.'
   debug(err)
@@ -251,30 +250,25 @@ def getTasteAndSurpRecipes(user_dict):
       err = f'[getTasteAndSurpRecipes - ERROR]: Unable to find user {user_id} taste preference for recipe {recipe_id}, err = {err}'
       debug(err)
       continue  # Just ignore this recipe then.
+
+    userRecipePrefs.append(userRecipePref)
+
     userRecipeSurp, err = surpRecipe(user_dict, recipe_id, simpleSurprise=False)
     if err:
       err = f'[getTasteAndSurpRecipes - ERROR]: Unable to find user {user_id} surprise preference for recipe {recipe_id}, err = {err}'
       debug(err)
       continue  # Just ignore this recipe then.
-    #We decided on the geometric mean (sqrt(a*b)) to combine preference and surprise as it biases the rating towards the lower.
-    #taste_and_surp = gmean([userRecipeSurp,userRecipePref])
-    #taste_and_surp = (userRecipeSurp+userRecipePref)/2.
-    #debug(f'[getTasteAndSurpRecipes - DATA]: for user {user_id} and recipe {recipe_id} userRecipeSurp was {userRecipeSurp} and userRecipePref was {userRecipePref}, mean={taste_and_surp}')
-    recipe_ids_kept.append(recipe_id)
+    debug(f'[getTasteAndSurpRecipes - DATA]: for user {user_id} and recipe {recipe_id} userRecipeSurp was {userRecipeSurp} and userRecipePref was {userRecipePref}')
     userRecipeSurps.append(userRecipeSurp)
-    userRecipePrefs.append(userRecipePref)
-    #possibleRecipes.append((userRecipeSurp,userRecipePref, recipe_id))
+    kept_recipe_ids.append(recipe_id)
 
   userRecipeSurps = minmax_scale(userRecipeSurps)
   user_surp_thresh = np.median(userRecipeSurps)
   userRecipePrefs = minmax_scale(userRecipePrefs)
   user_pref_thresh = np.median(userRecipePrefs)
 
-  #possibleRecipes = [(gmean([surp,pref]),rid) for surp,pref,rid in zip(userRecipeSurps,userRecipePrefs,recipe_ids_kept)]
-  # possibleRecipes = [(gmean([surp, pref]), rid) for surp, pref, rid in
-  #                   zip(userRecipeSurps, userRecipePrefs, recipe_ids_kept) if surp > user_surp_thresh and pref > user_pref_thresh]
   possibleRecipes = [((surp+pref)/2., rid) for surp, pref, rid in
-                     zip(userRecipeSurps, userRecipePrefs, recipe_ids_kept) if surp > user_surp_thresh and pref > user_pref_thresh]
+                     zip(userRecipeSurps, userRecipePrefs, kept_recipe_ids) if surp > user_surp_thresh and pref > user_pref_thresh]
 
   possibleRecipes.sort(reverse=True)
   # Check that there are enough recipes to serve up.
