@@ -14,7 +14,7 @@ import numpy as np
 ################################################################################
 TASTE_RECIPES_RETURNED = 10
 
-EXPERIMENTAL_STATE_OVERRIDE = "taste+surprise" # Set to "experimental", "taste","surprise", or "taste+surprise" to override server, or "" to follow server behaviour
+EXPERIMENTAL_STATE_OVERRIDE = "" # Set to "experimental", "taste","surprise", or "taste+surprise" to override server, or "" to follow server behaviour
 USE_VECTOR_ESTIMATOR = True
 
 rating_types = ['taste',
