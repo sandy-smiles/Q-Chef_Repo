@@ -353,7 +353,6 @@ def advancedSurpRecipe(user, recipe_id):
 #  - (list of floats) calculated surprise scores in [0..1]
 #  - (string) error
 def advancedSurpRecipes(user, recipe_ids):
-    raise NotImplementedError
     model_dict,error = getModels()
     if error != "":
         return None,error
@@ -367,7 +366,7 @@ def advancedSurpRecipes(user, recipe_ids):
     net_surps = [sp - sn for sp,sn in zip(recipe_predictions["surp_pos"],recipe_predictions["surp_neg"])]
     surprises = [max(net_unfam,net_surp) for net_unfam,net_surp in zip(net_unfams,net_surps)]
 
-    return surprise,""
+    return surprises,""
 
 # surpRecipe - returns the predicted surprise for a given user-recipe pair
 # Input:

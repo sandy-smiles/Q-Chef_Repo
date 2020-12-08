@@ -222,7 +222,7 @@ def getTasteRecipes(user_dict):
 # - Output:
 #   - (dict) recipes and their information,
 #   - (string) error
-def getTasteAndSurpRecipes(user_dict):
+def getTasteAndSurpRecipes(user_dict, drop_thresh = 0.33):
   debug(f'[getTasteAndSurpRecipes - INFO]: Starting.')
   user_id = user_dict['user_id']
   numWantedRecipes = TASTE_RECIPES_RETURNED  # recipes_wanted
@@ -268,9 +268,9 @@ def getTasteAndSurpRecipes(user_dict):
     return None,error
 
   userRecipeSurps = minmax_scale(userRecipeSurps)
-  user_surp_thresh = np.median(userRecipeSurps)
+  user_surp_thresh = np.percentile(userRecipeSurps,drop_thresh*100.)
   userRecipePrefs = minmax_scale(userRecipePrefs)
-  user_pref_thresh = np.median(userRecipePrefs)
+  user_pref_thresh = np.percentile(userRecipePrefs,drop_thresh*100.)
 
   possibleRecipes = [((surp+pref)/2., rid) for surp, pref, rid in
                      zip(userRecipeSurps, userRecipePrefs, kept_recipe_ids) if surp > user_surp_thresh and pref > user_pref_thresh]
