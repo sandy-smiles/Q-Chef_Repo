@@ -169,6 +169,7 @@ def getRecipeRating(user_dict, recipe_id, rating_type):
 def getTasteRecipes(user_dict):
   debug(f'[getTasteRecipes - INFO]: Starting.')
   user_id = user_dict['user_id']
+  print(f'[getTasteRecipes: Serving tasty recipes for {user_id}')
   numWantedRecipes = TASTE_RECIPES_RETURNED #recipes_wanted
 
   ## Collect list of possible recipes to pick from
@@ -222,9 +223,10 @@ def getTasteRecipes(user_dict):
 # - Output:
 #   - (dict) recipes and their information,
 #   - (string) error
-def getTasteAndSurpRecipes(user_dict, drop_thresh = 0.33):
+def getTasteAndSurpRecipes(user_dict, drop_thresh = 0.25):
   debug(f'[getTasteAndSurpRecipes - INFO]: Starting.')
   user_id = user_dict['user_id']
+  print(f'[getTasteAndSurpRecipes: Serving tasty+surprising recipes for {user_id}')
   numWantedRecipes = TASTE_RECIPES_RETURNED  # recipes_wanted
 
   ## Collect list of possible recipes to pick from
@@ -307,6 +309,8 @@ def getTasteAndSurpRecipes(user_dict, drop_thresh = 0.33):
 def getSurpRecipes(user_dict):
   debug(f'[getSurpRecipes - INFO]: Starting.')
   user_id = user_dict['user_id']
+  print(f'[getSurpRecipes: Serving surprising recipes for {user_id}')
+
   numWantedRecipes = TASTE_RECIPES_RETURNED  # recipes_wanted
 
   ## Collect list of possible recipes to pick from

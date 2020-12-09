@@ -9,6 +9,8 @@ import traceback
 from func import *
 from sklearn.preprocessing import PolynomialFeatures
 
+from sklearn.preprocessing import minmax_scale
+
 model_fns = fns={
     "fam_high":"./data/best_fam_high_model_10board_poly_final.joblib",
     "fam_low":"./data/best_fam_low_model_10board_poly_final.joblib",
@@ -364,7 +366,10 @@ def advancedSurpRecipes(user, recipe_ids):
 
     net_unfams = [fl - fh for fl,fh in zip(recipe_predictions["fam_low"],recipe_predictions["fam_high"])]
     net_surps = [sp - sn for sp,sn in zip(recipe_predictions["surp_pos"],recipe_predictions["surp_neg"])]
-    surprises = [max(net_unfam,net_surp) for net_unfam,net_surp in zip(net_unfams,net_surps)]
+    net_unfams = minmax_scale(net_unfams)
+    net_surps = minmax_scale(net_surps)
+    #surprises = [max(net_unfam,net_surp) for net_unfam,net_surp in zip(net_unfams,net_surps)]
+    surprises = [net_unfam/2. + net_surp for net_unfam, net_surp in zip(net_unfams, net_surps)]
 
     return surprises,""
 
