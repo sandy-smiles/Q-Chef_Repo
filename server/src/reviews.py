@@ -75,6 +75,8 @@ def updateRecipeReviews(data):
     recipe_review = {}
     recipe_review['recipe_id'] = recipe_id
     recipe_review['cook_rating'] = data['cook_ratings'][recipe_id]
+    recipe_review['familiarity_ratings'] = data['familiarity_ratings'][recipe_id]
+    recipe_review['taste_ratings'] = data['taste_ratings'][recipe_id]
     recipe_review['how'] = data['how_response'][recipe_id]
     recipe_review['why'] = data['why_response'][recipe_id]
     recipe_review['image'] = data_url
