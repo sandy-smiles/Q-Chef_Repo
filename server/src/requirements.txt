@@ -7,3 +7,5 @@ firebase_admin
 gunicorn
 scikit-learn
 pandas
+sklearn
+pillow

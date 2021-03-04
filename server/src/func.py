@@ -100,6 +100,35 @@ def createDocument(collectionID, documentID, creationData):
 
   return ''
 
+
+
+################################################################################
+# createSubDocument
+# Create a sub collection and sub document within a specified document.
+# Input:
+#  - (String) mainCollection <- name of main collection
+#  - (String) UserId <- UserId or main Document Id 
+#  - (string) collectionID <- Database sub collection name (ID)
+#  - (string) documentID <- Database sub document name (ID)
+#  - (dict) creationData <- Dictionary containing values to set in the doc
+# Output:
+#  - (string) error
+def createSubDocument(mainCollection, UserId, collectionID, documentID, creationData):
+  debug(f'[createSubDocument - INFO]: Starting.')
+  collectionID = f'{collectionID}'
+  documentID = f'{documentID}'
+  doc_ref = db.collection(mainCollection).document(UserId)
+  subdoc_ref = doc_ref.collection(collectionID).document(documentID)
+  subdoc_ref.set(creationData)
+  
+  doc = subdoc_ref.get()
+  if not doc.exists:
+    err = f'[retrieveDocument - ERROR]: Document {documentID} does not exist in collection {collectionID}.'
+    debug(err)
+    return err
+
+  return ''
+
 ################################################################################
 # retrieveDocument
 # Retrieve a document within a specified document collection.
@@ -123,9 +152,10 @@ def retrieveDocument(collectionID, documentID):
   doc_ref = db.collection(collectionID).document(documentID)
   doc = doc_ref.get()
   if not doc.exists:
-    err = f'[retrieveDocument - ERROR]: Document {documentID} does not exist in collection {collectionID}.'
-    debug(err)
-    return None, None, err
+    doc_ref.set({})
+    # err = f'[retrieveDocument - ERROR]: Document {documentID} does not exist in collection {collectionID}.'
+    # debug(err)
+    # return None, None, err
 
   return doc_ref, doc, ''
 
