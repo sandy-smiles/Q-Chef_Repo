@@ -8,6 +8,8 @@ import json
 import csv
 import random
 
+import datetime
+
 from app import app, auth_app
 from flask import make_response, request, jsonify, render_template, redirect, url_for, send_file, abort
 from flask_cors import CORS, cross_origin
@@ -184,10 +186,7 @@ def authentication(request, server_settings):
     # Allow there to be no manual override of ID
     pass
 
-  # Check if using auth for cookies or tokens
-  if server_settings['useSessionCookies']:
-    return authCookies(request_data)
-  return authTokens(request_data)
+  return authCookies(request_data)
 
 ################################################################################
 # Returns (request_data, user_id, err)
@@ -240,7 +239,8 @@ def authCookies(request_data):
 
   try:
     # Extract the firebase token from the HTTP header
-    session_cookie = request.cookies.get('session')
+    
+    session_cookie = request.headers['Authorization'].replace('Bearer ','')
   except:
     err = f'No "session" cookie information given.'
     # else return an error
@@ -254,14 +254,15 @@ def authCookies(request_data):
     # Token is valid and not revoked.
     user_id = decoded_cookie['uid']
     request_data['userID'] = user_id
-#    except auth.RevokedIdTokenError:
-#      # Token revoked, inform the user to reauthenticate or signOut().
-#      err = f'Token revoked, inform the user to reauthenticate or signOut()'
-#    except auth.InvalidIdTokenError:
-#      # Token is invalid
-#      err = f'Token is invalid'
   except Exception as e:
     err = f'Unable to authenticate the user, err = {e}'
+    try:
+      # fallback authentication using auth token
+      return authTokens(request_data)
+    except Exception as err_token:
+      errToken = f'Unable to authenticate the user, err = {err_token}'
+      return request_data, user_id, errToken
+
   # else return an error
   return request_data, user_id, err
 
@@ -281,20 +282,46 @@ def session_login():
   # Get the ID token sent by the client
   id_token = request.json['idToken']
   # Set session expiration to 5 days.
-  expires_in = datetime.timedelta(days=365)
-  try:
-    # Create the session cookie. This will also verify the ID token in the process.
-    # The session cookie will have the same claims as the ID token.
-    session_cookie = auth.create_session_cookie(id_token, app=auth_app, expires_in=expires_in)
-    response = jsonify({'status': 'success'})
-    # Set cookie policy for session cookie.
-    expires = datetime.datetime.now() + expires_in
-    response.set_cookie(
-      'session', session_cookie, expires=expires, httponly=True, secure=True)
-    return response
-  except exceptions.FirebaseError:
-    debug(f'[session_login - ERROR]: Something went wrong.')
-    return abort(401, 'Failed to create a session cookie')
+  expires_in = datetime.timedelta(days=14)
+  
+  session_cookie = auth.create_session_cookie(id_token, app=auth_app, expires_in=expires_in)
+  response = jsonify({'status': 'success', 'token': session_cookie})
+  return response
+
+
+################################################################################
+# Extend Session
+################################################################################
+# onboarding_ingredient_rating [POST]
+# POST: Returns a user's Firebase session cookie.
+# - Input:
+#   - (json)
+# - Output:
+#   - (string) error
+@app.route('/extend_session', methods=['POST'])
+@cross_origin()
+def extend_session():
+  debug(f'[extend_session - INFO]: Starting.')
+  func_name = 'extend_session'
+  # Attempt to grab server settings document
+  server_settings, err = getServerSettings()
+  if err:
+    err = f"[{func_name} - ERROR]: Unable to retrieve settings, err = {err}."
+  
+    return err, 500
+
+  request_data, user_id, err = authentication(request, server_settings)
+  debug(f"[{func_name} - DATA]: request_data: {request_data}")
+  if err:
+    err = f"[{func_name} - ERROR]: Authentication error, err = {err}"
+  
+    return err, 500
+    
+  custom_token = auth.create_custom_token(user_id)
+ 
+  response = jsonify({'status': 'success', 'customtoken': custom_token.decode("utf-8") })
+  return response
+
 
 ################################################################################
 # Server API Helper Functions
@@ -393,14 +420,14 @@ def onboarding_ingredient_rating():
     if err:
       err = f"[{func_name} - ERROR]: Unable to retrieve settings, err = {err}."
       debug(err)
-      return err
+      return err, 500
 
     request_data, user_id, err = authentication(request, server_settings)
     debug(f"[{func_name} - DATA]: request_data: {request_data}")
     if err:
       err = f"[{func_name} - ERROR]: Authentication error, err = {err}"
       debug(err)
-      return err
+      return err, 500
     # Run any functions that need to be done before the rest of the request
     before_request_func()
 
@@ -409,7 +436,7 @@ def onboarding_ingredient_rating():
     if err:
       err = f"[{func_name} - ERROR]: Unable to retrieve document for {user_id}, err = {err}."
       debug(err)
-      return err
+      return err, 500
     user_dict = user_doc.to_dict()
     user_dict['user_id'] = user_id
 
@@ -419,14 +446,14 @@ def onboarding_ingredient_rating():
     if err:
       err = f"[{func_name} - ERROR]: Unable to update ingredient ratings, err = {err}"
       debug(err)
-      return err
+      return err, 500
 
     # Return json of test recipes that a user should liked
     onboarding_recipes2, err = getRecipes(user_dict, server_settings)
     if err:
       err = f"[{func_name} - ERROR]: Unable to find any recipes for user {user_id}, err = {err}"
       debug(err)
-      return err
+      return err, 500
     return jsonify(onboarding_recipes2)
 
   debug(f"[{func_name} - INFO]: GET request")
@@ -435,7 +462,7 @@ def onboarding_ingredient_rating():
   if err:
     err = f"[{func_name} - ERROR]: Unable to retrieve ingredients for onboarding, err = {err}"
     debug(err)
-    return err
+    return err, 500
 
   onboarding_ingredients = {}
   doc_dict = doc.to_dict()
@@ -477,14 +504,14 @@ def onboarding_recipe_rating():
     if err:
       err = f"[{func_name} - ERROR]: Unable to retrieve settings, err = {err}."
       debug(err)
-      return err
+      return err, 500
 
     request_data, user_id, err = authentication(request, server_settings)
     debug(f"[{func_name} - DATA]: request_data: {request_data}")
     if err:
       err = f"[{func_name} - ERROR]: Authentication error, err = {err}"
       debug(err)
-      return err
+      return err, 500
     # Run any functions that need to be done before the rest of the request
     before_request_func()
 
@@ -493,7 +520,7 @@ def onboarding_recipe_rating():
     if err:
       err = f"[{func_name} - ERROR]: Unable to retrieve document for {user_id}, err = {err}."
       debug(err)
-      return err
+      return err, 500
 
     # Update user's document with recipe ratings
     rating_types = ['taste', 'familiarity', 'surprise']
@@ -501,7 +528,7 @@ def onboarding_recipe_rating():
     if err:
       err = f"[{func_name} - ERROR]: Unable to update recipe ratings, err = {err}"
       debug(err)
-      return err
+      return err, 500
 
     return ''
 
@@ -511,7 +538,7 @@ def onboarding_recipe_rating():
   if err:
     err = f"[{func_name} - ERROR]: Unable to retrieve recipes for onboarding, err = {err}"
     debug(err)
-    return err
+    return err, 500
 
   doc_dict = doc.to_dict()
   return jsonify(doc_dict)
@@ -537,14 +564,14 @@ def validation_recipe_rating():
     if err:
       err = f"[{func_name} - ERROR]: Unable to retrieve settings, err = {err}."
       debug(err)
-      return err
+      return err, 500
 
     request_data, user_id, err = authentication(request, server_settings)
     debug(f"[{func_name} - DATA]: request_data: {request_data}")
     if err:
       err = f"[{func_name} - ERROR]: Authentication error, err = {err}"
       debug(err)
-      return err
+      return err, 500
     # Run any functions that need to be done before the rest of the request
     before_request_func()
 
@@ -554,7 +581,7 @@ def validation_recipe_rating():
     if err:
       err = f"[{func_name} - ERROR]: Unable to update recipe ratings, err = {err}"
       debug(err)
-      return err
+      return err, 500
     return ""
 
 ################################################################################
@@ -580,14 +607,14 @@ def get_meal_plan_selection():
     if err:
       err = f"[{func_name} - ERROR]: Unable to retrieve settings, err = {err}."
       debug(err)
-      return err
+      return err, 500
 
     request_data, user_id, err = authentication(request, server_settings)
     debug(f"[{func_name} - DATA]: request_data: {request_data}")
     if err:
       err = f"[{func_name} - ERROR]: Authentication error, err = {err}"
       debug(err)
-      return err
+      return err, 500
     # Run any functions that need to be done before the rest of the request
     before_request_func()
 
@@ -596,7 +623,7 @@ def get_meal_plan_selection():
     if err:
       err = f"[{func_name} - ERROR]: Unable to retrieve document for {user_id}, err = {err}."
       debug(err)
-      return err
+      return err, 500
     user_dict = user_doc.to_dict()
     user_dict['user_id'] = user_id
 
@@ -610,7 +637,7 @@ def get_meal_plan_selection():
     if err:
       err = f"[{func_name} - ERROR]: Unable to find any recipes for user {user_id}, err = {err}"
       debug(err)
-      return err
+      return err, 500
     return jsonify(ret_recipes)
 
 ################################################################################
@@ -635,14 +662,14 @@ def save_meal_plan():
     if err:
       err = f"[{func_name} - ERROR]: Unable to retrieve settings, err = {err}."
       debug(err)
-      return err
+      return err, 500
 
     request_data, user_id, err = authentication(request, server_settings)
     debug(f"[{func_name} - DATA]: request_data: {request_data}")
     if err:
       err = f"[{func_name} - ERROR]: Authentication error, err = {err}"
       debug(err)
-      return err
+      return err, 500
     # Run any functions that need to be done before the rest of the request
     before_request_func()
 
@@ -651,7 +678,7 @@ def save_meal_plan():
     if err:
       err = f"[{func_name} - ERROR]: Unable to retrieve document for {user_id}, err = {err}."
       debug(err)
-      return err
+      return err, 500
     user_dict = user_doc.to_dict()
     user_dict['user_id'] = user_id
 
@@ -666,13 +693,13 @@ def save_meal_plan():
     if err:
       err = f"[{func_name} - ERROR]: Unable to update the data {updateData} for user {user_id}, err = {err}"
       debug(err)
-      return err
+      return err, 500
 
     err = updateActionLog(request_data)
     if err:
       err = f"[{func_name} - ERROR]: Unable to update recipe(s) action log, err = {err}"
       debug(err)
-      return err
+      return err, 500
     return ''
 
 ################################################################################
@@ -695,14 +722,14 @@ def retrieve_meal_plan():
     if err:
       err = f"[{func_name} - ERROR]: Unable to retrieve settings, err = {err}."
       debug(err)
-      return err
+      return err, 500
 
     request_data, user_id, err = authentication(request, server_settings)
     debug(f"[{func_name} - DATA]: request_data: {request_data}")
     if err:
       err = f"[{func_name} - ERROR]: Authentication error, err = {err}"
       debug(err)
-      return err
+      return err, 500
     # Run any functions that need to be done before the rest of the request
     before_request_func()
 
@@ -711,7 +738,7 @@ def retrieve_meal_plan():
     if err:
       err = f"[{func_name} - ERROR]: Unable to retrieve document for {user_id}, err = {err}."
       debug(err)
-      return err
+      return err, 500
     user_dict = user_doc.to_dict()
     user_dict['user_id'] = user_id
 
@@ -753,14 +780,14 @@ def review_recipe():
     if err:
       err = f"[{func_name} - ERROR]: Unable to retrieve settings, err = {err}."
       debug(err)
-      return err
+      return err, 500
 
     request_data, user_id, err = authentication(request, server_settings)
     debug(f"[{func_name} - DATA]: request_data: {request_data}")
     if err:
       err = f"[{func_name} - ERROR]: Authentication error, err = {err}"
       debug(err)
-      return err
+      return err, 500
     # Run any functions that need to be done before the rest of the request
     before_request_func()
 
@@ -770,13 +797,13 @@ def review_recipe():
     if err:
       err = f"[{func_name} - ERROR]: Unable to update recipe(s) ratings, err = {err}"
       debug(err)
-      return err
+      return err, 500
 
     err = updateRecipeReviews(request_data)
     if err:
       err = f"[{func_name} - ERROR]: Unable to update recipe(s) review, err = {err}"
       debug(err)
-      return err
+      return err, 500
     return ""
 
 ################################################################################
@@ -799,14 +826,14 @@ def lookup_user_predicted():
     if err:
       err = f"[{func_name} - ERROR]: Unable to retrieve settings, err = {err}."
       debug(err)
-      return err
+      return err, 500
 
     request_data, user_id, err = authentication(request, server_settings)
     debug(f"[{func_name} - DATA]: request_data: {request_data}")
     if err:
       err = f"[{func_name} - ERROR]: Authentication error, err = {err}"
       debug(err)
-      return err
+      return err, 500
     # Run any functions that need to be done before the rest of the request
     before_request_func()
 
@@ -815,7 +842,7 @@ def lookup_user_predicted():
     if err:
       err = f"[{func_name} - ERROR]: Unable to retrieve document for {user_id}, err = {err}."
       debug(err)
-      return err
+      return err, 500
     user_dict = user_doc.to_dict()
 
     user_ratings = {}
@@ -875,14 +902,14 @@ def lookup_user_saved():
     if err:
       err = f"[{func_name} - ERROR]: Unable to retrieve settings, err = {err}."
       debug(err)
-      return err
+      return err, 500
 
     request_data, user_id, err = authentication(request, server_settings)
     debug(f"[{func_name} - DATA]: request_data: {request_data}")
     if err:
       err = f"[{func_name} - ERROR]: Authentication error, err = {err}"
       debug(err)
-      return err
+      return err, 500
     # Run any functions that need to be done before the rest of the request
     before_request_func()
 
@@ -891,7 +918,7 @@ def lookup_user_saved():
     if err:
       err = f"[{func_name} - ERROR]: Unable to retrieve document for {user_id}, err = {err}."
       debug(err)
-      return err
+      return err, 500
     user_dict = user_doc.to_dict()
 
     return jsonify(user_dict)
