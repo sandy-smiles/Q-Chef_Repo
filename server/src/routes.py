@@ -190,48 +190,6 @@ def authentication(request, server_settings):
 
 ################################################################################
 # Returns (request_data, user_id, err)
-def authTokens(request_data):
-  id_token = ''
-  user_id = None
-  err = ''
-
-  try:
-    # Extract the firebase token from the HTTP header
-    id_token = request.headers['Authorization']
-  except:
-    err = f'No "Authorization" header information given.'
-    # else return an error
-    return request_data, user_id, err
-
-  # Extract the token
-  try:
-    id_token = request.headers['Authorization'].replace('Bearer ','')
-  except:
-    err = f'No token given.'
-    # else return an error
-    return request_data, user_id, err
-
-  # Verify the ID token while checking if the token is revoked by
-  # passing check_revoked=True.
-  try:
-    # Validate the token
-    decoded_token = auth.verify_id_token(id_token, app=auth_app, check_revoked=True)
-    # Token is valid and not revoked.
-    user_id = decoded_token['uid']
-    request_data['userID'] = user_id
-#    except auth.RevokedIdTokenError:
-#      # Token revoked, inform the user to reauthenticate or signOut().
-#      err = f'Token revoked, inform the user to reauthenticate or signOut()'
-#    except auth.InvalidIdTokenError:
-#      # Token is invalid
-#      err = f'Token is invalid'
-  except Exception as e:
-    err = f'Unable to authenticate the user, err = {e}'
-  # else return an error
-  return request_data, user_id, err
-
-################################################################################
-# Returns (request_data, user_id, err)
 def authCookies(request_data):
   session_cookie = ''
   user_id = None
@@ -256,12 +214,6 @@ def authCookies(request_data):
     request_data['userID'] = user_id
   except Exception as e:
     err = f'Unable to authenticate the user, err = {e}'
-    try:
-      # fallback authentication using auth token
-      return authTokens(request_data)
-    except Exception as err_token:
-      errToken = f'Unable to authenticate the user, err = {err_token}'
-      return request_data, user_id, errToken
 
   # else return an error
   return request_data, user_id, err
@@ -275,7 +227,7 @@ def authCookies(request_data):
 #   - (json)
 # - Output:
 #   - (string) error
-@app.route('/sessionLogin', methods=['POST'])
+@app.route('/session_login', methods=['POST'])
 @cross_origin()
 def session_login():
   debug(f'[session_login - INFO]: Starting.')
@@ -316,7 +268,7 @@ def extend_session():
     err = f"[{func_name} - ERROR]: Authentication error, err = {err}"
   
     return err, 500
-    
+
   custom_token = auth.create_custom_token(user_id)
  
   response = jsonify({'status': 'success', 'customtoken': custom_token.decode("utf-8") })
