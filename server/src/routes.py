@@ -655,7 +655,10 @@ def save_meal_plan():
     user_dict = user_doc.to_dict()
     user_dict['user_id'] = user_id
 
-    pickedRecipes = user_dict['pickedRecipes']
+    if 'pickedRecipes' in user_dict:
+      pickedRecipes = user_dict['pickedRecipes']
+    else:
+      pickedRecipes = {'latest':-1}
     pickedRecipes['latest'] += 1
     pickedRecipes[str(pickedRecipes['latest'])] = request_data['picked']
     updateData = {'pickedRecipes': pickedRecipes}
