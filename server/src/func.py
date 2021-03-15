@@ -153,6 +153,8 @@ def retrieveDocument(collectionID, documentID):
   doc = doc_ref.get()
   if not doc.exists:
     doc_ref.set({})
+    doc_ref = db.collection(collectionID).document(documentID)
+    doc = doc_ref.get()
     # err = f'[retrieveDocument - ERROR]: Document {documentID} does not exist in collection {collectionID}.'
     # debug(err)
     # return None, None, err
