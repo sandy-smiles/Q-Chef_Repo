@@ -450,6 +450,12 @@ def updateSingleIngredientRating(user_dict, ingredient_id, ratings, rating_types
   # Update the ingredient rating
   for rating_type in rating_types:
     rating = ratings[rating_type]
+    if 'i_' + rating_type not in user_dict:
+      user_dict['i_'+rating_type] = {}
+    if 'is_' + rating_type not in user_dict:
+      user_dict['is_'+rating_type] = {}
+    if 'ic_' + rating_type not in user_dict:
+      user_dict['ic_'+rating_type] = {}
     try:
       r = user_dict['i_'+rating_type][ingredient_id]['rating']
       n = user_dict['i_'+rating_type][ingredient_id]['n_ratings']
@@ -573,10 +579,12 @@ def updateSingleRecipeRating(user_dict, recipe_id, ratings, rating_types):
     debug(err)
     return err
 
-
   # Update the recipe ratings
   for rating_type in rating_types:
     rating = ratings[rating_type]
+    
+    if 'r_' + rating_type not in user_dict:
+      user_dict['r_'+rating_type] = {}
     try:
       r = user_dict['r_'+rating_type][recipe_id]['rating']
       n = user_dict['r_'+rating_type][recipe_id]['n_ratings']
