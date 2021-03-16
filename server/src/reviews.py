@@ -54,20 +54,28 @@ def updateRecipeReviews(data):
     #try:
     if data['image'][recipe_id] is not None:
       # resize image
-      image_base64 = data['image'][recipe_id].replace("data:image/jpeg;base64,", "")
-      
-      im = Image.open(BytesIO(base64.b64decode(image_base64)))
-      output = ImageOps.fit(im, mask.size, centering=(0.5,0.5))
-      
+      if data['image'][recipe_id].startswith("data:image/jpeg"):
+        image_base64 = data['image'][recipe_id].replace("data:image/jpeg;base64,", "")
+      elif data['image'][recipe_id].startswith("data:image/png"):
+        image_base64 = data['image'][recipe_id].replace("data:image/png;base64,", "")
+      else:
+        image_base64 = ""
 
-      output2 = BytesIO()
-      output.save(output2, format='JPEG')
-      im_data = output2.getvalue()
-      base64_bytes = base64.b64encode(im_data)
-      base64_message = base64_bytes.decode('ascii')
-      data_url = 'data:image/jpeg;base64,' + base64_message
+      if image_base64 != "":
+        im = Image.open(BytesIO(base64.b64decode(image_base64)))
+        output = ImageOps.fit(im, mask.size, centering=(0.5,0.5))
+        
 
-    else :
+        output2 = BytesIO()
+        output.save(output2, format='JPEG')
+        im_data = output2.getvalue()
+        base64_bytes = base64.b64encode(im_data)
+        base64_message = base64_bytes.decode('ascii')
+        data_url = 'data:image/jpeg;base64,' + base64_message
+      else:
+        data_url = data['image'][recipe_id]
+
+    else:
       data_url = None
 
     
