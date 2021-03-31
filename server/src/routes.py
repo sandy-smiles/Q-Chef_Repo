@@ -74,9 +74,9 @@ def info():
 
 ################################################################################
 # Returns the participant information statement for the Q-Chef surveys
-@app.route('/info-survey')
+@app.route('/info_survey')
 @cross_origin()
-def info():
+def info_survey():
   return send_file('Participant Information Statement - Survey.pdf', attachment_filename='Participant Information Statement - Survey.pdf')
 
 ################################################################################
