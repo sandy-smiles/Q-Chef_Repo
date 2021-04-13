@@ -139,7 +139,7 @@ def createSubDocument(mainCollection, UserId, collectionID, documentID, creation
 #  - (doc_ref) document reference
 #  - (doc) document itself (if it exists)
 #  - (string) error
-def retrieveDocument(collectionID, documentID):
+def retrieveDocument(collectionID, documentID, returnErrorOnNull=False):
   debug(f'[retrieveDocument - INFO]: Starting.')
   collectionID = f'{collectionID}'
   documentID = f'{documentID}'
@@ -152,12 +152,14 @@ def retrieveDocument(collectionID, documentID):
   doc_ref = db.collection(collectionID).document(documentID)
   doc = doc_ref.get()
   if not doc.exists:
-    doc_ref.set({})
-    doc_ref = db.collection(collectionID).document(documentID)
-    doc = doc_ref.get()
-    # err = f'[retrieveDocument - ERROR]: Document {documentID} does not exist in collection {collectionID}.'
-    # debug(err)
-    # return None, None, err
+    if not returnErrorOnNull:
+      doc_ref.set({})
+      doc_ref = db.collection(collectionID).document(documentID)
+      doc = doc_ref.get()
+    else:
+      err = f'[retrieveDocument - ERROR]: Document {documentID} does not exist in collection {collectionID}.'
+      debug(err)
+      return None, None, err
 
   return doc_ref, doc, ''
 
