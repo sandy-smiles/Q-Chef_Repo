@@ -70,6 +70,13 @@ def index():
 @app.route('/info')
 @cross_origin()
 def info():
+  return send_file('Participant Information Statement - App Store.pdf', attachment_filename='Participant Information Statement - App Store.pdf')
+
+################################################################################
+# Returns the participant information statement for the Q-Chef surveys
+@app.route('/info_survey')
+@cross_origin()
+def info_survey():
   return send_file('Participant Information Statement - Survey.pdf', attachment_filename='Participant Information Statement - Survey.pdf')
 
 ################################################################################
@@ -296,51 +303,65 @@ def getServerSettings():
 # user_doc_ref, user_doc, err = getUserDocument(user_id)
 def getUserDocument(user_id, server_settings, create_flag=False):
   func_name = "getUserDocument"
-  user_doc_ref, user_doc, err = retrieveDocument('users', user_id)
+  user_doc_ref, user_doc, err = retrieveDocument('users', user_id, create_flag)
   if err:
     err = f"[{func_name} - WARN]: Unable to retrieve document for {user_id}, err = {err}\nCreating documents now..."
     debug(err)
 
     if not create_flag:
       return None, None, err
+    
+    user_doc_ref, user_doc, err = createUserProfile(user_id, server_settings)
+  
+  return user_doc_ref, user_doc, err  
 
-    # else create_flag: # Create the new documents
-     # known only 2 groups
-    num_group_0 = server_settings['groupNum']['0']
-    num_group_1 = server_settings['groupNum']['1']
-    if num_group_0 == num_group_1:
-      int_user_group = random.choice(user_groups)
+   
+
+
+def createUserProfile(user_id, server_settings):
+  # else create_flag: # Create the new documents
+    # known only 2 groups
+  debug(f'begin create user profile')
+  num_group_0 = server_settings['groupNum']['0']
+  num_group_1 = server_settings['groupNum']['1']
+  if num_group_0 == num_group_1:
+    int_user_group = random.choice(user_groups)
+  else:
+    if num_group_0 > num_group_1:
+      int_user_group = 1
     else:
-      if num_group_0 > num_group_1:
-        int_user_group = 1;
-      else:
-        int_user_group = 0;
-    userStartingDoc['group'] = int_user_group
-    err = createDocument('users', user_id, userStartingDoc)
-    if err:
-      err = f"[{func_name} - ERROR]: Unable to create user document for {user_id}, err = {err}"
-      debug(err)
-      return None, None, err
-     # user document creation successful, update server settings
-    server_settings['groupNum'][str(int_user_group)] += 1
-    err = updateDocument('server', 'settings', server_settings);
-    if err:
-      err = f"[{func_name} - ERROR]: Unable to server settings document, err = {err}"
-      debug(err)
-      return None, None, err
+      int_user_group = 0
+  userStartingDoc['group'] = int_user_group
+  
+  err = createDocument('users', user_id, userStartingDoc)
 
-    err = createDocument('actions', user_id, {})
-    if err:
-      err = f"[{func_name} - ERROR]: Unable to create action document for {user_id}, err = {err}"
-      debug(err)
-      return None, None, err
-    err = createDocument('reviews', user_id, {})
-    if err:
-      err = f"[{func_name} - ERROR]: Unable to create review document for {user_id}, err = {err}"
-      debug(err)
-      return None, None, err
+  if err:
+    err = f"[{func_name} - ERROR]: Unable to create user document for {user_id}, err = {err}"
+    debug(err)
+    return None, None, err
+    # user document creation successful, update server settings
+  server_settings['groupNum'][str(int_user_group)] += 1
+  err = updateDocument('server', 'settings', server_settings)
+  if err:
+    err = f"[{func_name} - ERROR]: Unable to server settings document, err = {err}"
+    debug(err)
+    return None, None, err
 
-  return user_doc_ref, user_doc, err
+  err = createDocument('actions', user_id, {})
+  if err:
+    err = f"[{func_name} - ERROR]: Unable to create action document for {user_id}, err = {err}"
+    debug(err)
+    return None, None, err
+  err = createDocument('reviews', user_id, {})
+  if err:
+    err = f"[{func_name} - ERROR]: Unable to create review document for {user_id}, err = {err}"
+    debug(err)
+    return None, None, err
+
+  user_doc_ref, user_doc, err = getUserDocument(user_id, server_settings)
+  
+  return user_doc_ref, user_doc, err  
+ 
 
 ################################################################################
 # Server API URLs
@@ -384,7 +405,7 @@ def onboarding_ingredient_rating():
     before_request_func()
 
     # Attempt to grab user's document
-    user_doc_ref, user_doc, err = getUserDocument(user_id, server_settings, create_flag=1)
+    user_doc_ref, user_doc, err = getUserDocument(user_id, server_settings, create_flag=True)
     if err:
       err = f"[{func_name} - ERROR]: Unable to retrieve document for {user_id}, err = {err}."
       debug(err)
@@ -466,9 +487,9 @@ def onboarding_recipe_rating():
       return err, 500
     # Run any functions that need to be done before the rest of the request
     before_request_func()
-
+ 
     # Attempt to grab user's document
-    user_doc_ref, user_doc, err = getUserDocument(user_id, server_settings, create_flag=1)
+    user_doc_ref, user_doc, err = getUserDocument(user_id, server_settings, create_flag=True)
     if err:
       err = f"[{func_name} - ERROR]: Unable to retrieve document for {user_id}, err = {err}."
       debug(err)
@@ -686,7 +707,7 @@ def retrieve_meal_plan():
     before_request_func()
 
     # Attempt to grab user's document
-    user_doc_ref, user_doc, err = getUserDocument(user_id, server_settings)
+    user_doc_ref, user_doc, err = getUserDocument(user_id, server_settings, create_flag=True)
     if err:
       err = f"[{func_name} - ERROR]: Unable to retrieve document for {user_id}, err = {err}."
       debug(err)
@@ -694,12 +715,19 @@ def retrieve_meal_plan():
     user_dict = user_doc.to_dict()
     user_dict['user_id'] = user_id
 
+    if not len(user_dict["ic_surprise"]):
+      err = f"[{func_name} - ERROR]: {user_id} onboarding incomplete."
+      debug(err)
+      return err,500
+
     # Grab the recipe information to be returned in the json
     pickedRecipes = user_dict['pickedRecipes']
     latest = pickedRecipes['latest']
     if latest == -1:
-      return 'No recipes selected.'
-    recipe_info = {} 
+      err = f"[{func_name} - ERROR]: {user_id} has no meal plan."
+      debug(err)
+      return err,500
+    recipe_info = {}
     recipe_ids = pickedRecipes[str(pickedRecipes['latest'])]
     for recipe_id in recipe_ids:
       # Get the recipe information
