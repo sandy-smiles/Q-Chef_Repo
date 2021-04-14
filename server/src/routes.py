@@ -707,7 +707,7 @@ def retrieve_meal_plan():
     before_request_func()
 
     # Attempt to grab user's document
-    user_doc_ref, user_doc, err = getUserDocument(user_id, server_settings)
+    user_doc_ref, user_doc, err = getUserDocument(user_id, server_settings,create_flag=True)
     if err:
       err = f"[{func_name} - ERROR]: Unable to retrieve document for {user_id}, err = {err}."
       debug(err)
