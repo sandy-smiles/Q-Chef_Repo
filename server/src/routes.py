@@ -707,7 +707,7 @@ def retrieve_meal_plan():
     before_request_func()
 
     # Attempt to grab user's document
-    user_doc_ref, user_doc, err = getUserDocument(user_id, server_settings,create_flag=True)
+    user_doc_ref, user_doc, err = getUserDocument(user_id, server_settings)
     if err:
       err = f"[{func_name} - ERROR]: Unable to retrieve document for {user_id}, err = {err}."
       debug(err)
@@ -719,8 +719,10 @@ def retrieve_meal_plan():
     pickedRecipes = user_dict['pickedRecipes']
     latest = pickedRecipes['latest']
     if latest == -1:
-      return 'No recipes selected.'
-    recipe_info = {} 
+      err = f"[{func_name} - ERROR]: {user_id} has not selected any recipes."
+      debug(err)
+      return err,500
+    recipe_info = {}
     recipe_ids = pickedRecipes[str(pickedRecipes['latest'])]
     for recipe_id in recipe_ids:
       # Get the recipe information
