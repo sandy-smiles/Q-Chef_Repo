@@ -715,7 +715,7 @@ def retrieve_meal_plan():
     user_dict = user_doc.to_dict()
     user_dict['user_id'] = user_id
 
-    if not len(user_dict["ic_surprise"]):
+    if 'pickedRecipes' not in user_dict:
       err = f"[{func_name} - ERROR]: {user_id} onboarding incomplete."
       debug(err)
       return err,500
