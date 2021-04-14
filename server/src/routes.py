@@ -707,7 +707,7 @@ def retrieve_meal_plan():
     before_request_func()
 
     # Attempt to grab user's document
-    user_doc_ref, user_doc, err = getUserDocument(user_id, server_settings)
+    user_doc_ref, user_doc, err = getUserDocument(user_id, server_settings, create_flag=True)
     if err:
       err = f"[{func_name} - ERROR]: Unable to retrieve document for {user_id}, err = {err}."
       debug(err)
@@ -715,11 +715,16 @@ def retrieve_meal_plan():
     user_dict = user_doc.to_dict()
     user_dict['user_id'] = user_id
 
+    if not len(user_dict["ic_surprise"]):
+      err = f"[{func_name} - ERROR]: {user_id} onboarding incomplete."
+      debug(err)
+      return err,500
+
     # Grab the recipe information to be returned in the json
     pickedRecipes = user_dict['pickedRecipes']
     latest = pickedRecipes['latest']
     if latest == -1:
-      err = f"[{func_name} - ERROR]: {user_id} has not selected any recipes."
+      err = f"[{func_name} - ERROR]: {user_id} has no meal plan."
       debug(err)
       return err,500
     recipe_info = {}
