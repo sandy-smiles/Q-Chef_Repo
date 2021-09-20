@@ -51,48 +51,46 @@ def updateRecipeReviews(data):
 
   size = (1280,720)
   mask = Image.new('L', size, 0)
-  draw = ImageDraw.Draw(mask)
-  draw.rectangle((0,0) + size, fill=255)
+  #draw = ImageDraw.Draw(mask)
+  #draw.rectangle((0,0) + size, fill=255)
 
   for recipe_id in recipe_ids:
     #try:
     if data['image'][recipe_id] is not None:
       # resize image
       if data['image'][recipe_id].startswith("data:image/jpeg"):
-        print(f'[updateRecipeReviews - PRINT]: Beginning image resize for user {user_id} and recipe {recipe_id}. JPEG detected.')
+        print(f'[updateRecipeReviews - HELP]: Beginning image resize for user {user_id} and recipe {recipe_id}. JPEG detected.')
         image_base64 = data['image'][recipe_id].replace("data:image/jpeg;base64,", "")
       elif data['image'][recipe_id].startswith("data:image/png"):
-        print(f'[updateRecipeReviews - PRINT]: Beginning image resize for user {user_id} and recipe {recipe_id}. PNG detected.')
+        print(f'[updateRecipeReviews - HELP]: Beginning image resize for user {user_id} and recipe {recipe_id}. PNG detected.')
         image_base64 = data['image'][recipe_id].replace("data:image/png;base64,", "")
       else:
-        print(f'[updateRecipeReviews - PRINT]: Beginning image resize for user {user_id} and recipe {recipe_id}. No format detected.')
+        print(f'[updateRecipeReviews - HELP]: Beginning image resize for user {user_id} and recipe {recipe_id}. No format detected.')
         image_base64 = ""
 
-      print(f'[updateRecipeReviews - PRINT]: image_base64: {image_base64}')
+      print(f'[updateRecipeReviews - HELP]: image_base64: {image_base64}')
       if image_base64 != "":
-        print(f'[updateRecipeReviews - PRINT]: In image resize for user {user_id} and recipe {recipe_id}, line 73.')
+        print(f'[updateRecipeReviews - HELP]: In image resize for user {user_id} and recipe {recipe_id}.')
         im = Image.open(BytesIO(base64.b64decode(image_base64)))
-        output = ImageOps.fit(im, mask.size, centering=(0.5,0.5))
-        
-        print(f'[updateRecipeReviews - PRINT]: In image resize for user {user_id} and recipe {recipe_id}, line 77.')
-        output2 = BytesIO()
-        output.save(output2, format='JPEG')
-        print(f'[updateRecipeReviews - PRINT]: In image resize for user {user_id} and recipe {recipe_id}, line 80.')
-        im_data = output2.getvalue()
+        #image_resized = ImageOps.fit(im, mask.size, centering=(0.5,0.5))
+        im.thumbnail((1280,1280))
+
+        output = BytesIO()
+        #image_resized.save(output, format='JPEG')
+        im.save(output, format='JPEG')
+        im_data = output.getvalue()
         base64_bytes = base64.b64encode(im_data)
-        print(f'[updateRecipeReviews - PRINT]: In image resize for user {user_id} and recipe {recipe_id}, line 83.')
         base64_message = base64_bytes.decode('ascii')
         data_url = 'data:image/jpeg;base64,' + base64_message
-        print(f'[updateRecipeReviews - PRINT]: In image resize for user {user_id} and recipe {recipe_id}, line 86.')
       else:
         data_url = data['image'][recipe_id]
 
-      print(f'[updateRecipeReviews - PRINT]: Completed image resize for user {user_id} and recipe {recipe_id}')
+      print(f'[updateRecipeReviews - HELP]: Completed image resize for user {user_id} and recipe {recipe_id}')
     else:
       data_url = None
 
 
-    print(f'[updateRecipeReviews - PRINT]: data_url: {data_url}')
+    print(f'[updateRecipeReviews - HELP]: data_url: {data_url}')
     # debug(f"[{data_url} - INFO]: RESIZED IMAGE")
     recipe_review = {}
     recipe_review['recipe_id'] = recipe_id
@@ -103,10 +101,10 @@ def updateRecipeReviews(data):
     recipe_review['why'] = data['why_response'][recipe_id]
     recipe_review['image'] = data_url
 
-    print(f'[updateRecipeReviews - PRINT]: Beginning review update for user {user_id} and recipe {recipe_id}')
+    print(f'[updateRecipeReviews - HELP]: Beginning review update for user {user_id} and recipe {recipe_id}')
 
     size = str(sys.getsizeof(data_url))
-    print(f'[updateRecipeReviews - PRINT]: Final size of image is {size}')
+    print(f'[updateRecipeReviews - HELP]: Final size of image is {size}')
 
     err = createSubDocument('reviews', user_id, recipe_id, 'review', recipe_review)
    
