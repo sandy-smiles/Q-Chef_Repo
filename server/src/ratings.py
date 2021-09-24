@@ -15,6 +15,7 @@ import numpy as np
 TASTE_RECIPES_RETURNED = 10
 
 EXPERIMENTAL_STATE_OVERRIDE = "" # Set to "experimental", "taste","surprise", or "taste+surprise" to override server, or "" to follow server behaviour
+COMBO_ALGO_OVERRIDE = "" # Set to "avg" or "pareto" to override server, or "" to follow server config
 USE_VECTOR_ESTIMATOR = True
 
 rating_types = ['taste',
@@ -223,11 +224,20 @@ def getTasteRecipes(user_dict):
 # - Output:
 #   - (dict) recipes and their information,
 #   - (string) error
-def getTasteAndSurpRecipes(user_dict, drop_thresh = 0.25):
+def getTasteAndSurpRecipes(user_dict, server_dict, drop_thresh = 0.25):
   debug(f'[getTasteAndSurpRecipes - INFO]: Starting.')
   user_id = user_dict['user_id']
   print(f'[getTasteAndSurpRecipes: Serving tasty+surprising recipes for {user_id}')
   numWantedRecipes = TASTE_RECIPES_RETURNED  # recipes_wanted
+
+  taste_surp_combo_method = "avg"
+  if len(COMBO_ALGO_OVERRIDE):
+    taste_surp_combo_method = COMBO_ALGO_OVERRIDE
+  else:
+    try:
+      taste_surp_combo_method = server_dict["comboAlgo"]
+    except KeyError:
+      debug(f'[getTasteAndSurpRecipes - ERROR]: No "comboAlgo" flag in server config! Defaulting to averaging.')
 
   ## Collect list of possible recipes to pick from
   ## Noting that we won't give a user a recipe they have already tried.
@@ -274,14 +284,21 @@ def getTasteAndSurpRecipes(user_dict, drop_thresh = 0.25):
   userRecipePrefs = minmax_scale(userRecipePrefs)
   user_pref_thresh = np.percentile(userRecipePrefs,drop_thresh*100.)
 
-  possibleRecipes = [((surp+pref)/2., rid) for surp, pref, rid in
-                     zip(userRecipeSurps, userRecipePrefs, kept_recipe_ids) if surp > user_surp_thresh and pref > user_pref_thresh]
+  possibleRecipesDict = {rid: (surp, pref) for surp, pref, rid in zip(userRecipeSurps, userRecipePrefs, kept_recipe_ids)
+                     if surp > user_surp_thresh and pref > user_pref_thresh}
 
-  possibleRecipes.sort(reverse=True)
-  # Check that there are enough recipes to serve up.
-  numPossibleRecipes = len(possibleRecipes)
-  if numPossibleRecipes > numWantedRecipes:
-    possibleRecipes = possibleRecipes[:numWantedRecipes]
+  # Check that there are enough recipes to serve up, and if so run the sorting algorithm.
+  if len(possibleRecipesDict.keys()) > numWantedRecipes:
+    if taste_surp_combo_method == "avg":
+      possibleRecipes = [((val[0]+val[1])/2., rid) for rid,val in possibleRecipesDict.items()]
+      possibleRecipes.sort(reverse=True)
+      possibleRecipes = possibleRecipes[:numWantedRecipes]
+    elif taste_surp_combo_method == "pareto":
+      possibleRecipes = paretoRecipeSort(possibleRecipesDict,numWantedRecipes)
+  else:
+    possibleRecipes = [(1,rid) for rid in possibleRecipesDict.keys()]
+    debug(f"[getTasteAndSurpRecipes - WARNING]: Too few recipes available to choose from, returning: {possibleRecipes}")
+
   debug(f"[getTasteAndSurpRecipes - DATA]: Found possibleRecipes: {possibleRecipes}")
 
   # Grab the recipe information to be returned in the json
@@ -357,6 +374,57 @@ def getSurpRecipes(user_dict):
   return recipe_info, ''
 
 ################################################################################
+# isParetoEfficient
+# Returns indices of pareto dominant tuples. From https://stackoverflow.com/questions/32791911/fast-calculation-of-pareto-front-in-python
+# - Input:
+#   :param costs: An (n_points, n_costs) array
+#   :param return_mask: True to return a mask
+# - Output:
+#    :return: An array of indices of pareto-efficient points.
+#      If return_mask is True, this will be an (n_points, ) boolean array
+#      Otherwise it will be a (n_efficient_points, ) integer array of indices.
+def isParetoEfficient(costs, return_mask=True):
+  is_efficient = np.arange(costs.shape[0])
+  n_points = costs.shape[0]
+  next_point_index = 0  # Next index in the is_efficient array to search for
+  while next_point_index < len(costs):
+    nondominated_point_mask = np.any(costs > costs[next_point_index], axis=1)
+    nondominated_point_mask[next_point_index] = True
+    is_efficient = is_efficient[nondominated_point_mask]  # Remove dominated points
+    costs = costs[nondominated_point_mask]
+    next_point_index = np.sum(nondominated_point_mask[:next_point_index]) + 1
+  if return_mask:
+    is_efficient_mask = np.zeros(n_points, dtype=bool)
+    is_efficient_mask[is_efficient] = True
+    return is_efficient_mask
+  else:
+    return is_efficient
+
+################################################################################
+# paretoRecipeSort
+# Returns the numWanted most-dominant recipes based on the provided preferences.
+# - Input:
+#   - (dict) possibleRecipesDict, with recipe ID keys and ,
+#   - (dict) server_settings
+# - Output:
+#   - (dict) recipes and their information,
+#   - (string) error
+def paretoRecipeSort(possibleRecipesDict,numWanted):
+  dominant_ids = []
+  numRecursions = 0
+  while(len(dominant_ids) < numWanted):
+    possibleRecipeIDs,possibleRecipeList = zip(*[(k,v) for k,v in possibleRecipesDict.items() if k not in dominant_ids])
+    possibleRecipesArray = np.array(possibleRecipeList)
+    next_pareto_front = isParetoEfficient(possibleRecipesArray,return_mask = False)
+    if next_pareto_front.shape[0] + len(dominant_ids) > numWanted:
+      next_pareto_front = np.random.choice(next_pareto_front,size=numWanted-len(dominant_ids),replace=False)
+    dominant_ids += [possibleRecipeIDs[id] for id in (next_pareto_front)]
+    numRecursions += 1
+  debug(f'[paretoRecipeSort - INFO]: Needed {numRecursions} to get required recipes.')
+  return dominant_ids
+
+
+################################################################################
 # getRecipes
 # Returns a constant times wanted number of recipes.
 # - Input:
@@ -408,7 +476,7 @@ def getRecipes(user_dict, server_settings):
 
   if server_dict['returnTaste'] and server_dict['returnSurprise']:
     debug(f'[getRecipes - REQU]: state = tasteAndSurpState')
-    return getTasteAndSurpRecipes(user_dict)
+    return getTasteAndSurpRecipes(user_dict, server_dict)
 
   if server_dict['returnSurprise']:
     debug(f'[getRecipes - REQU]: state = surpState')
