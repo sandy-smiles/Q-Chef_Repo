@@ -423,7 +423,7 @@ def paretoRecipeSort(possibleRecipesDict,numWanted):
     dominant_ids += [possibleRecipeIDs[id] for id in (next_pareto_front)]
     numRecursions += 1
   debug(f'[paretoRecipeSort - INFO]: Needed {numRecursions} to get required recipes.')
-  return [,id for pref,id in dominant_ids]
+  return dominant_ids
 
 
 ################################################################################
