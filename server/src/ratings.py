@@ -293,17 +293,19 @@ def getTasteAndSurpRecipes(user_dict, server_dict, drop_thresh = 0.25):
       possibleRecipes = [((val[0]+val[1])/2., rid) for rid,val in possibleRecipesDict.items()]
       possibleRecipes.sort(reverse=True)
       possibleRecipes = possibleRecipes[:numWantedRecipes]
+      chosenRecipeIDs = [r[1] for r in possibleRecipes]
     elif taste_surp_combo_method == "pareto":
-      possibleRecipes = paretoRecipeSort(possibleRecipesDict,numWantedRecipes)
+      chosenRecipeIDs = paretoRecipeSort(possibleRecipesDict,numWantedRecipes)
   else:
-    possibleRecipes = [(1,rid) for rid in possibleRecipesDict.keys()]
-    debug(f"[getTasteAndSurpRecipes - WARNING]: Too few recipes available to choose from, returning: {possibleRecipes}")
+    #possibleRecipes = [(1,rid) for rid in possibleRecipesDict.keys()]
+    chosenRecipeIDs = possibleRecipesDict.keys()
+    debug(f"[getTasteAndSurpRecipes - WARNING]: Too few recipes available to choose from, returning: {chosenRecipeIDs}")
 
-  debug(f"[getTasteAndSurpRecipes - DATA]: Found possibleRecipes: {possibleRecipes}")
+  debug(f"[getTasteAndSurpRecipes - DATA]: Found chosenRecipeIDs: {chosenRecipeIDs}")
 
   # Grab the recipe information to be returned in the json
   recipe_info = {}
-  for pref, recipe_id in possibleRecipes:
+  for recipe_id in chosenRecipeIDs:
     # Get the recipe information
     recipeInfo, err = getRecipeInformation(recipe_id)
     if err:
@@ -421,7 +423,7 @@ def paretoRecipeSort(possibleRecipesDict,numWanted):
     dominant_ids += [possibleRecipeIDs[id] for id in (next_pareto_front)]
     numRecursions += 1
   debug(f'[paretoRecipeSort - INFO]: Needed {numRecursions} to get required recipes.')
-  return dominant_ids
+  return [,id for pref,id in dominant_ids]
 
 
 ################################################################################
