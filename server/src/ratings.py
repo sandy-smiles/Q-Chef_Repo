@@ -227,7 +227,10 @@ def getTasteRecipes(user_dict):
 #   - (dict) recipes and their information,
 #   - (string) error
 def getTasteAndSurpRecipes(user_dict, server_dict, drop_thresh = 0.25):
-  debug(f'[getTasteAndSurpRecipes - ALWAYS]: Starting.  user_dict["history"]: {user_dict["history"]}')
+  if "history" in user_dict.keys():
+    debug(f'[getTasteAndSurpRecipes - ALWAYS]: Starting.  user_dict["history"]: {user_dict["history"]}')
+  else:
+    debug(f'[getTasteAndSurpRecipes - ALWAYS]: Starting.  No user_dict["history"].')
   user_id = user_dict['user_id']
   print(f'[getTasteAndSurpRecipes: Serving tasty+surprising recipes for {user_id}')
   numWantedRecipes = TASTE_RECIPES_RETURNED  # recipes_wanted
