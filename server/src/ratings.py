@@ -8,11 +8,13 @@ from surprise_models import *
 from scipy.stats import gmean
 from sklearn.preprocessing import minmax_scale
 import numpy as np
+from time import time
 
 ################################################################################
 # Constants
 ################################################################################
 TASTE_RECIPES_RETURNED = 10
+MILLIS_PER_MONTH = 2629800000
 
 EXPERIMENTAL_STATE_OVERRIDE = "" # Set to "experimental", "taste","surprise", or "taste+surprise" to override server, or "" to follow server behaviour
 COMBO_ALGO_OVERRIDE = "" # Set to "avg" or "pareto" to override server, or "" to follow server config
@@ -225,7 +227,7 @@ def getTasteRecipes(user_dict):
 #   - (dict) recipes and their information,
 #   - (string) error
 def getTasteAndSurpRecipes(user_dict, server_dict, drop_thresh = 0.25):
-  debug(f'[getTasteAndSurpRecipes - INFO]: Starting.')
+  debug(f'[getTasteAndSurpRecipes - ALWAYS]: Starting.  user_dict["history"]: {user_dict["history"]}')
   user_id = user_dict['user_id']
   print(f'[getTasteAndSurpRecipes: Serving tasty+surprising recipes for {user_id}')
   numWantedRecipes = TASTE_RECIPES_RETURNED  # recipes_wanted
@@ -441,6 +443,15 @@ def getRecipes(user_dict, server_settings):
   ## Collect list of possible recipes to pick from
   ## Noting that we won't give a user a recipe they have already tried.
 
+
+
+
+  # Retrieve the server document
+  server_doc_ref, server_doc, err = retrieveDocument('server', 'settings')
+  if err:
+    return None, err
+  server_dict = server_doc.to_dict()
+
   ## Check current hard_code server setting override.
   if len(EXPERIMENTAL_STATE_OVERRIDE):
     if EXPERIMENTAL_STATE_OVERRIDE == 'experimental':
@@ -451,19 +462,11 @@ def getRecipes(user_dict, server_settings):
         return None,"No experimental group assignment found in user's record."
       return expReturn[user_group](user_dict)
     elif EXPERIMENTAL_STATE_OVERRIDE == "taste+surprise":
-      return getTasteAndSurpRecipes(user_dict)
+      return getTasteAndSurpRecipes(user_dict,server_dict)
     elif EXPERIMENTAL_STATE_OVERRIDE == "taste":
       return getTasteRecipes(user_dict)
     if EXPERIMENTAL_STATE_OVERRIDE == "surprise":
       return getSurpRecipes(user_dict)
-
-
-  # Retrieve the server document
-  server_doc_ref, server_doc, err = retrieveDocument('server', 'settings')
-  if err:
-    return None, err
-  server_dict = server_doc.to_dict()
-
 
   if server_dict['experimentalState']:
     debug(f'[getRecipes - REQU]: state = experimentalState')

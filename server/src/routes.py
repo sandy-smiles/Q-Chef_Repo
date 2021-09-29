@@ -313,9 +313,20 @@ def getUserDocument(user_id, server_settings, create_flag=False):
     
     user_doc_ref, user_doc, err = createUserProfile(user_id, server_settings)
   
-  return user_doc_ref, user_doc, err  
+  return user_doc_ref, user_doc, err
 
-   
+
+# -------------------------------------------------------------------------------
+# Obtains the user's history document from the actions collection.
+# user_history_ref, user_history, err = getUserHistoryDocument(user_id)
+def getUserHistoryDocument(user_id):
+  user_doc_ref, user_doc, err = retrieveDocument('actions', user_id)
+  if err:
+    err = f"[getUserHistoryDocument - WARN]: Unable to retrieve document for {user_id}, err = {err}"
+    debug(err)
+    return None, None, err
+
+  return user_doc_ref, user_doc, err
 
 
 def createUserProfile(user_id, server_settings):
@@ -599,6 +610,17 @@ def get_meal_plan_selection():
       return err, 500
     user_dict = user_doc.to_dict()
     user_dict['user_id'] = user_id
+
+    # Attempt to grab user's history
+    user_history_ref, user_history, err = getUserHistoryDocument(user_id)
+    if err and user_doc is not None:
+      err = f"[{func_name} - ERROR]: Unable to retrieve user history document for {user_id}, err = {err}."
+      debug(err)
+      return err, 500
+    elif err and user_doc is None:
+      user_dict["history"] = {}
+    else:
+      user_dict["history"] = user_history.to_dict()
 
     #num_wanted_recipes = request_data['number_of_recipes']
     num_wanted_recipes = recipesReturned
