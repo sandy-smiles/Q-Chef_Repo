@@ -292,6 +292,13 @@ def getTasteAndSurpRecipes(user_dict, server_dict, drop_thresh = 0.25):
   possibleRecipesDict = {rid: (surp, pref) for surp, pref, rid in zip(userRecipeSurps, userRecipePrefs, kept_recipe_ids)
                      if surp > user_surp_thresh and pref > user_pref_thresh}
 
+  # Reduce the preferences of any recipes that we've seen before.
+  for rid,prefs in possibleRecipesDict.items():
+    if rid in user_dict["history"].keys():
+      debuf(f'[getTasteAndSurpRecipes - INFO]: For user {user_id}, recipe {recipe_id} has already been recommended, so halving both pref and surprise.')
+      possibleRecipesDict[rid] = (prefs[0]*.5, prefs[1]*.5) # Currently just halving the prefs of anything we've seen, which should pretty seriously nerf their chances.
+
+
   # Check that there are enough recipes to serve up, and if so run the sorting algorithm.
   if len(possibleRecipesDict.keys()) > numWantedRecipes:
     if taste_surp_combo_method == "avg":
