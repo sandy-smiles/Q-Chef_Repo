@@ -582,9 +582,9 @@ def validation_recipe_rating():
 @cross_origin()
 def get_meal_plan_selection():
   func_name = "get_meal_plan_selection"
-  debug(f"[{func_name} - INFO]: Starting.")
+  debug(f"[{func_name} - ALWAYS]: Starting.")
   if request.method == 'POST':
-    debug(f"[{func_name} - INFO]: POST request")
+    debug(f"[{func_name} - ALWAYS]: POST request")
 
     # Attempt to grab server settings document
     server_settings, err = getServerSettings()
@@ -594,7 +594,7 @@ def get_meal_plan_selection():
       return err, 500
 
     request_data, user_id, err = authentication(request, server_settings)
-    debug(f"[{func_name} - DATA]: request_data: {request_data}")
+    debug(f"[{func_name} - ALWAYS]: Auth request_data: {request_data}")
     if err:
       err = f"[{func_name} - ERROR]: Authentication error, err = {err}"
       debug(err)
@@ -610,6 +610,7 @@ def get_meal_plan_selection():
       return err, 500
     user_dict = user_doc.to_dict()
     user_dict['user_id'] = user_id
+    debug(f"[{func_name} - ALWAYS]: User_dict pre history: {user_dict}")
 
     # Attempt to grab user's history
     user_history_ref, user_history, err = getUserHistoryDocument(user_id)
@@ -621,6 +622,7 @@ def get_meal_plan_selection():
       user_dict["history"] = {}
     else:
       user_dict["history"] = user_history.to_dict()
+    debug(f"[{func_name} - ALWAYS]: User_dict post history: {user_dict}")
 
     #num_wanted_recipes = request_data['number_of_recipes']
     num_wanted_recipes = recipesReturned
@@ -633,6 +635,7 @@ def get_meal_plan_selection():
       err = f"[{func_name} - ERROR]: Unable to find any recipes for user {user_id}, err = {err}"
       debug(err)
       return err, 500
+    debug(f"[{func_name} - ALWAYS]: ret_recipes: {ret_recipes}")
     return jsonify(ret_recipes)
 
 ################################################################################
