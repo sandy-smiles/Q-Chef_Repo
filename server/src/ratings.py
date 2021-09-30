@@ -295,7 +295,7 @@ def getTasteAndSurpRecipes(user_dict, server_dict, drop_thresh = 0.25):
   # Reduce the preferences of any recipes that we've seen before.
   for rid,prefs in possibleRecipesDict.items():
     if rid in user_dict["history"].keys():
-      debuf(f'[getTasteAndSurpRecipes - INFO]: For user {user_id}, recipe {recipe_id} has already been recommended, so halving both pref and surprise.')
+      debug(f'[getTasteAndSurpRecipes - INFO]: For user {user_id}, recipe {recipe_id} has already been recommended, so halving both pref and surprise.')
       possibleRecipesDict[rid] = (prefs[0]*.5, prefs[1]*.5) # Currently just halving the prefs of anything we've seen, which should pretty seriously nerf their chances.
 
 
