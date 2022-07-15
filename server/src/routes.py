@@ -423,6 +423,7 @@ def onboarding_ingredient_rating():
       return err, 500
     user_dict = user_doc.to_dict()
     user_dict['user_id'] = user_id
+    user_dict["history"] = {}
 
     # Update user's document with ingredient ratings
     rating_types = ['taste', 'familiarity']

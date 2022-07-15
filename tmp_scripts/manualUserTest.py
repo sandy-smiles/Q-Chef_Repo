@@ -48,8 +48,8 @@ surprise_question_str = """Surprise Question...
       0) I think these ingredients often appear in recipes together.
       """
 
-#url_domain = 'https://q-chef-backend-api-server.web.app'
-url_domain = 'http://127.0.0.1:5000'
+url_domain = 'https://q-chef-backend-api-server.web.app'
+#url_domain = 'http://127.0.0.1:5000'
 
 
 ################################################################################
