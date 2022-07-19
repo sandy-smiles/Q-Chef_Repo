@@ -226,7 +226,7 @@ def getTasteRecipes(user_dict):
 # - Output:
 #   - (dict) recipes and their information,
 #   - (string) error
-def getTasteAndSurpRecipes(user_dict, server_dict, drop_thresh = 0.25):
+def getTasteAndSurpRecipes(user_dict, server_dict, drop_thresh = 0.25, taste_surp_combo_method = ""):
   if "history" in user_dict.keys():
     debug(f'[getTasteAndSurpRecipes - ALWAYS]: Starting.  user_dict["history"]: {user_dict["history"]}')
   else:
@@ -235,14 +235,14 @@ def getTasteAndSurpRecipes(user_dict, server_dict, drop_thresh = 0.25):
   print(f'[getTasteAndSurpRecipes: Serving tasty+surprising recipes for {user_id}')
   numWantedRecipes = TASTE_RECIPES_RETURNED  # recipes_wanted
 
-  taste_surp_combo_method = "avg"
+  # If there's a combo algo override in the settings use that, if not use the one in the method header, if there's not one use the one in the server flags.
   if len(COMBO_ALGO_OVERRIDE):
     taste_surp_combo_method = COMBO_ALGO_OVERRIDE
-  else:
+  elif not len(taste_surp_combo_method):
     try:
       taste_surp_combo_method = server_dict["comboAlgo"]
     except KeyError:
-      debug(f'[getTasteAndSurpRecipes - ERROR]: No "comboAlgo" flag in server config! Defaulting to averaging.')
+      debug(f'[getTasteAndSurpRecipes - ERROR]: No "comboAlgo" flag in server config and no override provided! Defaulting to averaging.')
 
   ## Collect list of possible recipes to pick from
   ## Noting that we won't give a user a recipe they have already tried.
@@ -464,7 +464,20 @@ def getRecipes(user_dict, server_settings):
 
   ## Check current hard_code server setting override.
   if len(EXPERIMENTAL_STATE_OVERRIDE):
-    if EXPERIMENTAL_STATE_OVERRIDE == 'experimental':
+    # If we're in the long-term study situation, with three user groups.
+    if EXPERIMENTAL_STATE_OVERRIDE == "longitudinal":
+      try:
+        user_group = int(user_dict['group'])
+      except:
+        return None,"No experimental group assignment found in user's record."
+      if user_group == 0:
+        return getTasteRecipes(user_dict)
+      elif user_group == 1:
+        return getTasteAndSurpRecipes(user_dict, server_dict, taste_surp_combo_method="avg")
+      elif user_group == 2:
+        return getTasteAndSurpRecipes(user_dict, server_dict, taste_surp_combo_method="pareto")
+    #If we're in teh lab study situation, with two user groups.
+    elif EXPERIMENTAL_STATE_OVERRIDE == 'experimental':
       expReturn = {0: getTasteRecipes, 1: getTasteAndSurpRecipes}
       try:
         user_group = int(user_dict['group'])
@@ -475,9 +488,27 @@ def getRecipes(user_dict, server_settings):
       return getTasteAndSurpRecipes(user_dict,server_dict)
     elif EXPERIMENTAL_STATE_OVERRIDE == "taste":
       return getTasteRecipes(user_dict)
-    if EXPERIMENTAL_STATE_OVERRIDE == "surprise":
+    elif EXPERIMENTAL_STATE_OVERRIDE == "surprise":
       return getSurpRecipes(user_dict)
 
+
+  # If we're in the long-term study situation, with three user groups.
+  if server_dict['longitudinal']:
+    debug(f'[getRecipes - REQU]: state = longitudinal')
+    try:
+      user_group = int(user_dict['group'])
+    except:
+      # if there is not specified group, assume they're a test user
+      debug(f'[getRecipes - REQU]: no testing group found, assuming group 1')
+      user_group = 1
+    if user_group == 0:
+      return getTasteRecipes(user_dict)
+    elif user_group == 1:
+      return getTasteAndSurpRecipes(user_dict, server_dict, taste_surp_combo_method="avg")
+    elif user_group == 2:
+      return getTasteAndSurpRecipes(user_dict, server_dict, taste_surp_combo_method="pareto")
+
+  # If we're in the lab study situation, with two user groups.
   if server_dict['experimentalState']:
     debug(f'[getRecipes - REQU]: state = experimentalState')
     try:

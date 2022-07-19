@@ -39,7 +39,6 @@ userStartingDoc = {
   'pickedRecipes': {'latest': -1}
 }
 
-user_groups = [0, 1]
 
 recipesReturned = 10
 
@@ -330,19 +329,29 @@ def getUserHistoryDocument(user_id):
 
 
 def createUserProfile(user_id, server_settings):
-  # else create_flag: # Create the new documents
-    # known only 2 groups
   debug(f'begin create user profile')
-  num_group_0 = server_settings['groupNum']['0']
-  num_group_1 = server_settings['groupNum']['1']
-  if num_group_0 == num_group_1:
-    int_user_group = random.choice(user_groups)
-  else:
-    if num_group_0 > num_group_1:
-      int_user_group = 1
+
+  if server_settings["longitudinalState"]:
+    num_group_0 = server_settings['groupNum']['0']
+    num_group_1 = server_settings['groupNum']['1']
+    num_group_2 = server_settings['groupNum']['2']
+    groups = np.array([num_group_0,num_group_1,num_group_2])
+    #flatnonzero is a version of np.where that returns just the indices, not tuples.
+    int_user_group = list(np.flatnonzero(groups == groups.min()))
+    if len(int_user_group) > 1:
+      int_user_group = random.choice(int_user_group)
+    userStartingDoc['group'] = int_user_group
+  elif server_settings["experimentalState"]:
+    num_group_0 = server_settings['groupNum']['0']
+    num_group_1 = server_settings['groupNum']['1']
+    if num_group_0 == num_group_1:
+      int_user_group = random.choice([0, 1])
     else:
-      int_user_group = 0
-  userStartingDoc['group'] = int_user_group
+      if num_group_0 > num_group_1:
+        int_user_group = 1
+      else:
+        int_user_group = 0
+    userStartingDoc['group'] = int_user_group
   
   err = createDocument('users', user_id, userStartingDoc)
 
@@ -351,7 +360,9 @@ def createUserProfile(user_id, server_settings):
     debug(err)
     return None, None, err
     # user document creation successful, update server settings
-  server_settings['groupNum'][str(int_user_group)] += 1
+
+  if server_settings["experimentalState"] or server_settings["longitudinalState"]:
+    server_settings['groupNum'][str(int_user_group)] += 1
   err = updateDocument('server', 'settings', server_settings)
   if err:
     err = f"[{func_name} - ERROR]: Unable to server settings document, err = {err}"
