@@ -226,7 +226,7 @@ def getTasteRecipes(user_dict):
 # - Output:
 #   - (dict) recipes and their information,
 #   - (string) error
-def getTasteAndSurpRecipes(user_dict, server_dict, drop_thresh = 0.25, taste_surp_combo_method = ""):
+def getTasteAndSurpRecipes(user_dict, server_dict, drop_thresh = 0.33, taste_surp_combo_method = ""):
   if "history" in user_dict.keys():
     debug(f'[getTasteAndSurpRecipes - ALWAYS]: Starting.  user_dict["history"]: {user_dict["history"]}')
   else:
