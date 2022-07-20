@@ -339,7 +339,7 @@ def createUserProfile(user_id, server_settings):
     #flatnonzero is a version of np.where that returns just the indices, not tuples.
     int_user_group = list(np.flatnonzero(groups == groups.min()))
     if len(int_user_group) > 1:
-      int_user_group = random.choice(int_user_group)
+      int_user_group = int(random.choice(int_user_group))
     userStartingDoc['group'] = int_user_group
   elif server_settings["experimentalState"]:
     num_group_0 = server_settings['groupNum']['0']
