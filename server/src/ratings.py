@@ -8,7 +8,7 @@ from surprise_models import *
 from scipy.stats import gmean
 from sklearn.preprocessing import minmax_scale
 import numpy as np
-from time import time
+import copy
 
 ################################################################################
 # Constants
@@ -16,7 +16,7 @@ from time import time
 TASTE_RECIPES_RETURNED = 10
 MILLIS_PER_MONTH = 2629800000
 
-EXPERIMENTAL_STATE_OVERRIDE = "" # Set to "experimental", "taste","surprise", or "taste+surprise" to override server, or "" to follow server behaviour
+EXPERIMENTAL_STATE_OVERRIDE = "" # Set to "experimental", "longitudinal", "taste","surprise", or "taste+surprise" to override server, or "" to follow server behaviour
 COMBO_ALGO_OVERRIDE = "" # Set to "avg" or "pareto" to override server, or "" to follow server config
 USE_VECTOR_ESTIMATOR = True
 
@@ -169,7 +169,7 @@ def getRecipeRating(user_dict, recipe_id, rating_type):
 # - Output:
 #   - (dict) recipes and their information,
 #   - (string) error
-def getTasteRecipes(user_dict):
+def getTasteRecipes(user_dict, trim_surprise=0):
   debug(f'[getTasteRecipes - INFO]: Starting.')
   user_id = user_dict['user_id']
   print(f'[getTasteRecipes: Serving tasty recipes for {user_id}')
@@ -198,11 +198,22 @@ def getTasteRecipes(user_dict):
       continue # Just ignore this recipe then.
     possibleRecipes.append((userRecipePref, recipe_id))
 
+  if trim_surprise > 0:
+    untrimmedRecipes = copy.copy(possibleRecipes)
+    userRecipeSurps, error = surpRecipes(user_dict, [x[1] for x in possibleRecipes], simpleSurprise=False)
+    if error != "":
+      return None, error
+
+    userRecipeSurps = minmax_scale(userRecipeSurps)
+    user_surp_thresh = np.percentile(userRecipeSurps, trim_surprise * 100.)
+    possibleRecipes = [r for i,r in enumerate(possibleRecipes) if userRecipeSurps[i] <= user_surp_thresh]
+
   possibleRecipes.sort(reverse=True)
   # Check that there are enough recipes to serve up.
-  numPossibleRecipes = len(possibleRecipes)
-  if numPossibleRecipes > numWantedRecipes:
+  if len(possibleRecipes) >= numWantedRecipes:
     possibleRecipes = possibleRecipes[:numWantedRecipes]
+  elif len(untrimmedRecipes) >= numWantedRecipes: # If we don't have enough recipes post surprise-trim, include some of the higher surprise ones anyway.
+    possibleRecipes = untrimmedRecipes[:numWantedRecipes]
 
   # Grab the recipe information to be returned in the json
   recipe_info = {}
@@ -226,7 +237,11 @@ def getTasteRecipes(user_dict):
 # - Output:
 #   - (dict) recipes and their information,
 #   - (string) error
-def getTasteAndSurpRecipes(user_dict, server_dict, drop_thresh = 0.33, taste_surp_combo_method = ""):
+def getTasteAndSurpRecipes(user_dict, server_dict, drop_thresh = 0.33, surp_drop_thresh = -1, taste_drop_thresh = -1, taste_surp_combo_method = ""):
+  if surp_drop_thresh <0:
+    surp_drop_thresh = drop_thresh
+  if taste_drop_thresh <0:
+    taste_drop_thresh = drop_thresh
   if "history" in user_dict.keys():
     debug(f'[getTasteAndSurpRecipes - ALWAYS]: Starting.  user_dict["history"]: {user_dict["history"]}')
   else:
@@ -285,9 +300,9 @@ def getTasteAndSurpRecipes(user_dict, server_dict, drop_thresh = 0.33, taste_sur
     return None,error
 
   userRecipeSurps = minmax_scale(userRecipeSurps)
-  user_surp_thresh = np.percentile(userRecipeSurps,drop_thresh*100.)
+  user_surp_thresh = np.percentile(userRecipeSurps,surp_drop_thresh*100.)
   userRecipePrefs = minmax_scale(userRecipePrefs)
-  user_pref_thresh = np.percentile(userRecipePrefs,drop_thresh*100.)
+  user_pref_thresh = np.percentile(userRecipePrefs,taste_drop_thresh*100.)
 
   possibleRecipesDict = {rid: (surp, pref) for surp, pref, rid in zip(userRecipeSurps, userRecipePrefs, kept_recipe_ids)
                      if surp > user_surp_thresh and pref > user_pref_thresh}
@@ -471,11 +486,11 @@ def getRecipes(user_dict, server_settings):
       except:
         return None,"No experimental group assignment found in user's record."
       if user_group == 0:
-        return getTasteRecipes(user_dict)
+        return getTasteRecipes(user_dict, trim_surprise=0.67)
       elif user_group == 1:
-        return getTasteAndSurpRecipes(user_dict, server_dict, taste_surp_combo_method="avg")
+        return getTasteAndSurpRecipes(user_dict, server_dict, drop_thresh = 0.5, taste_surp_combo_method="avg")
       elif user_group == 2:
-        return getTasteAndSurpRecipes(user_dict, server_dict, taste_surp_combo_method="pareto")
+        return getTasteAndSurpRecipes(user_dict, server_dict, taste_drop_thresh=0.33, surp_drop_thresh=0, taste_surp_combo_method="pareto")
     #If we're in teh lab study situation, with two user groups.
     elif EXPERIMENTAL_STATE_OVERRIDE == 'experimental':
       expReturn = {0: getTasteRecipes, 1: getTasteAndSurpRecipes}
@@ -493,8 +508,8 @@ def getRecipes(user_dict, server_settings):
 
 
   # If we're in the long-term study situation, with three user groups.
-  if server_dict['longitudinal']:
-    debug(f'[getRecipes - REQU]: state = longitudinal')
+  if server_dict['longitudinalState']:
+    debug(f'[getRecipes - REQU]: state = longitudinalState')
     try:
       user_group = int(user_dict['group'])
     except:
@@ -502,11 +517,11 @@ def getRecipes(user_dict, server_settings):
       debug(f'[getRecipes - REQU]: no testing group found, assuming group 1')
       user_group = 1
     if user_group == 0:
-      return getTasteRecipes(user_dict)
+      return getTasteRecipes(user_dict, trim_surprise=0.67)
     elif user_group == 1:
-      return getTasteAndSurpRecipes(user_dict, server_dict, taste_surp_combo_method="avg")
+      return getTasteAndSurpRecipes(user_dict, server_dict, drop_thresh = 0.5, taste_surp_combo_method="avg")
     elif user_group == 2:
-      return getTasteAndSurpRecipes(user_dict, server_dict, taste_surp_combo_method="pareto")
+      return getTasteAndSurpRecipes(user_dict, server_dict, taste_drop_thresh=0.33, surp_drop_thresh=0., taste_surp_combo_method="pareto")
 
   # If we're in the lab study situation, with two user groups.
   if server_dict['experimentalState']:

@@ -3,7 +3,6 @@
 # Authors: Q-Chef Backend Programmers
 # Updated: 20200621
 
-import time
 import json
 import csv
 import random
@@ -14,6 +13,7 @@ from app import app, auth_app
 from flask import make_response, request, jsonify, render_template, redirect, url_for, send_file, abort
 from flask_cors import CORS, cross_origin
 from firebase_admin import auth
+from time import time
 
 from func import *
 from actions import *
@@ -340,6 +340,8 @@ def createUserProfile(user_id, server_settings):
     int_user_group = list(np.flatnonzero(groups == groups.min()))
     if len(int_user_group) > 1:
       int_user_group = int(random.choice(int_user_group))
+    else:
+      int_user_group = int(int_user_group[0])
     userStartingDoc['group'] = int_user_group
   elif server_settings["experimentalState"]:
     num_group_0 = server_settings['groupNum']['0']
@@ -648,6 +650,17 @@ def get_meal_plan_selection():
       debug(err)
       return err, 500
     debug(f"[{func_name} - ALWAYS]: ret_recipes: {ret_recipes}")
+
+    served_recipes = {"action_log":[],"userID":user_id}
+    for recipe_id in ret_recipes.keys():
+      served_recipes["action_log"].append((int(time()*1000),recipe_id,"served"))
+      debug(f"[{func_name} - ALWAYS]: served_recipes['action_log']: {served_recipes['action_log']}")
+    err = updateActionLog(served_recipes)
+
+    if err:
+      err = f"[{func_name} - ERROR]: Unable to log recipe served actions for {user_id}, err = {err}"
+      debug(err)
+      return err, 500
     return jsonify(ret_recipes)
 
 ################################################################################
