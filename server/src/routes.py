@@ -115,9 +115,10 @@ def before_request_func():
     debug(f'[get_r_data - INFO]: Starting.')
     if 'r_data' not in g:
       data = {}
-      with open('./data/qchef_recipes.json', 'r') as f:
+      with open('./data/qchef_recipes_pruned.json', 'r') as f:
         data = json.load(f)
       g.r_data = data
+      debug(f'[get_r_data - ALWAYS]: loaded '+str(len(g.r_data.keys()))+' recipes.')
       return g.r_data
 
   def get_surp_data():

@@ -222,8 +222,8 @@ def getTasteRecipes(user_dict, trim_surprise=0):
                       taste_ratings=[r[0] for r in possibleRecipes],
                       raw_surp_max_ratings=[g.r_data[r[1]]["surprises"]["100%"] for r in possibleRecipes],
                       raw_surp_95_ratings=[g.r_data[r[1]]["surprises"]["95%"] for r in possibleRecipes],
-                      predicted_surp_ratings=[userPredictedSurpAndFam[r[0]][0] for r in possibleRecipes],
-                      predicted_unfam_ratings=[userPredictedSurpAndFam[r[0]][1] for r in possibleRecipes])
+                      predicted_surp_ratings=[userPredictedSurpAndFam[r[1]][0] for r in possibleRecipes],
+                      predicted_unfam_ratings=[userPredictedSurpAndFam[r[1]][1] for r in possibleRecipes])
   else:
     updateServedRecipes(user_id, user_dict,
                       recipe_ids=[r[1] for r in possibleRecipes],
@@ -355,8 +355,8 @@ def getTasteAndSurpRecipes(user_dict, server_dict, drop_thresh = 0.33, surp_drop
                       taste_ratings=[userRecipePrefDict[rid] for _,rid in possibleRecipes],
                       raw_surp_max_ratings=[g.r_data[r[1]]["surprises"]["100%"] for r in possibleRecipes],
                       raw_surp_95_ratings=[g.r_data[r[1]]["surprises"]["95%"] for r in possibleRecipes],
-                      predicted_surp_ratings=[userPredictedSurpAndFam[r[0]][0] for r in possibleRecipes],
-                      predicted_unfam_ratings=[userPredictedSurpAndFam[r[0]][1] for r in possibleRecipes])
+                      predicted_surp_ratings=[userPredictedSurpAndFam[r[1]][0] for r in possibleRecipes],
+                      predicted_unfam_ratings=[userPredictedSurpAndFam[r[1]][1] for r in possibleRecipes])
 
   # Grab the recipe information to be returned in the json
   recipe_info = {}
@@ -426,8 +426,8 @@ def getSurpRecipes(user_dict):
                       taste_ratings=[-1]* len(possibleRecipes),
                       raw_surp_max_ratings=[g.r_data[r[1]]["surprises"]["100%"] for r in possibleRecipes],
                       raw_surp_95_ratings=[g.r_data[r[1]]["surprises"]["95%"] for r in possibleRecipes],
-                      predicted_surp_ratings=[predictedSurps[r[0]] for r in possibleRecipes],
-                      predicted_unfam_ratings=[predictedFams[r[0]] for r in possibleRecipes])
+                      predicted_surp_ratings=[predictedSurps[r[1]] for r in possibleRecipes],
+                      predicted_unfam_ratings=[predictedFams[r[1]] for r in possibleRecipes])
 
   # Grab the recipe information to be returned in the json
   recipe_info = {}
@@ -446,7 +446,7 @@ def getSurpRecipes(user_dict):
 def updateServedRecipes(user_id, user_dict, recipe_ids=[],taste_ratings=[], raw_surp_max_ratings=[],raw_surp_95_ratings=[],predicted_surp_ratings=[],predicted_unfam_ratings=[]):
   servedRecipes = user_dict["servedRecipes"]
   servedRecipes["latest"] += 1
-  servedRecipes[servedRecipes["latest"]] = {
+  servedRecipes[str(servedRecipes["latest"])] = {
     "time": int(time()*1000),
     "recipes": recipe_ids,
     "taste_ratings": taste_ratings,
