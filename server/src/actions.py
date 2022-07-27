@@ -34,6 +34,8 @@ def updateActionLog(data):
     timestamp = str(timestamp)
     recipe_id = str(recipe_id)
     action = str(action)
+    if not updating_data["onboarded"]:
+      action = "validated"
     try:
       updating_data[recipe_id][timestamp] = action
     except:

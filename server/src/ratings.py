@@ -9,6 +9,7 @@ from scipy.stats import gmean
 from sklearn.preprocessing import minmax_scale
 import numpy as np
 import copy
+from time import time
 
 ################################################################################
 # Constants
@@ -147,7 +148,7 @@ def getRecipeRating(user_dict, recipe_id, rating_type):
 
     #The ratings engine isn't realising that some people hate individual ingredients a lot.  These weights adjust for that by emphasising negative ratings.
     if ingredientRating < 0:
-      ingredientRating *= 1.5
+      ingredientRating *= 2
 
     sumIngredientRatings += ingredientRating
     numIngredientRatings += 1
@@ -200,7 +201,7 @@ def getTasteRecipes(user_dict, trim_surprise=0):
 
   if trim_surprise > 0:
     untrimmedRecipes = copy.copy(possibleRecipes)
-    userRecipeSurps, error = surpRecipes(user_dict, [x[1] for x in possibleRecipes], simpleSurprise=False)
+    userRecipeSurps, userPredictedSurpAndFam, error = surpRecipes(user_dict, [x[1] for x in possibleRecipes], simpleSurprise=False, return_raw=True)
     if error != "":
       return None, error
 
@@ -214,6 +215,23 @@ def getTasteRecipes(user_dict, trim_surprise=0):
     possibleRecipes = possibleRecipes[:numWantedRecipes]
   elif len(untrimmedRecipes) >= numWantedRecipes: # If we don't have enough recipes post surprise-trim, include some of the higher surprise ones anyway.
     possibleRecipes = untrimmedRecipes[:numWantedRecipes]
+
+  if trim_surprise > 0:
+    updateServedRecipes(user_id, user_dict,
+                      recipe_ids=[r[1] for r in possibleRecipes],
+                      taste_ratings=[r[0] for r in possibleRecipes],
+                      raw_surp_max_ratings=[g.r_data[r[1]]["surprises"]["100%"] for r in possibleRecipes],
+                      raw_surp_95_ratings=[g.r_data[r[1]]["surprises"]["95%"] for r in possibleRecipes],
+                      predicted_surp_ratings=[userPredictedSurpAndFam[r[0]][0] for r in possibleRecipes],
+                      predicted_unfam_ratings=[userPredictedSurpAndFam[r[0]][1] for r in possibleRecipes])
+  else:
+    updateServedRecipes(user_id, user_dict,
+                      recipe_ids=[r[1] for r in possibleRecipes],
+                      taste_ratings=[r[0] for r in possibleRecipes],
+                      raw_surp_max_ratings=[g.r_data[r[1]]["surprises"]["100%"] for r in possibleRecipes],
+                      raw_surp_95_ratings=[g.r_data[r[1]]["surprises"]["95%"] for r in possibleRecipes],
+                      predicted_surp_ratings=[-1] * len(possibleRecipes),
+                      predicted_unfam_ratings=[-1] * len(possibleRecipes))
 
   # Grab the recipe information to be returned in the json
   recipe_info = {}
@@ -295,12 +313,13 @@ def getTasteAndSurpRecipes(user_dict, server_dict, drop_thresh = 0.33, surp_drop
     debug(f'[getTasteAndSurpRecipes - DATA]: for user {user_id} and recipe {recipe_id} userRecipeSurp was {userRecipeSurp} and userRecipePref was {userRecipePref}')
     userRecipeSurps.append(userRecipeSurp)
     '''
-  userRecipeSurps, error = surpRecipes(user_dict,kept_recipe_ids, simpleSurprise=False)
+  userRecipeSurps, userPredictedSurpAndFam, error = surpRecipes(user_dict,kept_recipe_ids, simpleSurprise=False, return_raw=True)
   if error != "":
     return None,error
 
   userRecipeSurps = minmax_scale(userRecipeSurps)
   user_surp_thresh = np.percentile(userRecipeSurps,surp_drop_thresh*100.)
+  userRecipePrefDict = {i:p for i,p in zip(kept_recipe_ids,userRecipePrefs)}
   userRecipePrefs = minmax_scale(userRecipePrefs)
   user_pref_thresh = np.percentile(userRecipePrefs,taste_drop_thresh*100.)
 
@@ -310,8 +329,9 @@ def getTasteAndSurpRecipes(user_dict, server_dict, drop_thresh = 0.33, surp_drop
   # Reduce the preferences of any recipes that we've seen before.
   for rid,prefs in possibleRecipesDict.items():
     if rid in user_dict["history"].keys():
-      debug(f'[getTasteAndSurpRecipes - INFO]: For user {user_id}, recipe {recipe_id} has already been recommended, so halving both pref and surprise.')
-      possibleRecipesDict[rid] = (prefs[0]*.5, prefs[1]*.5) # Currently just halving the prefs of anything we've seen, which should pretty seriously nerf their chances.
+      if user_dict["servedRecipes"]["latest"] < 1 or not rid in user_dict["servedRecipes"][-1]["recipe_ids"]:
+        debug(f'[getTasteAndSurpRecipes - INFO]: For user {user_id}, recipe {recipe_id} has already been recommended, so halving both pref and surprise.')
+        possibleRecipesDict[rid] = (prefs[0]*.5, prefs[1]*.5) # Currently just halving the prefs of anything we've seen, which should pretty seriously nerf their chances.
 
 
   # Check that there are enough recipes to serve up, and if so run the sorting algorithm.
@@ -329,6 +349,14 @@ def getTasteAndSurpRecipes(user_dict, server_dict, drop_thresh = 0.33, surp_drop
     debug(f"[getTasteAndSurpRecipes - WARNING]: Too few recipes available to choose from, returning: {chosenRecipeIDs}")
 
   debug(f"[getTasteAndSurpRecipes - DATA]: Found chosenRecipeIDs: {chosenRecipeIDs}")
+
+  updateServedRecipes(user_id, user_dict,
+                      recipe_ids=[r[1] for r in possibleRecipes],
+                      taste_ratings=[userRecipePrefDict[rid] for _,rid in possibleRecipes],
+                      raw_surp_max_ratings=[g.r_data[r[1]]["surprises"]["100%"] for r in possibleRecipes],
+                      raw_surp_95_ratings=[g.r_data[r[1]]["surprises"]["95%"] for r in possibleRecipes],
+                      predicted_surp_ratings=[userPredictedSurpAndFam[r[0]][0] for r in possibleRecipes],
+                      predicted_unfam_ratings=[userPredictedSurpAndFam[r[0]][1] for r in possibleRecipes])
 
   # Grab the recipe information to be returned in the json
   recipe_info = {}
@@ -367,6 +395,8 @@ def getSurpRecipes(user_dict):
 
   # Retrieve the recipe collection
   possibleRecipes = []
+  predictedSurps = {}
+  predictedFams = {}
   recipe_ids = g.r_data.keys()
   err = f'[getSurpRecipes - HELP]: For user {user_id}, recipe {user_recipes} have already been rated.'
   debug(err)
@@ -375,7 +405,9 @@ def getSurpRecipes(user_dict):
       err = f'[getSurpRecipes - INFO]: For user {user_id}, recipe {recipe_id} has already been rated, therefore continuing...'
       debug(err)
       continue
-    userRecipeSurp, err = surpRecipe(user_dict, recipe_id, simpleSurprise=False)
+    userRecipeSurp, predicted_surp_and_fam, err = surpRecipe(user_dict, recipe_id, simpleSurprise=False, return_raw=True)
+    predictedSurps[recipe_id] = predicted_surp_and_fam[0]
+    predictedFams[recipe_id] = predicted_surp_and_fam[1]
     debug(f'[getSurpRecipes - DATA]: userRecipeSurp :{userRecipeSurp}')
     if err:
       err = f'[getSurpRecipes - ERROR]: Unable to find user {user_id} surprise preference for recipe {recipe_id}, err = {err}'
@@ -389,6 +421,14 @@ def getSurpRecipes(user_dict):
   if numPossibleRecipes > numWantedRecipes:
     possibleRecipes = possibleRecipes[:numWantedRecipes]
 
+  updateServedRecipes(user_id, user_dict,
+                      recipe_ids=[r[1] for r in possibleRecipes],
+                      taste_ratings=[-1]* len(possibleRecipes),
+                      raw_surp_max_ratings=[g.r_data[r[1]]["surprises"]["100%"] for r in possibleRecipes],
+                      raw_surp_95_ratings=[g.r_data[r[1]]["surprises"]["95%"] for r in possibleRecipes],
+                      predicted_surp_ratings=[predictedSurps[r[0]] for r in possibleRecipes],
+                      predicted_unfam_ratings=[predictedFams[r[0]] for r in possibleRecipes])
+
   # Grab the recipe information to be returned in the json
   recipe_info = {}
   for pref, recipe_id in possibleRecipes:
@@ -401,6 +441,26 @@ def getSurpRecipes(user_dict):
     recipe_info[recipe_id] = recipeInfo
 
   return recipe_info, ''
+
+
+def updateServedRecipes(user_id, user_dict, recipe_ids=[],taste_ratings=[], raw_surp_max_ratings=[],raw_surp_95_ratings=[],predicted_surp_ratings=[],predicted_unfam_ratings=[]):
+  servedRecipes = user_dict["servedRecipes"]
+  servedRecipes["latest"] += 1
+  servedRecipes[servedRecipes["latest"]] = {
+    "time": int(time()*1000),
+    "recipes": recipe_ids,
+    "taste_ratings": taste_ratings,
+    "raw_surp_100_ratings": raw_surp_max_ratings,
+    "raw_surp_95_ratings": raw_surp_95_ratings,
+    "predicted_surp_ratings": predicted_surp_ratings,
+    "predicted_unfam_ratings": predicted_unfam_ratings
+  }
+  updateData = {"servedRecipes": servedRecipes}
+  err = updateDocument('users', user_id, updateData)
+  if err:
+    err = f"[{func_name} - ERROR]: Unable to update the data {updateData} for user {user_id}, err = {err}"
+    debug(err)
+    return err, 500
 
 ################################################################################
 # isParetoEfficient
@@ -462,7 +522,7 @@ def paretoRecipeSort(possibleRecipesDict,numWanted):
 # - Output:
 #   - (dict) recipes and their information,
 #   - (string) error
-def getRecipes(user_dict, server_settings):
+def getRecipes(user_dict, server_settings, validation=False):
   debug(f'[getRecipes - INFO]: Starting.')
 
   ## Collect list of possible recipes to pick from
@@ -476,6 +536,9 @@ def getRecipes(user_dict, server_settings):
   if err:
     return None, err
   server_dict = server_doc.to_dict()
+
+  if validation:
+    return getTasteRecipes(user_dict)
 
   ## Check current hard_code server setting override.
   if len(EXPERIMENTAL_STATE_OVERRIDE):

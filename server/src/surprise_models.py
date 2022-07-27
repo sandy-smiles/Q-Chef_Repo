@@ -194,7 +194,9 @@ def culinaryExperience(user):
 # Output:
 #  - (float) calculated surprise score in [0..1]
 #  - (string) error
-def simpleSurpRecipe(user, recipe_id, sigma=2, delta=1):
+def simpleSurpRecipe(user, recipe_id, sigma=2, delta=1, return_raw=False):
+    if return_raw:
+        raise NotImplementedError # We discontinued the use of this function before proper logging was incorporated.
     cul_ex,error = culinaryExperience(user)
     if len(error):
         return None,error
@@ -223,7 +225,7 @@ def simpleSurpRecipe(user, recipe_id, sigma=2, delta=1):
 # Output:
 #  - (list of floats) calculated surprise scores in [0..1]
 #  - (string) error
-def simpleSurpRecipes(user, recipe_ids, sigma=2, delta=1):
+def simpleSurpRecipes(user, recipe_ids, sigma=2, delta=1, return_raw=False):
     raise NotImplementedError
 
 def predict_many_users_one_recipe(model, users, recipe_id, weight_id = None):
@@ -324,7 +326,7 @@ def predict_one_user_many_recipes(model, user, recipe_ids, weight_ids = None):
 # Output:
 #  - (float) calculated surprise score in [0..1]
 #  - (string) error
-def advancedSurpRecipe(user, recipe_id):
+def advancedSurpRecipe(user, recipe_id, return_raw=False):
     model_dict,error = getModels()
     if error != "":
         return None,error
@@ -345,6 +347,8 @@ def advancedSurpRecipe(user, recipe_id):
 
     surprise = max(net_unfam,net_surp).item()
     debug(f'[advancedSurpRecipe - DATA]: surprise for {recipe_id} :{surprise}')
+    if return_raw:
+        return surprise, (net_surp, net_unfam), ""
     return surprise,""
 
 # advancedSurpRecipes - returns the surprise score for a given user-recipe pair
@@ -354,7 +358,7 @@ def advancedSurpRecipe(user, recipe_id):
 # Output:
 #  - (list of floats) calculated surprise scores in [0..1]
 #  - (string) error
-def advancedSurpRecipes(user, recipe_ids):
+def advancedSurpRecipes(user, recipe_ids, return_raw=False):
     model_dict,error = getModels()
     if error != "":
         return None,error
@@ -366,11 +370,13 @@ def advancedSurpRecipes(user, recipe_ids):
 
     net_unfams = [fl - fh for fl,fh in zip(recipe_predictions["fam_low"],recipe_predictions["fam_high"])]
     net_surps = [sp - sn for sp,sn in zip(recipe_predictions["surp_pos"],recipe_predictions["surp_neg"])]
-    net_unfams = minmax_scale(net_unfams)
-    net_surps = minmax_scale(net_surps)
+    scaled_net_unfams = minmax_scale(net_unfams)
+    scaled_net_surps = minmax_scale(net_surps)
     #surprises = [max(net_unfam,net_surp) for net_unfam,net_surp in zip(net_unfams,net_surps)]
-    surprises = [net_unfam/2. + net_surp for net_unfam, net_surp in zip(net_unfams, net_surps)]
+    surprises = [net_unfam/2. + net_surp for net_unfam, net_surp in zip(scaled_net_unfams, scaled_net_surps)]
 
+    if return_raw:
+        return surprises, {i:(s,f) for i,s,f in zip(recipe_ids,net_surps,net_unfams)}, ""
     return surprises,""
 
 # surpRecipe - returns the predicted surprise for a given user-recipe pair
@@ -382,11 +388,11 @@ def advancedSurpRecipes(user, recipe_ids):
 # Output:
 #  - (float) calculated surprise score in [0..1]
 #  - (string) error
-def surpRecipe(user, recipe_id, simpleSurprise=True):
+def surpRecipe(user, recipe_id, simpleSurprise=True, return_raw=False):
     if simpleSurprise:
-        return simpleSurpRecipe(user,recipe_id)
+        return simpleSurpRecipe(user,recipe_id, return_raw=return_raw)
     else:
-        return advancedSurpRecipe(user,recipe_id)
+        return advancedSurpRecipe(user,recipe_id, return_raw=return_raw)
 
 # surpRecipes - returns the predicted surprise for a user and list of recipes
 # Input:
@@ -397,8 +403,8 @@ def surpRecipe(user, recipe_id, simpleSurprise=True):
 # Output:
 #  - (list of floats) calculated surprise scores in [0..1]
 #  - (string) error
-def surpRecipes(user, recipe_ids, simpleSurprise=True):
+def surpRecipes(user, recipe_ids, simpleSurprise=True, return_raw=False):
     if simpleSurprise:
-        return simpleSurpRecipes(user,recipe_ids)
+        return simpleSurpRecipes(user,recipe_ids, return_raw=return_raw)
     else:
-        return advancedSurpRecipes(user,recipe_ids)
+        return advancedSurpRecipes(user,recipe_ids, return_raw=return_raw)

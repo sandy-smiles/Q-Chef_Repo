@@ -36,7 +36,9 @@ userStartingDoc = {
   'is_surprise': {},
   'ic_surprise': {},
   'r_surprise' : {},
-  'pickedRecipes': {'latest': -1}
+  'pickedRecipes': {'latest': -1},
+  'servedRecipes': {'latest': -2},
+  'onboarded': False
 }
 
 
@@ -342,7 +344,8 @@ def createUserProfile(user_id, server_settings):
       int_user_group = int(random.choice(int_user_group))
     else:
       int_user_group = int(int_user_group[0])
-    userStartingDoc['group'] = int_user_group
+    userNewDoc = copy.copy(userStartingDoc)
+    userNewDoc['group'] = int_user_group
   elif server_settings["experimentalState"]:
     num_group_0 = server_settings['groupNum']['0']
     num_group_1 = server_settings['groupNum']['1']
@@ -353,9 +356,9 @@ def createUserProfile(user_id, server_settings):
         int_user_group = 1
       else:
         int_user_group = 0
-    userStartingDoc['group'] = int_user_group
+    userNewDoc['group'] = int_user_group
   
-  err = createDocument('users', user_id, userStartingDoc)
+  err = createDocument('users', user_id, userNewDoc)
 
   if err:
     err = f"[{func_name} - ERROR]: Unable to create user document for {user_id}, err = {err}"
@@ -447,11 +450,12 @@ def onboarding_ingredient_rating():
       return err, 500
 
     # Return json of test recipes that a user should liked
-    onboarding_recipes2, err = getRecipes(user_dict, server_settings)
+    onboarding_recipes2, err = getRecipes(user_dict, server_settings, validation=True)
     if err:
       err = f"[{func_name} - ERROR]: Unable to find any recipes for user {user_id}, err = {err}"
       debug(err)
       return err, 500
+
     return jsonify(onboarding_recipes2)
 
   debug(f"[{func_name} - INFO]: GET request")
@@ -578,6 +582,13 @@ def validation_recipe_rating():
     err = updateRecipeRatings(request_data, rating_types)
     if err:
       err = f"[{func_name} - ERROR]: Unable to update recipe ratings, err = {err}"
+      debug(err)
+      return err, 500
+
+    updateData = {'onboarded': True}
+    err = updateDocument('users', user_id, updateData)
+    if err:
+      err = f"[{func_name} - ERROR]: Unable to update the data {updateData} for user {user_id}, err = {err}"
       debug(err)
       return err, 500
     return ""
