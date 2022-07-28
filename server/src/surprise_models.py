@@ -329,11 +329,15 @@ def predict_one_user_many_recipes(model, user, recipe_ids, weight_ids = None):
 def advancedSurpRecipe(user, recipe_id, return_raw=False):
     model_dict,error = getModels()
     if error != "":
+        if return_raw:
+            return None, None, error
         return None,error
     recipe_predictions = {}
     for model_name,model in model_dict.items():
         recipe_predictions[model_name],error = predict_many_users_one_recipe(model, [user],recipe_id, weight_id=recipe_id)
         if error != "":
+            if return_raw:
+                return None, None, error
             return None,error
     net_unfam = recipe_predictions["fam_low"] - recipe_predictions["fam_high"]
 
@@ -361,11 +365,15 @@ def advancedSurpRecipe(user, recipe_id, return_raw=False):
 def advancedSurpRecipes(user, recipe_ids, return_raw=False):
     model_dict,error = getModels()
     if error != "":
+        if return_raw:
+            return None, None, error
         return None,error
     recipe_predictions = {}
     for model_name,model in model_dict.items():
         recipe_predictions[model_name],error = predict_one_user_many_recipes(model, user,recipe_ids)
         if error != "":
+            if return_raw:
+                return None, None, error
             return None,error
 
     net_unfams = [fl - fh for fl,fh in zip(recipe_predictions["fam_low"],recipe_predictions["fam_high"])]
