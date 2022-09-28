@@ -8,13 +8,16 @@ from surprise_models import *
 from scipy.stats import gmean
 from sklearn.preprocessing import minmax_scale
 import numpy as np
+from time import time
 
 ################################################################################
 # Constants
 ################################################################################
 TASTE_RECIPES_RETURNED = 10
+MILLIS_PER_MONTH = 2629800000
 
 EXPERIMENTAL_STATE_OVERRIDE = "" # Set to "experimental", "taste","surprise", or "taste+surprise" to override server, or "" to follow server behaviour
+COMBO_ALGO_OVERRIDE = "" # Set to "avg" or "pareto" to override server, or "" to follow server config
 USE_VECTOR_ESTIMATOR = True
 
 rating_types = ['taste',
@@ -223,11 +226,23 @@ def getTasteRecipes(user_dict):
 # - Output:
 #   - (dict) recipes and their information,
 #   - (string) error
-def getTasteAndSurpRecipes(user_dict, drop_thresh = 0.25):
-  debug(f'[getTasteAndSurpRecipes - INFO]: Starting.')
+def getTasteAndSurpRecipes(user_dict, server_dict, drop_thresh = 0.25):
+  if "history" in user_dict.keys():
+    debug(f'[getTasteAndSurpRecipes - ALWAYS]: Starting.  user_dict["history"]: {user_dict["history"]}')
+  else:
+    debug(f'[getTasteAndSurpRecipes - ALWAYS]: Starting.  No user_dict["history"].')
   user_id = user_dict['user_id']
   print(f'[getTasteAndSurpRecipes: Serving tasty+surprising recipes for {user_id}')
   numWantedRecipes = TASTE_RECIPES_RETURNED  # recipes_wanted
+
+  taste_surp_combo_method = "avg"
+  if len(COMBO_ALGO_OVERRIDE):
+    taste_surp_combo_method = COMBO_ALGO_OVERRIDE
+  else:
+    try:
+      taste_surp_combo_method = server_dict["comboAlgo"]
+    except KeyError:
+      debug(f'[getTasteAndSurpRecipes - ERROR]: No "comboAlgo" flag in server config! Defaulting to averaging.')
 
   ## Collect list of possible recipes to pick from
   ## Noting that we won't give a user a recipe they have already tried.
@@ -274,19 +289,35 @@ def getTasteAndSurpRecipes(user_dict, drop_thresh = 0.25):
   userRecipePrefs = minmax_scale(userRecipePrefs)
   user_pref_thresh = np.percentile(userRecipePrefs,drop_thresh*100.)
 
-  possibleRecipes = [((surp+pref)/2., rid) for surp, pref, rid in
-                     zip(userRecipeSurps, userRecipePrefs, kept_recipe_ids) if surp > user_surp_thresh and pref > user_pref_thresh]
+  possibleRecipesDict = {rid: (surp, pref) for surp, pref, rid in zip(userRecipeSurps, userRecipePrefs, kept_recipe_ids)
+                     if surp > user_surp_thresh and pref > user_pref_thresh}
 
-  possibleRecipes.sort(reverse=True)
-  # Check that there are enough recipes to serve up.
-  numPossibleRecipes = len(possibleRecipes)
-  if numPossibleRecipes > numWantedRecipes:
-    possibleRecipes = possibleRecipes[:numWantedRecipes]
-  debug(f"[getTasteAndSurpRecipes - DATA]: Found possibleRecipes: {possibleRecipes}")
+  # Reduce the preferences of any recipes that we've seen before.
+  for rid,prefs in possibleRecipesDict.items():
+    if rid in user_dict["history"].keys():
+      debug(f'[getTasteAndSurpRecipes - INFO]: For user {user_id}, recipe {recipe_id} has already been recommended, so halving both pref and surprise.')
+      possibleRecipesDict[rid] = (prefs[0]*.5, prefs[1]*.5) # Currently just halving the prefs of anything we've seen, which should pretty seriously nerf their chances.
+
+
+  # Check that there are enough recipes to serve up, and if so run the sorting algorithm.
+  if len(possibleRecipesDict.keys()) > numWantedRecipes:
+    if taste_surp_combo_method == "avg":
+      possibleRecipes = [((val[0]+val[1])/2., rid) for rid,val in possibleRecipesDict.items()]
+      possibleRecipes.sort(reverse=True)
+      possibleRecipes = possibleRecipes[:numWantedRecipes]
+      chosenRecipeIDs = [r[1] for r in possibleRecipes]
+    elif taste_surp_combo_method == "pareto":
+      chosenRecipeIDs = paretoRecipeSort(possibleRecipesDict,numWantedRecipes)
+  else:
+    #possibleRecipes = [(1,rid) for rid in possibleRecipesDict.keys()]
+    chosenRecipeIDs = possibleRecipesDict.keys()
+    debug(f"[getTasteAndSurpRecipes - WARNING]: Too few recipes available to choose from, returning: {chosenRecipeIDs}")
+
+  debug(f"[getTasteAndSurpRecipes - DATA]: Found chosenRecipeIDs: {chosenRecipeIDs}")
 
   # Grab the recipe information to be returned in the json
   recipe_info = {}
-  for pref, recipe_id in possibleRecipes:
+  for recipe_id in chosenRecipeIDs:
     # Get the recipe information
     recipeInfo, err = getRecipeInformation(recipe_id)
     if err:
@@ -357,6 +388,57 @@ def getSurpRecipes(user_dict):
   return recipe_info, ''
 
 ################################################################################
+# isParetoEfficient
+# Returns indices of pareto dominant tuples. From https://stackoverflow.com/questions/32791911/fast-calculation-of-pareto-front-in-python
+# - Input:
+#   :param costs: An (n_points, n_costs) array
+#   :param return_mask: True to return a mask
+# - Output:
+#    :return: An array of indices of pareto-efficient points.
+#      If return_mask is True, this will be an (n_points, ) boolean array
+#      Otherwise it will be a (n_efficient_points, ) integer array of indices.
+def isParetoEfficient(costs, return_mask=True):
+  is_efficient = np.arange(costs.shape[0])
+  n_points = costs.shape[0]
+  next_point_index = 0  # Next index in the is_efficient array to search for
+  while next_point_index < len(costs):
+    nondominated_point_mask = np.any(costs > costs[next_point_index], axis=1)
+    nondominated_point_mask[next_point_index] = True
+    is_efficient = is_efficient[nondominated_point_mask]  # Remove dominated points
+    costs = costs[nondominated_point_mask]
+    next_point_index = np.sum(nondominated_point_mask[:next_point_index]) + 1
+  if return_mask:
+    is_efficient_mask = np.zeros(n_points, dtype=bool)
+    is_efficient_mask[is_efficient] = True
+    return is_efficient_mask
+  else:
+    return is_efficient
+
+################################################################################
+# paretoRecipeSort
+# Returns the numWanted most-dominant recipes based on the provided preferences.
+# - Input:
+#   - (dict) possibleRecipesDict, with recipe ID keys and ,
+#   - (dict) server_settings
+# - Output:
+#   - (dict) recipes and their information,
+#   - (string) error
+def paretoRecipeSort(possibleRecipesDict,numWanted):
+  dominant_ids = []
+  numRecursions = 0
+  while(len(dominant_ids) < numWanted):
+    possibleRecipeIDs,possibleRecipeList = zip(*[(k,v) for k,v in possibleRecipesDict.items() if k not in dominant_ids])
+    possibleRecipesArray = np.array(possibleRecipeList)
+    next_pareto_front = isParetoEfficient(possibleRecipesArray,return_mask = False)
+    if next_pareto_front.shape[0] + len(dominant_ids) > numWanted:
+      next_pareto_front = np.random.choice(next_pareto_front,size=numWanted-len(dominant_ids),replace=False)
+    dominant_ids += [possibleRecipeIDs[id] for id in (next_pareto_front)]
+    numRecursions += 1
+  debug(f'[paretoRecipeSort - INFO]: Needed {numRecursions} to get required recipes.')
+  return dominant_ids
+
+
+################################################################################
 # getRecipes
 # Returns a constant times wanted number of recipes.
 # - Input:
@@ -371,6 +453,15 @@ def getRecipes(user_dict, server_settings):
   ## Collect list of possible recipes to pick from
   ## Noting that we won't give a user a recipe they have already tried.
 
+
+
+
+  # Retrieve the server document
+  server_doc_ref, server_doc, err = retrieveDocument('server', 'settings')
+  if err:
+    return None, err
+  server_dict = server_doc.to_dict()
+
   ## Check current hard_code server setting override.
   if len(EXPERIMENTAL_STATE_OVERRIDE):
     if EXPERIMENTAL_STATE_OVERRIDE == 'experimental':
@@ -381,19 +472,11 @@ def getRecipes(user_dict, server_settings):
         return None,"No experimental group assignment found in user's record."
       return expReturn[user_group](user_dict)
     elif EXPERIMENTAL_STATE_OVERRIDE == "taste+surprise":
-      return getTasteAndSurpRecipes(user_dict)
+      return getTasteAndSurpRecipes(user_dict,server_dict)
     elif EXPERIMENTAL_STATE_OVERRIDE == "taste":
       return getTasteRecipes(user_dict)
     if EXPERIMENTAL_STATE_OVERRIDE == "surprise":
       return getSurpRecipes(user_dict)
-
-
-  # Retrieve the server document
-  server_doc_ref, server_doc, err = retrieveDocument('server', 'settings')
-  if err:
-    return None, err
-  server_dict = server_doc.to_dict()
-
 
   if server_dict['experimentalState']:
     debug(f'[getRecipes - REQU]: state = experimentalState')
@@ -408,7 +491,7 @@ def getRecipes(user_dict, server_settings):
 
   if server_dict['returnTaste'] and server_dict['returnSurprise']:
     debug(f'[getRecipes - REQU]: state = tasteAndSurpState')
-    return getTasteAndSurpRecipes(user_dict)
+    return getTasteAndSurpRecipes(user_dict, server_dict)
 
   if server_dict['returnSurprise']:
     debug(f'[getRecipes - REQU]: state = surpState')

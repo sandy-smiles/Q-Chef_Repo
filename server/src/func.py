@@ -27,6 +27,10 @@ DATA = False
 REQU = True
 
 def debug(fString):
+  if "ALWAYS" in fString:
+    print(fString)
+    return
+
   if not DEBUG:
     return
 

@@ -14,6 +14,10 @@
 ################################################################################
 import json
 
+from PIL import Image, ImageOps, ImageDraw
+from io import BytesIO
+import base64
+
 import firebase_admin
 from firebase_admin import credentials
 from firebase_admin import firestore
@@ -65,6 +69,29 @@ def main():
   # Turn the user's document into a dictionary
   # so that we can read from it.
   user_dict = usr_doc.to_dict()
+
+
+  # Ask if we wish to view the recipe reviews
+  prompt_str = f"\nDo you wish to see the {usrID}'s recipe reviews? [Y/n] "
+  see_reviews = ('n' not in input(prompt_str).lower())
+  if see_reviews:
+    usr_review_cols = [col.id for col in db.collection('reviews').document(usrID).collections()]
+    reviews_ref_dict = {id: db.collection('reviews').document(usrID).collection(id).document("review") for id in usr_review_cols}
+    reviews_doc_dict = {}
+    for id,ref in reviews_ref_dict.items():
+      doc = ref.get()
+      if not doc.exists:
+        err = f"[MAIN - ERROR]: Unable to retreive document reviews/{usrID}/{id}/review."
+        print(err)
+        return
+      reviews_doc_dict[id] = doc.to_dict()
+      if reviews_doc_dict[id]["image"] is not None:
+        im_base64 = reviews_doc_dict[id]["image"].replace("data:image/jpeg;base64,","")
+        im = Image.open(BytesIO(base64.b64decode(im_base64)))
+        im.save(f"{usrID}.{id}.jpg", format="JPEG")
+      del reviews_doc_dict[id]["image"]
+
+  print(reviews_doc_dict)
 
   # Ask if we wish to view the recipe ratings
   prompt_str = f"\nDo you wish to see the {usrID}'s recipe ratings? [Y/n] "
