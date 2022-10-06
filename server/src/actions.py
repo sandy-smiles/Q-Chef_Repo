@@ -27,19 +27,13 @@ def updateActionLog(data):
   user_doc_ref, user_doc, err = retrieveDocument('actions', user_id)
   if err:
     return err
-  user_main_doc_ref, user_main_doc, err = retrieveDocument('users', user_id)
-  if err:
-    return err
 
   updating_data = user_doc.to_dict()
-  user_profile = user_main_doc.to_dict()
   action_log = data['action_log']
   for timestamp, recipe_id, action in action_log:
     timestamp = str(timestamp)
     recipe_id = str(recipe_id)
     action = str(action)
-    if not user_profile["onboarded"]:
-      action = "validated"
     try:
       updating_data[recipe_id][timestamp] = action
     except:

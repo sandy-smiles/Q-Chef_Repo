@@ -51,7 +51,6 @@ urls_to_delete = [
   "www.bbc.co.uk/food/recipes/course_country_terrine_54023",
   "www.bbc.co.uk/food/recipes/steaktartare_88981",
   "www.bbc.co.uk/food/recipes/creamedbrusselssprou_84835",
-  "www.bbc.co.uk/food/recipes/ragudipomodoro_70563",
   "www.bbc.co.uk/food/recipes/italianbeanandspinac_84283",
   "www.bbc.co.uk/food/recipes/freshtomatosalsawith_8881",
   "www.bbc.co.uk/food/recipes/gameterrine_14230",

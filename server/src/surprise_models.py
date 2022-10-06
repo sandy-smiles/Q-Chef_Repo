@@ -11,12 +11,17 @@ from sklearn.preprocessing import PolynomialFeatures
 
 from sklearn.preprocessing import minmax_scale
 
+#model_fns = fns={
+#    "fam_high":"./data/best_fam_high_model_10board_poly_final.joblib",
+#    "fam_low":"./data/best_fam_low_model_10board_poly_final.joblib",
+#    "surp_pos":"./data/best_surp_pos_model_10board_poly_final.joblib",
+#    "surp_neg":"./data/best_surp_neg_model_10board_poly_final.joblib"
+#}
+
 model_fns = fns={
-    "fam_high":"./data/best_fam_high_model_10board_poly_final.joblib",
-    "fam_low":"./data/best_fam_low_model_10board_poly_final.joblib",
-    "surp_pos":"./data/best_surp_pos_model_10board_poly_final.joblib",
-    "surp_neg":"./data/best_surp_neg_model_10board_poly_final.joblib"
+    "combined":"./data/best_either_surprising_model_2022_final.joblib"
 }
+
 
 ######## Surprise Helper Functions ########
 
@@ -339,21 +344,29 @@ def advancedSurpRecipe(user, recipe_id, return_raw=False):
             if return_raw:
                 return None, None, error
             return None,error
-    net_unfam = recipe_predictions["fam_low"] - recipe_predictions["fam_high"]
+
+    surprise = recipe_predictions["combined"]
+    debug(f'[advancedSurpRecipe - DATA]: surp for {recipe_id} :{surprise}')
+    if return_raw:
+        return surprise, (surprise, surprise), ""
+    return surprise,""
+    # This code relates to the old multi-surprise-model approach.
+    #net_unfam = recipe_predictions["fam_low"] - recipe_predictions["fam_high"]
 
     #debug(f'[advancedSurpRecipe - DATA]: fam_high for {recipe_id} :{recipe_predictions["fam_high"]}')
     #debug(f'[advancedSurpRecipe - DATA]: fam_low for {recipe_id} :{recipe_predictions["fam_low"]}')
-    debug(f'[advancedSurpRecipe - DATA]: net_unfam for {recipe_id} :{net_unfam}')
-    net_surp = recipe_predictions["surp_pos"] - recipe_predictions["surp_neg"]
+    #debug(f'[advancedSurpRecipe - DATA]: net_unfam for {recipe_id} :{net_unfam}')
+    #net_surp = recipe_predictions["surp_pos"] - recipe_predictions["surp_neg"]
     #debug(f'[advancedSurpRecipe - DATA]: surp_pos for {recipe_id} :{recipe_predictions["surp_pos"]}')
     #debug(f'[advancedSurpRecipe - DATA]: surp_neg for {recipe_id} :{recipe_predictions["surp_neg"]}')
-    debug(f'[advancedSurpRecipe - DATA]: net_surp for {recipe_id} :{net_surp}')
+    #debug(f'[advancedSurpRecipe - DATA]: net_surp for {recipe_id} :{net_surp}')
 
-    surprise = max(net_unfam,net_surp).item()
-    debug(f'[advancedSurpRecipe - DATA]: surprise for {recipe_id} :{surprise}')
-    if return_raw:
-        return surprise, (net_surp, net_unfam), ""
-    return surprise,""
+    #surprise = max(net_unfam,net_surp).item()
+    #surprise = net_unfam/2.+net_surp
+    #debug(f'[advancedSurpRecipe - DATA]: surprise for {recipe_id} :{surprise}')
+    #if return_raw:
+    #    return surprise, (net_surp, net_unfam), ""
+    #return surprise,""
 
 # advancedSurpRecipes - returns the surprise score for a given user-recipe pair
 # Input:
@@ -376,16 +389,25 @@ def advancedSurpRecipes(user, recipe_ids, return_raw=False):
                 return None, None, error
             return None,error
 
-    net_unfams = [fl - fh for fl,fh in zip(recipe_predictions["fam_low"],recipe_predictions["fam_high"])]
-    net_surps = [sp - sn for sp,sn in zip(recipe_predictions["surp_pos"],recipe_predictions["surp_neg"])]
-    scaled_net_unfams = minmax_scale(net_unfams)
-    scaled_net_surps = minmax_scale(net_surps)
+    # This code relates to the old multi-surprise-model approach.
+    #net_unfams = [fl - fh for fl,fh in zip(recipe_predictions["fam_low"],recipe_predictions["fam_high"])]
+    #net_surps = [sp - sn for sp,sn in zip(recipe_predictions["surp_pos"],recipe_predictions["surp_neg"])]
+    #scaled_net_unfams = minmax_scale(net_unfams)
+    #scaled_net_surps = minmax_scale(net_surps)
     #surprises = [max(net_unfam,net_surp) for net_unfam,net_surp in zip(net_unfams,net_surps)]
-    surprises = [net_unfam/2. + net_surp for net_unfam, net_surp in zip(scaled_net_unfams, scaled_net_surps)]
+    #surprises = [net_unfam/2. + net_surp for net_unfam, net_surp in zip(scaled_net_unfams, scaled_net_surps)]
 
+    #if return_raw:
+    #    return surprises, {i:(s,f) for i,s,f in zip(recipe_ids,scaled_net_surps,scaled_net_unfams)}, ""
+    #return surprises,""
+
+    surprises = recipe_predictions["combined"]
     if return_raw:
-        return surprises, {i:(s,f) for i,s,f in zip(recipe_ids,net_surps,net_unfams)}, ""
-    return surprises,""
+        return surprises, {i:(s,s) for i,s in zip(recipe_ids,surprises)}, ""
+    scaled_surprises = minmax_scale(surprises)
+    return scaled_surprises,""
+
+
 
 # surpRecipe - returns the predicted surprise for a given user-recipe pair
 # Input:

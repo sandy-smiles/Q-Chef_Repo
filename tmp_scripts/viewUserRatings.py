@@ -33,7 +33,7 @@ with open('../server/src/data/qchef_ingredient_subclusters.json', 'r') as f:
   is_data = json.load(f)
 with open('../server/src/data/qchef_ingredient_clusters.json', 'r') as f:
   ic_data = json.load(f)
-with open('../server/src/data/qchef_recipes.json', 'r') as f:
+with open('../server/src/data/qchef_recipes_pruned.json', 'r') as f:
   r_data = json.load(f)
 
 ################################################################################
@@ -69,6 +69,44 @@ def main():
   # Turn the user's document into a dictionary
   # so that we can read from it.
   user_dict = usr_doc.to_dict()
+  import pprint
+  pprint.pprint(user_dict["servedRecipes"])
+
+  highestSurp = 0
+  highestSurpRow = -1
+  highestPref = 0
+  highestPrefRow = -1
+
+  #Write the data out to CSV
+  rows = []
+  for week,week_ratings in user_dict["servedRecipes"].items():
+    if week != "latest":
+      #Figure out which recipes they picked
+      picked = {rid:"-" for rid in week_ratings["recipes"]}
+      if str(int(week)-1) in user_dict["pickedRecipes"].keys():
+        for picked_recipe in user_dict["pickedRecipes"][str(int(week)-1)]:
+          picked[picked_recipe] = "P"
+      for recipe in zip(week_ratings["recipes"],week_ratings["predicted_surp_ratings"],week_ratings["predicted_unfam_ratings"],week_ratings["raw_surp_100_ratings"],week_ratings["taste_ratings"]):
+        recipe = list(recipe)
+        if picked[recipe[0]] == "P":
+          if recipe[3] < highestSurp:
+            highestSurp = recipe[3]
+            highestSurpRow = len(rows)
+          if recipe[4] > highestPref:
+            highestPref = recipe[4]
+            highestPrefRow = len(rows)
+        rows.append([week]+recipe+[picked[recipe[0]]])
+
+  rows[highestSurpRow][-1] += "S"
+  rows[highestPrefRow][-1] += "T"
+  import csv
+  with open(usrID+"_ratings.csv", "w") as csvfile:
+    writer = csv.writer(csvfile)
+    writer.writerows(rows)
+  import sys
+
+
+  sys.exit()
 
 
   # Ask if we wish to view the recipe reviews

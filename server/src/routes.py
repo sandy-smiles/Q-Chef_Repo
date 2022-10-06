@@ -369,6 +369,7 @@ def createUserProfile(user_id, server_settings):
 
   if server_settings["experimentalState"] or server_settings["longitudinalState"]:
     server_settings['groupNum'][str(int_user_group)] += 1
+    server_settings["experimental_participants"].append(user_id)
   err = updateDocument('server', 'settings', server_settings)
   if err:
     err = f"[{func_name} - ERROR]: Unable to server settings document, err = {err}"
@@ -457,6 +458,16 @@ def onboarding_ingredient_rating():
       debug(err)
       return err, 500
 
+    val_recipes = {"action_log": [], "userID": user_id}
+    for recipe_id in onboarding_recipes2.keys():
+      val_recipes["action_log"].append((int(time() * 1000), recipe_id, "validated"))
+      debug(f"[{func_name} - INFO]: val_recipes['action_log']: {val_recipes['action_log']}")
+    err = updateActionLog(val_recipes)
+    if err:
+      err = f"[{func_name} - ERROR]: Unable to update recipe(s) action log, err = {err}"
+      debug(err)
+      return err, 500
+
     return jsonify(onboarding_recipes2)
 
   debug(f"[{func_name} - INFO]: GET request")
@@ -530,6 +541,24 @@ def onboarding_recipe_rating():
     err = updateRecipeRatings(request_data, rating_types)
     if err:
       err = f"[{func_name} - ERROR]: Unable to update recipe ratings, err = {err}"
+      debug(err)
+      return err, 500
+
+  # Grab the onboarding recipes again so that we can action they were onboarded
+    on_ref, on_doc, err = retrieveDocument('onboarding', 'recipes')
+    if err:
+      err = f"[{func_name} - ERROR]: Unable to retrieve recipes for onboarding, err = {err}"
+      debug(err)
+      return err, 500
+
+    on_doc_dict = on_doc.to_dict()
+    on_recipes = {"action_log": [], "userID": user_id}
+    for recipe_id in on_doc_dict.keys():
+      on_recipes["action_log"].append((int(time() * 1000), recipe_id, "onboarded"))
+      debug(f"[{func_name} - INFO]: val_recipes['action_log']: {on_recipes['action_log']}")
+    err = updateActionLog(on_recipes)
+    if err:
+      err = f"[{func_name} - ERROR]: Unable to update recipe(s) action log, err = {err}"
       debug(err)
       return err, 500
 
@@ -636,7 +665,7 @@ def get_meal_plan_selection():
       return err, 500
     user_dict = user_doc.to_dict()
     user_dict['user_id'] = user_id
-    debug(f"[{func_name} - ALWAYS]: User_dict pre history: {user_dict}")
+    debug(f"[{func_name} - INFO]: User_dict pre history: {user_dict}")
 
     # Attempt to grab user's history
     user_history_ref, user_history, err = getUserHistoryDocument(user_id)
@@ -648,7 +677,7 @@ def get_meal_plan_selection():
       user_dict["history"] = {}
     else:
       user_dict["history"] = user_history.to_dict()
-    debug(f"[{func_name} - ALWAYS]: User_dict post history: {user_dict}")
+    debug(f"[{func_name} - INFO]: User_dict post history: {user_dict}")
 
     #num_wanted_recipes = request_data['number_of_recipes']
     num_wanted_recipes = recipesReturned
@@ -666,7 +695,7 @@ def get_meal_plan_selection():
     served_recipes = {"action_log":[],"userID":user_id}
     for recipe_id in ret_recipes.keys():
       served_recipes["action_log"].append((int(time()*1000),recipe_id,"served"))
-      debug(f"[{func_name} - ALWAYS]: served_recipes['action_log']: {served_recipes['action_log']}")
+      debug(f"[{func_name} - INFO]: served_recipes['action_log']: {served_recipes['action_log']}")
     err = updateActionLog(served_recipes)
 
     if err:

@@ -10,6 +10,7 @@ from sklearn.preprocessing import minmax_scale
 import numpy as np
 import copy
 from time import time
+from scipy.spatial import distance
 
 ################################################################################
 # Constants
@@ -20,6 +21,9 @@ MILLIS_PER_MONTH = 2629800000
 EXPERIMENTAL_STATE_OVERRIDE = "" # Set to "experimental", "longitudinal", "taste","surprise", or "taste+surprise" to override server, or "" to follow server behaviour
 COMBO_ALGO_OVERRIDE = "" # Set to "avg" or "pareto" to override server, or "" to follow server config
 USE_VECTOR_ESTIMATOR = True
+SIMILAR_RECIPE_PENALTY = 0.1
+SERVED_RECIPE_PENALTY = 0.1
+MAX_SIM_BEFORE_PENALTY = 0.8 #The penalty will be 0 for anything with a cosine similarity less than this, ranging up to SIMILARITY_RECIPE_PENALTY for recipes substantially identical to the candidate.
 
 rating_types = ['taste',
                 'familiarity',
@@ -161,6 +165,92 @@ def getRecipeRating(user_dict, recipe_id, rating_type):
 
   return sumIngredientRatings/numIngredientRatings, ''
 
+# Retrieve the recipes the user has seen, with options to ignore validation and onboarding
+def getSeenRecipes(user_dict, exclude_validation=True, exclude_onboarding=True):
+  exclude_list = []
+  if exclude_validation and "-1" in user_dict["servedRecipes"].keys():
+    exclude_list += user_dict["servedRecipes"]["-1"]
+  if exclude_onboarding:
+    # Retrieve the onboarding recipes
+    onboarding_doc_ref, onboarding_doc, err = retrieveDocument('onboarding', 'recipes')
+    if err:
+      return None, err
+    onboarding_dict = onboarding_doc.to_dict()
+    exclude_list += onboarding_dict.keys()
+  #debug(f'[getSeenRecipes - ALWAYS]: user_dict["r_taste"].keys(): {user_dict["r_taste"].keys()}')
+  #debug(f'[getSeenRecipes - ALWAYS]: user_dict["pickedRecipes"]: {user_dict["pickedRecipes"]}')
+  return [rid for rid in user_dict['r_taste'].keys() if not rid in exclude_list]
+
+#Score penaliser for greedy diversity pruner
+def getSimilarityPenalisedScore(candidate_vector, candidate_score, best_recipe_vectors):
+  debug(f'[getSimilarityPenalisedScore - DATA]: candidate vector shape: {candidate_vector.shape}, best_recipe_vectors shapes: {[brv.shape for brv in best_recipe_vectors]}')
+  sims = [1. - distance.cosine(candidate_vector, rv) for rv in best_recipe_vectors]
+  max_sim = max(0,max(sims)) # If somehow all recipes are opposites, take 0 instead
+  max_sim *= max_sim # Square the (now guaranteed to be positive) similarity.
+  max_sim = max(max_sim-(MAX_SIM_BEFORE_PENALTY*MAX_SIM_BEFORE_PENALTY),0) #Subtract the square of the max unpenalised sim from the result and take 0 if it's negative.
+  return candidate_score - (SIMILAR_RECIPE_PENALTY * max_sim)
+
+def greedyRecipeDiversitySelection(possibleRecipes,numWantedRecipes, existing = [], fill=True):
+  debug(f'[greedyRecipeDiversitySelection - ALWAYS]: Beginning. Selecting {numWantedRecipes} from among {len(possibleRecipes)}')
+  try:
+    debug(f'[greedyRecipeDiversitySelection - ALWAYS]: existing shapes: {[e.shape for e in existing]}')
+  except:
+    debug(f'[greedyRecipeDiversitySelection - ALWAYS]: existing has no shape.')
+  skipped_recipe_ids = []
+  next_best_index = 0
+  if len(existing):
+    #Then we can't guarantee that the first one is the best starting candidate
+    bestRecipes = []
+    bestRecipeVectors = {}
+  else:
+    bestRecipes = [possibleRecipes[0]]
+    bestRecipeVectors = {possibleRecipes[0][1]: np.array(g.r_data[possibleRecipes[0][1]]["vector"])}
+    debug(f'[greedyRecipeDiversitySelection - ALWAYS]: {next_best_index} has been selected to be kept, currently {len(bestRecipes)} in the selected list.')
+    next_best_index = 1
+  next_best_vector = np.array(g.r_data[possibleRecipes[next_best_index][1]]["vector"])
+  next_best_penalised_score = getSimilarityPenalisedScore(next_best_vector, possibleRecipes[next_best_index][0], existing +
+                                                          [bestRecipeVectors[rid] for _, rid in bestRecipes])
+  candidate_index = next_best_index + 1
+  while len(bestRecipes) < numWantedRecipes and next_best_index < len(possibleRecipes):  #
+    if candidate_index >= len(possibleRecipes) or possibleRecipes[candidate_index][0] <= next_best_penalised_score:
+      # We've hit the end of the list or we've hit the point where we can't possibly find a higher score, so we add this recipe and reset the search.
+      bestRecipes.append(possibleRecipes[next_best_index])
+      bestRecipeVectors[possibleRecipes[next_best_index][1]] = next_best_vector
+      debug(f'[greedyRecipeDiversitySelection - ALWAYS]: {next_best_index} has been selected to be kept, currently {len(bestRecipes)} in the selected list.')
+      next_best_index = next_best_index + 1
+      if next_best_index < len(possibleRecipes):
+        next_best_vector = np.array(g.r_data[possibleRecipes[next_best_index][1]]["vector"])
+        next_best_penalised_score = getSimilarityPenalisedScore(next_best_vector, possibleRecipes[next_best_index][0], existing +
+                                                                [bestRecipeVectors[rid] for _, rid in bestRecipes])
+
+        debug(f'[greedyRecipeDiversitySelection - ALWAYS]: Current candidate is {next_best_index} with a penalised score of {next_best_penalised_score}, and it has become the best current candidate to be kept.')
+        candidate_index = next_best_index + 1
+    else:
+      candidate_vector = np.array(g.r_data[possibleRecipes[candidate_index][1]]["vector"])
+      candidate_penalised_score = getSimilarityPenalisedScore(candidate_vector, possibleRecipes[candidate_index][0], existing +
+                                                              [bestRecipeVectors[rid] for _, rid in bestRecipes])
+      debug(f'[greedyRecipeDiversitySelection - ALWAYS]: Current candidate is {candidate_index} with a penalised score of {candidate_penalised_score} vs the current best {next_best_penalised_score} (#{next_best_index})')
+      if candidate_penalised_score > next_best_penalised_score:
+        debug(f'[greedyRecipeDiversitySelection - ALWAYS]: {candidate_index} has become the best current candidate to be kept.')
+        next_best_index = candidate_index
+        next_best_vector = candidate_vector
+        next_best_penalised_score = candidate_penalised_score
+        candidate_index = next_best_index + 1
+      else:
+        skipped_recipe_ids.append(possibleRecipes[candidate_index][1])
+        candidate_index += 1
+  if len(possibleRecipes) >= numWantedRecipes:
+    selected_avg = sum([r[0] for r in bestRecipes]) / float(numWantedRecipes)
+    top_avg = sum([r[0] for r in possibleRecipes[:numWantedRecipes]]) / float(numWantedRecipes)
+    debug(f'[greedyRecipeDiversitySelection - ALWAYS]: {len(set(skipped_recipe_ids))} skipped of {len(possibleRecipes)} total options.  Average score of selection was {selected_avg} vs average score of top {numWantedRecipes}: {top_avg}')
+  else:
+    debug(f'[greedyRecipeDiversitySelection - ALWAYS]: {len(set(skipped_recipe_ids))} skipped of {len(possibleRecipes)} total options.  There were fewer options than the number of wanted recipes.')
+  if fill and len(bestRecipes) < numWantedRecipes:
+    missing_recipes = numWantedRecipes - len(bestRecipes)
+    return bestRecipes + [possibleRecipes[rid] for rid in skipped_recipe_ids[:missing_recipes]]
+  else:
+    return bestRecipes
+
 ################################################################################
 # getTasteRecipes
 # Returns a constant times wanted number of recipes 
@@ -170,7 +260,7 @@ def getRecipeRating(user_dict, recipe_id, rating_type):
 # - Output:
 #   - (dict) recipes and their information,
 #   - (string) error
-def getTasteRecipes(user_dict, trim_surprise=0):
+def getTasteRecipes(user_dict, trim_surprise=0, for_validation=False):
   debug(f'[getTasteRecipes - INFO]: Starting.')
   user_id = user_dict['user_id']
   print(f'[getTasteRecipes: Serving tasty recipes for {user_id}')
@@ -179,10 +269,16 @@ def getTasteRecipes(user_dict, trim_surprise=0):
   ## Collect list of possible recipes to pick from
   ## Noting that we won't give a user a recipe they have already tried.
 
-  # Retrieve the user's info
-  user_recipes = list(user_dict['r_taste'].keys())
+
+  user_recipes = getSeenRecipes(user_dict, exclude_onboarding = not for_validation)
+  #if -1 in user_dict["servedRecipes"].keys(): # If they've done the validation step of the onboarding
+  #  #Then the recipes they won't see are the ones that weren't part of validation but do have a taste rating
+  #  user_recipes = [rid for rid in user_dict['r_taste'].keys() if not rid in user_dict["servedRecipes"][-1]]
+  #else:
+  #  user_recipes = list(user_dict['r_taste'].keys())
+
   
-  # Retrieve the recipe collection
+  # Retrieve the recipe collection and its preferences
   possibleRecipes = []
   recipe_ids = g.r_data.keys()
   err = f'[getTasteRecipes - HELP]: For user {user_id}, recipe {user_recipes} have already been rated.'
@@ -207,14 +303,37 @@ def getTasteRecipes(user_dict, trim_surprise=0):
 
     userRecipeSurps = minmax_scale(userRecipeSurps)
     user_surp_thresh = np.percentile(userRecipeSurps, trim_surprise * 100.)
+    debug(f'[getTasteRecipes - ALWAYS]: For user {user_id},user_surp_thresh was {user_surp_thresh}')
+    untrimmed_length = len(possibleRecipes)
     possibleRecipes = [r for i,r in enumerate(possibleRecipes) if userRecipeSurps[i] <= user_surp_thresh]
+    debug(f'[getTasteRecipes - ALWAYS]: {untrimmed_length - len(possibleRecipes)} out of {untrimmed_length} recipes were removed for being too high surprise.')
+
+  # Reduce the preferences of any recipes that we've seen before.
+  for k,v in enumerate(possibleRecipes):
+    pref = v[0]
+    rid = v[1]
+    if rid in user_dict["history"].keys() and ("served" in user_dict["history"][rid].values() or user_dict["servedRecipes"]["latest"] < 1):
+      # If we're in the first two meal plans and something has been onboarded or validated, it won't have been "served", hence max.
+      num_times_served = max(1, list(user_dict["history"][rid].values()).count("served"))
+      debug(f'[getTasteRecipes - DATA]: For user {user_id}, recipe {rid} has already been recommended, so subtracting {SERVED_RECIPE_PENALTY*num_times_served}.')
+      possibleRecipes[k] = (pref - SERVED_RECIPE_PENALTY*num_times_served,rid)
+
 
   possibleRecipes.sort(reverse=True)
-  # Check that there are enough recipes to serve up.
-  if len(possibleRecipes) >= numWantedRecipes:
-    possibleRecipes = possibleRecipes[:numWantedRecipes]
-  elif len(untrimmedRecipes) >= numWantedRecipes: # If we don't have enough recipes post surprise-trim, include some of the higher surprise ones anyway.
-    possibleRecipes = untrimmedRecipes[:numWantedRecipes]
+
+  if len(possibleRecipes) == 0:
+    error = f'[getTasteRecipes - ERROR]: For user {user_id}, no possible recipes were found.'
+    return None,error
+  if SIMILAR_RECIPE_PENALTY > 0 and len(possibleRecipes) > numWantedRecipes:
+    possibleRecipes = greedyRecipeDiversitySelection(possibleRecipes,numWantedRecipes)
+    debug(f'[getTasteRecipes - ALWAYS]: possibleRecipes[:10] after diversity selection: {possibleRecipes[:10]}')
+  else:
+    debug(f'[getTasteRecipes - ALWAYS]: possibleRecipes[:10] {possibleRecipes[:10]}')
+    # Check that there are enough recipes to serve up.
+    if len(possibleRecipes) >= numWantedRecipes:
+      possibleRecipes = possibleRecipes[:numWantedRecipes]
+    elif len(untrimmedRecipes) >= numWantedRecipes: # If we don't have enough recipes post surprise-trim, include some of the higher surprise ones anyway.
+      possibleRecipes = untrimmedRecipes[:numWantedRecipes]
 
   if trim_surprise > 0:
     updateServedRecipes(user_id, user_dict,
@@ -280,8 +399,12 @@ def getTasteAndSurpRecipes(user_dict, server_dict, drop_thresh = 0.33, surp_drop
   ## Collect list of possible recipes to pick from
   ## Noting that we won't give a user a recipe they have already tried.
 
-  # Retrieve the user's info
-  user_recipes = list(user_dict['r_taste'].keys())
+  user_recipes = getSeenRecipes(user_dict)
+  #if -1 in user_dict["servedRecipes"].keys():
+  #  user_recipes = [rid for rid in user_dict['r_taste'].keys() if not rid in user_dict["servedRecipes"][-1]]
+  #else:
+  #  user_recipes = list(user_dict['r_taste'].keys())
+
 
   # Retrieve the recipe collection
   userRecipeSurps = []
@@ -328,10 +451,11 @@ def getTasteAndSurpRecipes(user_dict, server_dict, drop_thresh = 0.33, surp_drop
 
   # Reduce the preferences of any recipes that we've seen before.
   for rid,prefs in possibleRecipesDict.items():
-    if rid in user_dict["history"].keys():
-      if user_dict["servedRecipes"]["latest"] < 1 or not rid in user_dict["servedRecipes"][-1]["recipe_ids"]:
-        debug(f'[getTasteAndSurpRecipes - INFO]: For user {user_id}, recipe {recipe_id} has already been recommended, so halving both pref and surprise.')
-        possibleRecipesDict[rid] = (prefs[0]*.5, prefs[1]*.5) # Currently just halving the prefs of anything we've seen, which should pretty seriously nerf their chances.
+    if rid in user_dict["history"].keys() and ("served" in user_dict["history"][rid].values() or user_dict["servedRecipes"]["latest"] < 1):
+      # If we're in the first two meal plans and something has been onboarded or validated, it won't have been "served", hence max.
+      num_times_served = max(1, list(user_dict["history"][rid].values()).count("served"))
+      possibleRecipesDict[rid] = (prefs[0] - SERVED_RECIPE_PENALTY*num_times_served, prefs[1]  - SERVED_RECIPE_PENALTY*num_times_served)
+      debug(f'[getTasteAndSurpRecipes - DATA]: For user {user_id}, recipe {rid} has already been recommended, so subtracting {SERVED_RECIPE_PENALTY*num_times_served}.')
 
 
   # Check that there are enough recipes to serve up, and if so run the sorting algorithm.
@@ -339,7 +463,10 @@ def getTasteAndSurpRecipes(user_dict, server_dict, drop_thresh = 0.33, surp_drop
     if taste_surp_combo_method == "avg":
       possibleRecipes = [((val[0]+val[1])/2., rid) for rid,val in possibleRecipesDict.items()]
       possibleRecipes.sort(reverse=True)
-      possibleRecipes = possibleRecipes[:numWantedRecipes]
+      if SIMILAR_RECIPE_PENALTY > 0 :
+        possibleRecipes = greedyRecipeDiversitySelection(possibleRecipes, numWantedRecipes)
+      else:
+        possibleRecipes = possibleRecipes[:numWantedRecipes]
       chosenRecipeIDs = [r[1] for r in possibleRecipes]
     elif taste_surp_combo_method == "pareto":
       chosenRecipeIDs = paretoRecipeSort(possibleRecipesDict,numWantedRecipes)
@@ -351,12 +478,12 @@ def getTasteAndSurpRecipes(user_dict, server_dict, drop_thresh = 0.33, surp_drop
   debug(f"[getTasteAndSurpRecipes - DATA]: Found chosenRecipeIDs: {chosenRecipeIDs}")
 
   updateServedRecipes(user_id, user_dict,
-                      recipe_ids=[r[1] for r in possibleRecipes],
-                      taste_ratings=[userRecipePrefDict[rid] for _,rid in possibleRecipes],
-                      raw_surp_max_ratings=[g.r_data[r[1]]["surprises"]["100%"] for r in possibleRecipes],
-                      raw_surp_95_ratings=[g.r_data[r[1]]["surprises"]["95%"] for r in possibleRecipes],
-                      predicted_surp_ratings=[userPredictedSurpAndFam[r[1]][0] for r in possibleRecipes],
-                      predicted_unfam_ratings=[userPredictedSurpAndFam[r[1]][1] for r in possibleRecipes])
+                      recipe_ids=chosenRecipeIDs,
+                      taste_ratings=[userRecipePrefDict[rid] for rid in chosenRecipeIDs],
+                      raw_surp_max_ratings=[g.r_data[rid]["surprises"]["100%"] for rid in chosenRecipeIDs],
+                      raw_surp_95_ratings=[g.r_data[rid]["surprises"]["95%"] for rid in chosenRecipeIDs],
+                      predicted_surp_ratings=[userPredictedSurpAndFam[rid][0] for rid in chosenRecipeIDs],
+                      predicted_unfam_ratings=[userPredictedSurpAndFam[rid][1] for rid in chosenRecipeIDs])
 
   # Grab the recipe information to be returned in the json
   recipe_info = {}
@@ -390,8 +517,9 @@ def getSurpRecipes(user_dict):
   ## Collect list of possible recipes to pick from
   ## Noting that we won't give a user a recipe they have already tried.
 
-  # Retrieve the user's info
-  user_recipes = list(user_dict['r_taste'].keys())
+
+  user_recipes = getSeenRecipes(user_dict)
+  #user_recipes = list(user_dict['r_taste'].keys())
 
   # Retrieve the recipe collection
   possibleRecipes = []
@@ -415,11 +543,29 @@ def getSurpRecipes(user_dict):
       continue  # Just ignore this recipe then.
     possibleRecipes.append((userRecipeSurp, recipe_id))
 
+  # Reduce the preferences of any recipes that we've seen before.
+  for k,v in enumerate(possibleRecipes):
+    surp = v[0]
+    rid = v[1]
+    if rid in user_dict["history"].keys() and ("served" in user_dict["history"][rid].values() or user_dict["servedRecipes"]["latest"] < 1):
+      # If we're in the first two meal plans and something has been onboarded or validated, it won't have been "served", hence max.
+      num_times_served = max(1, list(user_dict["history"][rid].values()).count("served"))
+      debug(f'[getSurpRecipes - DATA]: For user {user_id}, recipe {rid} has already been recommended, so subtracting {SERVED_RECIPE_PENALTY*num_times_served}.')
+      possibleRecipes[k] = (surp - SERVED_RECIPE_PENALTY*num_times_served, rid)
+
+  if len(possibleRecipes) == 0:
+    error = f'[getTasteRecipes - ERROR]: For user {user_id}, no possible recipes were found.'
+    return None,error
+
   possibleRecipes.sort(reverse=True)
-  # Check that there are enough recipes to serve up.
-  numPossibleRecipes = len(possibleRecipes)
-  if numPossibleRecipes > numWantedRecipes:
-    possibleRecipes = possibleRecipes[:numWantedRecipes]
+
+  if SIMILAR_RECIPE_PENALTY > 0 and len(possibleRecipes) > numWantedRecipes:
+    possibleRecipes = greedyRecipeDiversitySelection(possibleRecipes,numWantedRecipes)
+  else:
+    # Just check that there are enough recipes to serve up, then truncate
+    numPossibleRecipes = len(possibleRecipes)
+    if numPossibleRecipes > numWantedRecipes:
+      possibleRecipes = possibleRecipes[:numWantedRecipes]
 
   updateServedRecipes(user_id, user_dict,
                       recipe_ids=[r[1] for r in possibleRecipes],
@@ -505,8 +651,17 @@ def paretoRecipeSort(possibleRecipesDict,numWanted):
     possibleRecipeIDs,possibleRecipeList = zip(*[(k,v) for k,v in possibleRecipesDict.items() if k not in dominant_ids])
     possibleRecipesArray = np.array(possibleRecipeList)
     next_pareto_front = isParetoEfficient(possibleRecipesArray,return_mask = False)
-    if next_pareto_front.shape[0] + len(dominant_ids) > numWanted:
-      next_pareto_front = np.random.choice(next_pareto_front,size=numWanted-len(dominant_ids),replace=False)
+    if SIMILAR_RECIPE_PENALTY > 0:
+      rid_to_index = {possibleRecipeIDs[id]:id for id in next_pareto_front}
+      possibleRecipesInFront = [(1,possibleRecipeIDs[id]) for id in next_pareto_front]
+      if len(dominant_ids):
+        existing_vectors = [np.array(g.r_data[rid]["vector"]) for rid in dominant_ids]
+      else:
+        existing_vectors = []
+      next_pareto_front_rids = greedyRecipeDiversitySelection(possibleRecipesInFront, numWanted-len(dominant_ids), existing = existing_vectors, fill=False)
+      next_pareto_front = [rid_to_index[rid] for _, rid in next_pareto_front_rids]
+    elif next_pareto_front.shape[0] + len(dominant_ids) > numWanted:
+        next_pareto_front = np.random.choice(next_pareto_front,size=numWanted-len(dominant_ids),replace=False)
     dominant_ids += [possibleRecipeIDs[id] for id in (next_pareto_front)]
     numRecursions += 1
   debug(f'[paretoRecipeSort - INFO]: Needed {numRecursions} to get required recipes.')
@@ -538,7 +693,7 @@ def getRecipes(user_dict, server_settings, validation=False):
   server_dict = server_doc.to_dict()
 
   if validation:
-    return getTasteRecipes(user_dict)
+    return getTasteRecipes(user_dict, for_validation=True)
 
   ## Check current hard_code server setting override.
   if len(EXPERIMENTAL_STATE_OVERRIDE):
@@ -752,14 +907,14 @@ def updateSingleRecipeRating(user_dict, recipe_id, ratings, rating_types):
     if not (rating_type in rating_types):
       err = f'[updateSingleRecipeRating - ERROR]: rating_type {rating_type} is not a known rating type.'
       debug(err)
-      return err
+      return None, err
 
   # Check that the user has NOT already rated this recipe...
   try:
     user_dict['r_'+rating_type[0]][recipe_id]
     err = f'[updateSingleRecipeRating - HELP]: recipe {recipe_id} has already been rated. Skipping re-rating.'
     debug(err)
-    return err
+    return None, err
   except:
     pass
 
@@ -769,7 +924,7 @@ def updateSingleRecipeRating(user_dict, recipe_id, ratings, rating_types):
   except:
     err = f'[updateSingleRecipeRating - ERROR]: recipe {recipe_id} does not seem to exist.'
     debug(err)
-    return err
+    return None, err
 
   # Update the recipe ratings
   for rating_type in rating_types:
