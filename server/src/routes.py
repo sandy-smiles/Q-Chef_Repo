@@ -389,8 +389,33 @@ def createUserProfile(user_id, server_settings):
 
   user_doc_ref, user_doc, err = getUserDocument(user_id, server_settings)
   
-  return user_doc_ref, user_doc, err  
- 
+  return user_doc_ref, user_doc, err
+
+
+@app.route('/delete_user', methods=['POST'])
+@cross_origin()
+def delete_user():
+  func_name = "delete_user"
+  debug(f"[{func_name} - ALWAYS]: Starting.")
+  if request.method == 'POST':
+
+    # Attempt to grab server settings document
+    server_settings, err = getServerSettings()
+    if err:
+      err = f"[{func_name} - ERROR]: Unable to retrieve settings, err = {err}."
+      debug(err)
+      return err, 500
+
+    request_data, user_id, err = authentication(request, server_settings)
+    debug(f"[{func_name} - DATA]: request_data: {request_data}")
+    if err:
+      err = f"[{func_name} - ERROR]: Authentication error, err = {err}"
+      debug(err)
+      return err, 500
+
+    email = auth.get_user(user_id).email
+    auth.delete_user(user_id)
+    debug(f"[{func_name} - ALWAYS]: User {user_id} ({email}) has been deleted from the database.")
 
 ################################################################################
 # Server API URLs
