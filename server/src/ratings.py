@@ -436,6 +436,7 @@ def getTasteAndSurpRecipes(user_dict, server_dict, drop_thresh = 0.33, surp_drop
     debug(f'[getTasteAndSurpRecipes - DATA]: for user {user_id} and recipe {recipe_id} userRecipeSurp was {userRecipeSurp} and userRecipePref was {userRecipePref}')
     userRecipeSurps.append(userRecipeSurp)
     '''
+
   userRecipeSurps, userPredictedSurpAndFam, error = surpRecipes(user_dict,kept_recipe_ids, simpleSurprise=False, return_raw=True)
   if error != "":
     return None,error
@@ -448,6 +449,7 @@ def getTasteAndSurpRecipes(user_dict, server_dict, drop_thresh = 0.33, surp_drop
 
   possibleRecipesDict = {rid: (surp, pref) for surp, pref, rid in zip(userRecipeSurps, userRecipePrefs, kept_recipe_ids)
                      if surp > user_surp_thresh and pref > user_pref_thresh}
+
 
   # Reduce the preferences of any recipes that we've seen before.
   for rid,prefs in possibleRecipesDict.items():
@@ -477,6 +479,7 @@ def getTasteAndSurpRecipes(user_dict, server_dict, drop_thresh = 0.33, surp_drop
 
   debug(f"[getTasteAndSurpRecipes - DATA]: Found chosenRecipeIDs: {chosenRecipeIDs}")
 
+
   updateServedRecipes(user_id, user_dict,
                       recipe_ids=chosenRecipeIDs,
                       taste_ratings=[userRecipePrefDict[rid] for rid in chosenRecipeIDs],
@@ -484,6 +487,7 @@ def getTasteAndSurpRecipes(user_dict, server_dict, drop_thresh = 0.33, surp_drop
                       raw_surp_95_ratings=[g.r_data[rid]["surprises"]["95%"] for rid in chosenRecipeIDs],
                       predicted_surp_ratings=[userPredictedSurpAndFam[rid][0] for rid in chosenRecipeIDs],
                       predicted_unfam_ratings=[userPredictedSurpAndFam[rid][1] for rid in chosenRecipeIDs])
+
 
   # Grab the recipe information to be returned in the json
   recipe_info = {}
@@ -508,9 +512,8 @@ def getTasteAndSurpRecipes(user_dict, server_dict, drop_thresh = 0.33, surp_drop
 #   - (dict) recipes and their information,
 #   - (string) error
 def getSurpRecipes(user_dict):
-  debug(f'[getSurpRecipes - INFO]: Starting.')
   user_id = user_dict['user_id']
-  print(f'[getSurpRecipes: Serving surprising recipes for {user_id}')
+  debug(f'[getSurpRecipes - ALWAYS]: Serving surprising recipes for {user_id}')
 
   numWantedRecipes = TASTE_RECIPES_RETURNED  # recipes_wanted
 
@@ -533,14 +536,18 @@ def getSurpRecipes(user_dict):
       err = f'[getSurpRecipes - INFO]: For user {user_id}, recipe {recipe_id} has already been rated, therefore continuing...'
       debug(err)
       continue
+
+    print(f'[getSurpRecipes - INFO]: Predicting surprise for recipe id: {recipe_id} and user {user_id}')
     userRecipeSurp, predicted_surp_and_fam, err = surpRecipe(user_dict, recipe_id, simpleSurprise=False, return_raw=True)
-    predictedSurps[recipe_id] = predicted_surp_and_fam[0]
-    predictedFams[recipe_id] = predicted_surp_and_fam[1]
-    debug(f'[getSurpRecipes - DATA]: userRecipeSurp :{userRecipeSurp}')
+    print(f'[getSurpRecipes - INFO]: userRecipeSurp: {userRecipeSurp}')
+    print(f'[getSurpRecipes - INFO]: predicted_surp_and_fam: {predicted_surp_and_fam}')
     if err:
       err = f'[getSurpRecipes - ERROR]: Unable to find user {user_id} surprise preference for recipe {recipe_id}, err = {err}'
       debug(err)
       continue  # Just ignore this recipe then.
+    debug(f'[getSurpRecipes - DATA]: userRecipeSurp :{userRecipeSurp}')
+    predictedSurps[recipe_id] = predicted_surp_and_fam[0]
+    predictedFams[recipe_id] = predicted_surp_and_fam[1]
     possibleRecipes.append((userRecipeSurp, recipe_id))
 
   # Reduce the preferences of any recipes that we've seen before.

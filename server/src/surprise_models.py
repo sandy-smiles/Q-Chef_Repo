@@ -11,16 +11,16 @@ from sklearn.preprocessing import PolynomialFeatures
 
 from sklearn.preprocessing import minmax_scale
 
-#model_fns = fns={
-#    "fam_high":"./data/best_fam_high_model_10board_poly_final.joblib",
-#    "fam_low":"./data/best_fam_low_model_10board_poly_final.joblib",
-#    "surp_pos":"./data/best_surp_pos_model_10board_poly_final.joblib",
-#    "surp_neg":"./data/best_surp_neg_model_10board_poly_final.joblib"
-#}
-
 model_fns = fns={
-    "combined":"./data/best_either_surprising_model_2022_final.joblib"
+    "fam_high":"./data/best_fam_high_model_10board_poly_final.joblib",
+    "fam_low":"./data/best_fam_low_model_10board_poly_final.joblib",
+    "surp_pos":"./data/best_surp_pos_model_10board_poly_final.joblib",
+    "surp_neg":"./data/best_surp_neg_model_10board_poly_final.joblib"
 }
+
+#model_fns = fns={
+#    "combined":"./data/best_either_surprising_model_2022_final.joblib"
+#}
 
 
 ######## Surprise Helper Functions ########
@@ -253,6 +253,7 @@ def predict_many_users_one_recipe(model, users, recipe_id, weight_id = None):
             return None,col+" is not a supported model feature."
         X[col] = [feature] * len(users)
     archetype_similarities = archetypeSimilarities(g.r_data[recipe_id])
+
     for col in model["user_pset"]:
         if not "onboarding" in col:
                 return None, col + " is not a supported model feature."
@@ -298,6 +299,7 @@ def predict_one_user_many_recipes(model, user, recipe_ids, weight_ids = None):
         else:
             return None,col+" is not a supported model feature."
         X[col] = features
+
     for col in model["user_pset"]:
         if not "onboarding" in col:
                 return None, col + " is not a supported model feature."
@@ -315,9 +317,11 @@ def predict_one_user_many_recipes(model, user, recipe_ids, weight_ids = None):
         else:
             features = [np.mean(archetype_ratings)] * len(recipe_ids)
         X[col] = features
+
     if model["poly_features"] > 0:
         X = PolynomialFeatures(model["poly_features"]).fit_transform(X)
     X_scaled = model["scaler"].transform(X)
+
     if "decision_norm" in model.keys():
         return model["predictor"].decision_function(X_scaled) / model["decision_norm"],""
     else:
@@ -345,28 +349,30 @@ def advancedSurpRecipe(user, recipe_id, return_raw=False):
                 return None, None, error
             return None,error
 
-    surprise = recipe_predictions["combined"]
-    debug(f'[advancedSurpRecipe - DATA]: surp for {recipe_id} :{surprise}')
-    if return_raw:
-        return surprise, (surprise, surprise), ""
-    return surprise,""
-    # This code relates to the old multi-surprise-model approach.
-    #net_unfam = recipe_predictions["fam_low"] - recipe_predictions["fam_high"]
 
-    #debug(f'[advancedSurpRecipe - DATA]: fam_high for {recipe_id} :{recipe_predictions["fam_high"]}')
-    #debug(f'[advancedSurpRecipe - DATA]: fam_low for {recipe_id} :{recipe_predictions["fam_low"]}')
-    #debug(f'[advancedSurpRecipe - DATA]: net_unfam for {recipe_id} :{net_unfam}')
-    #net_surp = recipe_predictions["surp_pos"] - recipe_predictions["surp_neg"]
-    #debug(f'[advancedSurpRecipe - DATA]: surp_pos for {recipe_id} :{recipe_predictions["surp_pos"]}')
-    #debug(f'[advancedSurpRecipe - DATA]: surp_neg for {recipe_id} :{recipe_predictions["surp_neg"]}')
-    #debug(f'[advancedSurpRecipe - DATA]: net_surp for {recipe_id} :{net_surp}')
-
-    #surprise = max(net_unfam,net_surp).item()
-    #surprise = net_unfam/2.+net_surp
-    #debug(f'[advancedSurpRecipe - DATA]: surprise for {recipe_id} :{surprise}')
+    #This code relates to the single "combined" surprise predictor that wasn't actually working and we rolled back.
+    #surprise = recipe_predictions["combined"]
+    #debug(f'[advancedSurpRecipe - ALWAYS]: surp for {recipe_id} :{surprise}')
     #if return_raw:
-    #    return surprise, (net_surp, net_unfam), ""
+    #    return surprise, (surprise, surprise), ""
     #return surprise,""
+
+    # This code relates to the original multi-surprise-model approach, which we rolled back to.
+    net_unfam = recipe_predictions["fam_low"] - recipe_predictions["fam_high"]
+    debug(f'[advancedSurpRecipe - DATA]: fam_high for {recipe_id} :{recipe_predictions["fam_high"]}')
+    debug(f'[advancedSurpRecipe - DATA]: fam_low for {recipe_id} :{recipe_predictions["fam_low"]}')
+    debug(f'[advancedSurpRecipe - DATA]: net_unfam for {recipe_id} :{net_unfam}')
+    net_surp = recipe_predictions["surp_pos"] - recipe_predictions["surp_neg"]
+    debug(f'[advancedSurpRecipe - DATA]: surp_pos for {recipe_id} :{recipe_predictions["surp_pos"]}')
+    debug(f'[advancedSurpRecipe - DATA]: surp_neg for {recipe_id} :{recipe_predictions["surp_neg"]}')
+    debug(f'[advancedSurpRecipe - DATA]: net_surp for {recipe_id} :{net_surp}')
+
+    surprise = max(net_unfam,net_surp).item()
+    #surprise = net_unfam/2.+net_surp
+    debug(f'[advancedSurpRecipe - DATA]: surprise for {recipe_id} :{surprise}')
+    if return_raw:
+        return surprise, (net_surp, net_unfam), ""
+    return surprise,""
 
 # advancedSurpRecipes - returns the surprise score for a given user-recipe pair
 # Input:
@@ -389,23 +395,24 @@ def advancedSurpRecipes(user, recipe_ids, return_raw=False):
                 return None, None, error
             return None,error
 
-    # This code relates to the old multi-surprise-model approach.
-    #net_unfams = [fl - fh for fl,fh in zip(recipe_predictions["fam_low"],recipe_predictions["fam_high"])]
-    #net_surps = [sp - sn for sp,sn in zip(recipe_predictions["surp_pos"],recipe_predictions["surp_neg"])]
-    #scaled_net_unfams = minmax_scale(net_unfams)
-    #scaled_net_surps = minmax_scale(net_surps)
-    #surprises = [max(net_unfam,net_surp) for net_unfam,net_surp in zip(net_unfams,net_surps)]
+    # This code relates to the original multi-surprise-model approach, which we rolled back to.
+    net_unfams = [fl - fh for fl,fh in zip(recipe_predictions["fam_low"],recipe_predictions["fam_high"])]
+    net_surps = [sp - sn for sp,sn in zip(recipe_predictions["surp_pos"],recipe_predictions["surp_neg"])]
+    scaled_net_unfams = minmax_scale(net_unfams)
+    scaled_net_surps = minmax_scale(net_surps)
+    surprises = [max(net_unfam,net_surp) for net_unfam,net_surp in zip(net_unfams,net_surps)]
     #surprises = [net_unfam/2. + net_surp for net_unfam, net_surp in zip(scaled_net_unfams, scaled_net_surps)]
 
-    #if return_raw:
-    #    return surprises, {i:(s,f) for i,s,f in zip(recipe_ids,scaled_net_surps,scaled_net_unfams)}, ""
-    #return surprises,""
-
-    surprises = recipe_predictions["combined"]
     if return_raw:
-        return surprises, {i:(s,s) for i,s in zip(recipe_ids,surprises)}, ""
-    scaled_surprises = minmax_scale(surprises)
-    return scaled_surprises,""
+        return surprises, {i:(s,f) for i,s,f in zip(recipe_ids,scaled_net_surps,scaled_net_unfams)}, ""
+    return surprises,""
+
+    #This code relates to the single "combined" surprise predictor that wasn't actually working and we rolled back.
+    #surprises = recipe_predictions["combined"]
+    #if return_raw:
+    #    return surprises, {i:(s,s) for i,s in zip(recipe_ids,surprises)}, ""
+    #scaled_surprises = minmax_scale(surprises)
+    #return scaled_surprises,""
 
 
 

@@ -66,7 +66,7 @@ def main():
         if "pickedRecipes" in user_dict.keys() and user_dict["pickedRecipes"]["latest"] >= num_ratings_required:
             print("Extracting reviews for "+ usrID)
 
-            highestSurp = 10000
+            highestSurp = -10000
             highestSurpRow = -1
             highestPref = -10000
             highestPrefRow = -1
@@ -88,11 +88,11 @@ def main():
                                       week_ratings["taste_ratings"]):
                         recipe = list(recipe)
                         if picked[recipe[0]] == "P":
-                            if recipe[3] < highestSurp:
-                                highestSurp = recipe[3]
+                            if recipe[2] > highestSurp:
+                                highestSurp = recipe[2]
                                 highestSurpRow = len(rows)
-                            if recipe[4] > highestPref:
-                                highestPref = recipe[4]
+                            if recipe[5] > highestPref:
+                                highestPref = recipe[5]
                                 highestPrefRow = len(rows)
                         rows.append([week] + recipe + [picked[recipe[0]]])
 

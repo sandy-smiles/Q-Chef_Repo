@@ -106,9 +106,6 @@ def main():
   import sys
 
 
-  sys.exit()
-
-
   # Ask if we wish to view the recipe reviews
   prompt_str = f"\nDo you wish to see the {usrID}'s recipe reviews? [Y/n] "
   see_reviews = ('n' not in input(prompt_str).lower())
