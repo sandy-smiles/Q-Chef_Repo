@@ -417,6 +417,8 @@ def delete_user():
     auth.delete_user(user_id)
     debug(f"[{func_name} - ALWAYS]: User {user_id} ({email}) has been deleted from the database.")
 
+    return ""
+
 ################################################################################
 # Server API URLs
 ################################################################################
