@@ -719,9 +719,9 @@ def getRecipes(user_dict, server_settings, validation=False):
       elif user_group == 1:
         return getTasteAndSurpRecipes(user_dict, server_dict, drop_thresh = 0.5, taste_surp_combo_method="avg")
       elif user_group == 2:
-        return getTasteAndSurpRecipes(user_dict, server_dict, taste_drop_thresh=0.33, surp_drop_thresh=0, taste_surp_combo_method="pareto")
+        return getTasteAndSurpRecipes(user_dict, server_dict, taste_drop_thresh=0.33, surp_drop_thresh=0, taste_surp_combo_method="pareto_raw") # Raw Frontier
       elif user_group == 3:
-        return getTasteAndSurpRecipes(user_dict, server_dict, taste_drop_thresh=0.33, surp_drop_thresh=0, taste_surp_combo_method="pareto_raw")
+        return getTasteAndSurpRecipes(user_dict, server_dict, taste_drop_thresh=0.33, surp_drop_thresh=0, taste_surp_combo_method="pareto") # Original Frontier
     #If we're in teh lab study situation, with two user groups.
     elif EXPERIMENTAL_STATE_OVERRIDE == 'experimental':
       expReturn = {0: getTasteRecipes, 1: getTasteAndSurpRecipes}
@@ -752,9 +752,9 @@ def getRecipes(user_dict, server_settings, validation=False):
     elif user_group == 1:
       return getTasteAndSurpRecipes(user_dict, server_dict, drop_thresh = 0.5, taste_surp_combo_method="avg")
     elif user_group == 2:
-      return getTasteAndSurpRecipes(user_dict, server_dict, taste_drop_thresh=0.33, surp_drop_thresh=0., taste_surp_combo_method="pareto")
+      return getTasteAndSurpRecipes(user_dict, server_dict, taste_drop_thresh=0.33, surp_drop_thresh=0, taste_surp_combo_method="pareto_raw") # Raw Frontier
     elif user_group == 3:
-      return getTasteAndSurpRecipes(user_dict, server_dict, taste_drop_thresh=0.33, surp_drop_thresh=0, taste_surp_combo_method="pareto_raw")
+      return getTasteAndSurpRecipes(user_dict, server_dict, taste_drop_thresh=0.33, surp_drop_thresh=0., taste_surp_combo_method="pareto") # Original Frontier
 
   # If we're in the lab study situation, with two user groups.
   if server_dict['experimentalState']:
