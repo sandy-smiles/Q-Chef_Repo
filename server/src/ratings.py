@@ -437,7 +437,10 @@ def getTasteAndSurpRecipes(user_dict, server_dict, drop_thresh = 0.33, surp_drop
     userRecipeSurps.append(userRecipeSurp)
     '''
 
-  userRecipeSurps, userPredictedSurpAndFam, error = surpRecipes(user_dict,kept_recipe_ids, simpleSurprise=False, return_raw=True)
+  if taste_surp_combo_method == "pareto_raw":
+    userRecipeSurps, userPredictedSurpAndFam, error = surpRecipes(user_dict,kept_recipe_ids, simpleSurprise=True, return_raw=True)
+  else:
+    userRecipeSurps, userPredictedSurpAndFam, error = surpRecipes(user_dict,kept_recipe_ids, simpleSurprise=False, return_raw=True)
   if error != "":
     return None,error
 
@@ -470,7 +473,7 @@ def getTasteAndSurpRecipes(user_dict, server_dict, drop_thresh = 0.33, surp_drop
       else:
         possibleRecipes = possibleRecipes[:numWantedRecipes]
       chosenRecipeIDs = [r[1] for r in possibleRecipes]
-    elif taste_surp_combo_method == "pareto":
+    elif "pareto" in taste_surp_combo_method:
       chosenRecipeIDs = paretoRecipeSort(possibleRecipesDict,numWantedRecipes)
   else:
     #possibleRecipes = [(1,rid) for rid in possibleRecipesDict.keys()]
@@ -716,6 +719,8 @@ def getRecipes(user_dict, server_settings, validation=False):
         return getTasteAndSurpRecipes(user_dict, server_dict, drop_thresh = 0.5, taste_surp_combo_method="avg")
       elif user_group == 2:
         return getTasteAndSurpRecipes(user_dict, server_dict, taste_drop_thresh=0.33, surp_drop_thresh=0, taste_surp_combo_method="pareto")
+      elif user_group == 3:
+        return getTasteAndSurpRecipes(user_dict, server_dict, taste_drop_thresh=0.33, surp_drop_thresh=0, taste_surp_combo_method="pareto_raw")
     #If we're in teh lab study situation, with two user groups.
     elif EXPERIMENTAL_STATE_OVERRIDE == 'experimental':
       expReturn = {0: getTasteRecipes, 1: getTasteAndSurpRecipes}
@@ -747,6 +752,8 @@ def getRecipes(user_dict, server_settings, validation=False):
       return getTasteAndSurpRecipes(user_dict, server_dict, drop_thresh = 0.5, taste_surp_combo_method="avg")
     elif user_group == 2:
       return getTasteAndSurpRecipes(user_dict, server_dict, taste_drop_thresh=0.33, surp_drop_thresh=0., taste_surp_combo_method="pareto")
+    elif user_group == 3:
+      return getTasteAndSurpRecipes(user_dict, server_dict, taste_drop_thresh=0.33, surp_drop_thresh=0, taste_surp_combo_method="pareto_raw")
 
   # If we're in the lab study situation, with two user groups.
   if server_dict['experimentalState']:

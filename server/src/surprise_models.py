@@ -200,27 +200,31 @@ def culinaryExperience(user):
 #  - (float) calculated surprise score in [0..1]
 #  - (string) error
 def simpleSurpRecipe(user, recipe_id, sigma=2, delta=1, return_raw=False):
-    if return_raw:
-        raise NotImplementedError # We discontinued the use of this function before proper logging was incorporated.
-    cul_ex,error = culinaryExperience(user)
-    if len(error):
-        return None,error
-    raw_surprise,error = rawSurpRecipe(recipe_id)
-    if len(error):
-        return None,error
-    # The target surprise level varies by culinary experience
-    if cul_ex == "novice":
-        surprise = raw_surprise - sigma
-    elif cul_ex == "moderate":
-        surprise = raw_surprise - sigma - delta
-    elif cul_ex == "foodie":
-        surprise = raw_surprise - sigma - (2 * delta)
-    else:
-        return None,"Unexpected value in culinary experience"
-    surprise = abs(surprise / sigma)  # Gets the number of "sigmas" away from target
-    surprise = min(surprise, 1)
-    surprise = 1 - surprise
+    #This is the old discontinued normalisation based surprise that's been superseded by the Frontier approach.
+    # if return_raw:
+    #     raise NotImplementedError # We discontinued the use of this function before proper logging was incorporated.
+    # cul_ex,error = culinaryExperience(user)
+    # if len(error):
+    #     return None,error
+    # raw_surprise,error = rawSurpRecipe(recipe_id)
+    # if len(error):
+    #     return None,error
+    # # The target surprise level varies by culinary experience
+    # if cul_ex == "novice":
+    #     surprise = raw_surprise - sigma
+    # elif cul_ex == "moderate":
+    #     surprise = raw_surprise - sigma - delta
+    # elif cul_ex == "foodie":
+    #     surprise = raw_surprise - sigma - (2 * delta)
+    # else:
+    #     return None,"Unexpected value in culinary experience"
+    # surprise = abs(surprise / sigma)  # Gets the number of "sigmas" away from target
+    # surprise = min(surprise, 1)
+    # surprise = 1 - surprise
+    surprise = -g.r_data[recipe_id]["surprises"]["100%"]
     debug(f'[simpleSurpRecipe - DATA]: surprise for {recipe_id} :{surprise}')
+    if return_raw:
+        return surprise, (-surprise, -surprise),""
     return surprise,""
 
 # simpleSurpRecipe - surprise score for a given user-recipe pair
@@ -228,10 +232,14 @@ def simpleSurpRecipe(user, recipe_id, sigma=2, delta=1, return_raw=False):
 #  - (dict): user object
 #  - (lit of strings): recipe id
 # Output:
-#  - (list of floats) calculated surprise scores in [0..1]
+#  - (list of floats) calculated surprise scores
 #  - (string) error
-def simpleSurpRecipes(user, recipe_ids, sigma=2, delta=1, return_raw=False):
-    raise NotImplementedError
+def simpleSurpRecipes(user, recipe_ids, return_raw=False):
+    surprise_scores = [-g.r_data[rid]["surprises"]["100%"] for rid in recipe_ids]
+    raw_ratings = {i:(-s,-s) for i,s in zip(recipe_ids,surprise_scores)}
+    if return_raw:
+        return surprise_scores, raw_ratings, ""
+    return surprise_scores,""
 
 def predict_many_users_one_recipe(model, users, recipe_id, weight_id = None):
     X = pd.DataFrame()
