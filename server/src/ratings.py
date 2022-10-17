@@ -207,38 +207,39 @@ def greedyRecipeDiversitySelection(possibleRecipes,numWantedRecipes, existing = 
     bestRecipeVectors = {possibleRecipes[0][1]: np.array(g.r_data[possibleRecipes[0][1]]["vector"])}
     debug(f'[greedyRecipeDiversitySelection - ALWAYS]: {next_best_index} has been selected to be kept, currently {len(bestRecipes)} in the selected list.')
     next_best_index = 1
-  next_best_vector = np.array(g.r_data[possibleRecipes[next_best_index][1]]["vector"])
-  next_best_penalised_score = getSimilarityPenalisedScore(next_best_vector, possibleRecipes[next_best_index][0], existing +
-                                                          [bestRecipeVectors[rid] for _, rid in bestRecipes])
-  candidate_index = next_best_index + 1
-  while len(bestRecipes) < numWantedRecipes and next_best_index < len(possibleRecipes):  #
-    if candidate_index >= len(possibleRecipes) or possibleRecipes[candidate_index][0] <= next_best_penalised_score:
-      # We've hit the end of the list or we've hit the point where we can't possibly find a higher score, so we add this recipe and reset the search.
-      bestRecipes.append(possibleRecipes[next_best_index])
-      bestRecipeVectors[possibleRecipes[next_best_index][1]] = next_best_vector
-      debug(f'[greedyRecipeDiversitySelection - ALWAYS]: {next_best_index} has been selected to be kept, currently {len(bestRecipes)} in the selected list.')
-      next_best_index = next_best_index + 1
-      if next_best_index < len(possibleRecipes):
-        next_best_vector = np.array(g.r_data[possibleRecipes[next_best_index][1]]["vector"])
-        next_best_penalised_score = getSimilarityPenalisedScore(next_best_vector, possibleRecipes[next_best_index][0], existing +
-                                                                [bestRecipeVectors[rid] for _, rid in bestRecipes])
+  if next_best_index < len(possibleRecipes): # This is just here to check what happens if there's only one recipe in the list.
+    next_best_vector = np.array(g.r_data[possibleRecipes[next_best_index][1]]["vector"])
+    next_best_penalised_score = getSimilarityPenalisedScore(next_best_vector, possibleRecipes[next_best_index][0], existing +
+                                                            [bestRecipeVectors[rid] for _, rid in bestRecipes])
+    candidate_index = next_best_index + 1
+    while len(bestRecipes) < numWantedRecipes and next_best_index < len(possibleRecipes):  #
+      if candidate_index >= len(possibleRecipes) or possibleRecipes[candidate_index][0] <= next_best_penalised_score:
+        # We've hit the end of the list or we've hit the point where we can't possibly find a higher score, so we add this recipe and reset the search.
+        bestRecipes.append(possibleRecipes[next_best_index])
+        bestRecipeVectors[possibleRecipes[next_best_index][1]] = next_best_vector
+        debug(f'[greedyRecipeDiversitySelection - ALWAYS]: {next_best_index} has been selected to be kept, currently {len(bestRecipes)} in the selected list.')
+        next_best_index = next_best_index + 1
+        if next_best_index < len(possibleRecipes):
+          next_best_vector = np.array(g.r_data[possibleRecipes[next_best_index][1]]["vector"])
+          next_best_penalised_score = getSimilarityPenalisedScore(next_best_vector, possibleRecipes[next_best_index][0], existing +
+                                                                  [bestRecipeVectors[rid] for _, rid in bestRecipes])
 
-        debug(f'[greedyRecipeDiversitySelection - ALWAYS]: Current candidate is {next_best_index} with a penalised score of {next_best_penalised_score}, and it has become the best current candidate to be kept.')
-        candidate_index = next_best_index + 1
-    else:
-      candidate_vector = np.array(g.r_data[possibleRecipes[candidate_index][1]]["vector"])
-      candidate_penalised_score = getSimilarityPenalisedScore(candidate_vector, possibleRecipes[candidate_index][0], existing +
-                                                              [bestRecipeVectors[rid] for _, rid in bestRecipes])
-      debug(f'[greedyRecipeDiversitySelection - ALWAYS]: Current candidate is {candidate_index} with a penalised score of {candidate_penalised_score} vs the current best {next_best_penalised_score} (#{next_best_index})')
-      if candidate_penalised_score > next_best_penalised_score:
-        debug(f'[greedyRecipeDiversitySelection - ALWAYS]: {candidate_index} has become the best current candidate to be kept.')
-        next_best_index = candidate_index
-        next_best_vector = candidate_vector
-        next_best_penalised_score = candidate_penalised_score
-        candidate_index = next_best_index + 1
+          debug(f'[greedyRecipeDiversitySelection - ALWAYS]: Current candidate is {next_best_index} with a penalised score of {next_best_penalised_score}, and it has become the best current candidate to be kept.')
+          candidate_index = next_best_index + 1
       else:
-        skipped_recipe_ids.append(possibleRecipes[candidate_index][1])
-        candidate_index += 1
+        candidate_vector = np.array(g.r_data[possibleRecipes[candidate_index][1]]["vector"])
+        candidate_penalised_score = getSimilarityPenalisedScore(candidate_vector, possibleRecipes[candidate_index][0], existing +
+                                                                [bestRecipeVectors[rid] for _, rid in bestRecipes])
+        debug(f'[greedyRecipeDiversitySelection - ALWAYS]: Current candidate is {candidate_index} with a penalised score of {candidate_penalised_score} vs the current best {next_best_penalised_score} (#{next_best_index})')
+        if candidate_penalised_score > next_best_penalised_score:
+          debug(f'[greedyRecipeDiversitySelection - ALWAYS]: {candidate_index} has become the best current candidate to be kept.')
+          next_best_index = candidate_index
+          next_best_vector = candidate_vector
+          next_best_penalised_score = candidate_penalised_score
+          candidate_index = next_best_index + 1
+        else:
+          skipped_recipe_ids.append(possibleRecipes[candidate_index][1])
+          candidate_index += 1
   if len(possibleRecipes) >= numWantedRecipes:
     selected_avg = sum([r[0] for r in bestRecipes]) / float(numWantedRecipes)
     top_avg = sum([r[0] for r in possibleRecipes[:numWantedRecipes]]) / float(numWantedRecipes)
