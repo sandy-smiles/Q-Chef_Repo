@@ -177,6 +177,7 @@ def getSeenRecipes(user_dict, exclude_validation=True, exclude_onboarding=True):
       return None, err
     onboarding_dict = onboarding_doc.to_dict()
     exclude_list += onboarding_dict.keys()
+  exclude_list = [rid for rid in exclude_list if rid in user_dict["r_taste"].keys() and user_dict["r_taste"][rid]["n_ratings"] < 2]
   #debug(f'[getSeenRecipes - ALWAYS]: user_dict["r_taste"].keys(): {user_dict["r_taste"].keys()}')
   #debug(f'[getSeenRecipes - ALWAYS]: user_dict["pickedRecipes"]: {user_dict["pickedRecipes"]}')
   return [rid for rid in user_dict['r_taste'].keys() if not rid in exclude_list]
